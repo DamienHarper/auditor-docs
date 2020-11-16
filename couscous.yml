@@ -9,7 +9,7 @@ exclude:
 scripts:
   # Scripts to execute before generating the website
   before:
-    - npx postcss template/css/main.css -o template/css/app.css
+    - yarn run postcss template/css/main.css -o template/css/app.css
 
 menu:
   - section: '<svg class="h-6 w-6" viewBox="0 0 24 24" style="display: inline-block;"><path class="text-gray-400 fill-current" d="M12 21a2 2 0 0 1-1.41-.59l-.83-.82A2 2 0 0 0 8.34 19H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4a5 5 0 0 1 4 2v16z"></path><path class="text-gray-700 fill-current" d="M12 21V5a5 5 0 0 1 4-2h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4.34a2 2 0 0 0-1.42.59l-.83.82A2 2 0 0 1 12 21z"></path></svg> auditor'
@@ -40,12 +40,12 @@ menu:
       - section: Getting started
         items:
           ab-what-is-auditor:
-            text: What is auditor?
+            text: What is auditor-bundle?
             url: /docs/auditor-bundle/index.html
           ab-installation:
             text: Installation
             url: /docs/auditor-bundle/installation.html
-          ab-release-notes:
+          release-notes:
             text: Release notes
             url: /docs/auditor-bundle/release-notes.html
           ab-upgrading:
@@ -56,49 +56,49 @@ menu:
         items:
           general:
             text: General
-            url: /docs/auditor-bundle/configuration
+            url: /docs/auditor-bundle/configuration/general.html
           auditing:
             text: Auditing
-            url: /docs/auditor-bundle/auditing-configuration
+            url: /docs/auditor-bundle/configuration/auditing.html
           storage:
             text: Storage
-            url: /docs/auditor-bundle/storage-configuration
+            url: /docs/auditor-bundle/configuration/storage.html
           reference:
             text: Reference
-            url: /docs/auditor-bundle/configuration-reference
+            url: /docs/auditor-bundle/configuration/reference.html
 
       - section: Customization
         items:
           user-provider:
             text: User provider
-            url: /docs/auditor-bundle/user-provider-setup
+            url: /docs/auditor-bundle/customization/user-provider.html
           security-provider:
             text: Security provider
-            url: /docs/auditor-bundle/security-provider-setup
+            url: /docs/auditor-bundle/customization/security-provider.html
           role-checker:
             text: Role checker
-            url: /docs/auditor-bundle/role-checker-setup
+            url: /docs/auditor-bundle/customization/role-checker.html
 
       - section: Usage
         items:
           schema:
             text: Schema
-            url: /docs/auditor-bundle/schema-manipulation
+            url: /docs/auditor-bundle/usage/schema-manipulation.html
           enabling-disabling:
             text: Enabling/Disabling
-            url: /docs/auditor-bundle/enabling-disabling-at-runtime
+            url: /docs/auditor-bundle/usage/enabling-disabling-at-runtime.html
           viewer:
             text: Viewer
-            url: /docs/auditor-bundle/viewer
+            url: /docs/auditor-bundle/usage/viewer.html
           querying:
             text: Querying audits
-            url: /docs/auditor-bundle/querying
+            url: /docs/auditor-bundle/usage/querying.html
           events:
             text: Events
-            url: /docs/auditor-bundle/events
+            url: /docs/auditor-bundle/usage/events.html
           maintenance:
             text: Maintenance
-            url: /docs/auditor-bundle/maintenance
+            url: /docs/auditor-bundle/usage/maintenance.html
           contributing:
             text: Contributing
-            url: /docs/auditor-bundle/schema-manipulation
+            url: /docs/auditor-bundle/usage/schema-manipulation.html
