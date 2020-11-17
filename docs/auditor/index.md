@@ -8,7 +8,7 @@ next:
 
 `auditor`'s purpose is to provide an easy and standardized way to collect audit logs.
 
-### Architecture
+## Architecture
 
 This library is architected around two concepts:
 
@@ -18,7 +18,7 @@ This library is architected around two concepts:
 Those two kind of services are offered by Providers.
 
 
-### Default provider
+## Default provider
 
 A default provider is included with this library: the `DoctrineProvider`
 
@@ -49,7 +49,7 @@ direct DQL/SQL update or delete statements.
 </div>
 
 
-### Demo
+## Demo
 
 You can try out this bundle by cloning its companion demo app. 
 Follow instructions at [auditor-demo](https://github.com/DamienHarper/auditor-demo).

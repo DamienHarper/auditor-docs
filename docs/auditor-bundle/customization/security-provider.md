@@ -15,14 +15,14 @@ and firewall name.
 
 
 ## Built-in security provider
-<span class="ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
+<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
 
 `auditor-bundle` provides a default built-in security provider based on Symfony's `RequestStack` and `FirewallMap`, 
 but if you don't use those components, you can still provide a custom security provider. 
 
 
 ## Custom security provider
-<span class="ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
+<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
 
 First you need to provide a service implementing the `SecurityProviderInterface` interface
 and reference it in the `dh_auditor.yaml`. This service has to be a `callable` and 

@@ -12,7 +12,7 @@ next:
 `auditor` provides both a [query](/docs/auditor-bundle/querying#query-doctrine-provider) object and a [reader](/docs/auditor-bundle/querying#reader-doctrine-provider) to query the full history of any audited entity and even paginate results.
 
 ## Reader
-<span class="ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 The `Reader` makes it easy to query and retrieve audits from the storage.
 It heavily relies on the [`Query`](/docs/auditor-bundle/querying#query-doctrine-provider) object and takes care of checking roles and auditable state of a given entity.
@@ -100,12 +100,9 @@ $audits = $reader->getAuditsByTransactionHash('123abc');
 
 
 ---
-<div class="heading mt-6">
-  <h2 class="flex markdown mt-5">
-    Query
-    <span class="ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
-  </h2>
-</div>
+
+## Query
+<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 The `Query` object is a thin wrapper on top of Doctrine's `Doctrine\DBAL\Query\QueryBuilder`.
 It allows to query and retrieve audits from the storage.

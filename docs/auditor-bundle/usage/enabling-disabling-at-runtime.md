@@ -18,7 +18,7 @@ next:
 
 
 ## Enabling/Disabling at runtime
-<span class="ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 You can disable audit logging at runtime by calling `DH\Auditor\Provider\Doctrine\Configuration::disableAuditFor(string $entity)`.  
 This will prevent the system from logging changes applied to `$entity` objects.

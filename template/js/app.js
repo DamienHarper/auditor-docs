@@ -29,10 +29,11 @@ $.when($.ready).then(function() {
 
             // populate in-page-menu
             var caption = $(this).text().substr(2);
-            var classes = 'mb-4 lg:mb-2';
+            var classes = 'mb-4 lg:mb-1';
 
             switch ($(this)[0].nodeName) {
                 case 'H2':
+                    classes += ' toc-title';
                     break;
                 case 'H3':
                     classes += ' ml-4 lg:ml-2';
@@ -45,7 +46,7 @@ $.when($.ready).then(function() {
                     break;
             }
 
-            $('#in-page-menu ul').append('<li class="'+classes+'"><a class="block transition-fast hover:translate-r-2px hover:text-gray-900 font-medium text-gray-600" href="#' + $(this).attr('id') + '">' + caption + '</a></li>');
+            $('#in-page-menu ul').append('<li class="'+classes+'"><a class="block transition-fast hover:translate-r-2px hover:text-gray-900 text-gray-600" href="#' + $(this).attr('id') + '">' + caption + '</a></li>');
         });
     });
 });

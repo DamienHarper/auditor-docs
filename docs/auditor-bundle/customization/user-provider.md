@@ -13,14 +13,14 @@ A user provider is a service which goal is to return an object implementing `DH\
 `auditor` then invokes the user provider any time it receives an audit event.
 
 ## Built-in user provider
-<span class="ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
+<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
 
 `auditor-bundle` provides a default built-in user provider based on Symfony's `TokenStorage`, 
 but if you don't use `TokenStorage`, you can still provide a custom user provider. 
 
 
 ## Custom user provider
-<span class="ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
+<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
 
 First you need to provide a service implementing the `UserProviderInterface` interface
 and reference it in the `dh_auditor.yaml`. This service has to be a `callable` and 

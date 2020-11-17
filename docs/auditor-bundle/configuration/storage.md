@@ -13,7 +13,7 @@ Storage configuration is achieved using the YAML configuration file described in
 
 
 ## Audit tables naming format
-<span class="ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 Audit table names are composed of a prefix, a name and a suffix. 
 By default, the prefix is empty and the suffix is `_audit`. Though, they can be customized.
@@ -28,7 +28,7 @@ dh_auditor:
 
 
 ## Storage services
-<span class="ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 By default, `auditor-bundle` stores audits using Doctrine's default entity manager `doctrine.orm.default_entity_manager`.
 However, `auditor-bundle` lets you store audits using several entity managers by adding them to the `storage_services` list.
@@ -72,7 +72,7 @@ dh_auditor:
 
 
 ## Storage mapper
-<span class="ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 A storage mapper is a `callable` that routes audit events to storage services. 
 It's up to the storage mapper to choose which storage service should be used to persist audits logs for a given entity.

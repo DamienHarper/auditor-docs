@@ -12,7 +12,10 @@ scripts:
     - yarn run postcss template/css/main.css -o template/css/app.css
 
 menu:
-  - section: '<svg class="h-6 w-6" viewBox="0 0 24 24" style="display: inline-block;"><path class="text-gray-400 fill-current" d="M12 21a2 2 0 0 1-1.41-.59l-.83-.82A2 2 0 0 0 8.34 19H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4a5 5 0 0 1 4 2v16z"></path><path class="text-gray-700 fill-current" d="M12 21V5a5 5 0 0 1 4-2h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4.34a2 2 0 0 0-1.42.59l-.83.82A2 2 0 0 1 12 21z"></path></svg> auditor'
+  - section: 'auditor'
+    id: 'auditor'
+    icon: '<svg class="h-6 w-6" viewBox="0 0 24 24" style="display: inline-block;"><path class="text-gray-400 fill-current" d="M12 21a2 2 0 0 1-1.41-.59l-.83-.82A2 2 0 0 0 8.34 19H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4a5 5 0 0 1 4 2v16z"></path><path class="text-gray-700 fill-current" d="M12 21V5a5 5 0 0 1 4-2h4a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-4.34a2 2 0 0 0-1.42.59l-.83.82A2 2 0 0 1 12 21z"></path></svg>'
+    url: /docs/auditor/index.html
     items:
       - section: Getting started
         items:
@@ -35,7 +38,10 @@ menu:
             text: Providers
             url: /docs/auditor/providers.html
 
-  - section: '<svg class="h-6 w-6" viewBox="0 0 24 24" style="display: inline-block;"><path class="text-gray-400 fill-current" d="M3 6l9 4v12l-9-4V6zm14-3v2c0 1.1-2.24 2-5 2s-5-.9-5-2V3c0 1.1 2.24 2 5 2s5-.9 5-2z"></path><polygon class="text-gray-700 fill-current" points="21 6 12 10 12 22 21 18"></polygon></svg> auditor-bundle'
+  - section: 'auditor-bundle'
+    id: 'auditor-bundle'
+    icon: '<svg class="h-6 w-6" viewBox="0 0 24 24" style="display: inline-block;"><path class="text-gray-400 fill-current" d="M3 6l9 4v12l-9-4V6zm14-3v2c0 1.1-2.24 2-5 2s-5-.9-5-2V3c0 1.1 2.24 2 5 2s5-.9 5-2z"></path><polygon class="text-gray-700 fill-current" points="21 6 12 10 12 22 21 18"></polygon></svg>'
+    url: /docs/auditor-bundle/index.html
     items:
       - section: Getting started
         items:

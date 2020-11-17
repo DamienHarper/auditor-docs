@@ -4,9 +4,6 @@ introduction: "A guide to using auditor-bundle."
 previous:
     text: Events
     url: /docs/auditor-bundle/usage/events.html
-next:
-    text: Contributing
-    url: /docs/auditor-bundle/contributing.html
 ---
 
 `auditor` provides a convenient command that helps you cleaning audit tables.

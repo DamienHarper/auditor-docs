@@ -217,7 +217,7 @@ h1.markdown {
 
 .markdown > h2,
 h2.markdown {
-    margin-top: 4rem;
+    margin-top: 3rem;
     margin-bottom: 1rem;
     --text-opacity: 1;
     color: #1a202c;
@@ -425,4 +425,17 @@ pre code.markdown,
     --border-opacity: 1;
     border-color: #e2e8f0;
     border-color: rgba(226, 232, 240, var(--border-opacity));
+}
+
+.markdown .tag {
+    position: absolute!important;
+    right: 3rem!important;
+}
+
+.markdown h2 + p > .tag {
+    margin-top: -3rem!important;
+}
+
+.markdown h3 + p > .tag {
+    margin-top: -2.4rem!important;
 }

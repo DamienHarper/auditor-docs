@@ -20,7 +20,7 @@ As a reference, you can have a look at the bundled `AuditEventSubscriber`
 
 
 ## Subscribing to audit events
-<span class="ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
+<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
 
 First you have to create an event subscriber that listens to `LyfecycleEvent` events.
 
