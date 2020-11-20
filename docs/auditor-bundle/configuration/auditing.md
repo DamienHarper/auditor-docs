@@ -14,7 +14,7 @@ and/or using [annotations](#configuration-using-annotations-doctrine-provider) (
 
 
 ## Auditing services
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 By default, `auditor-bundle` audits operations coming from Doctrine's default entity manager `doctrine.orm.default_entity_manager`.
 Though, you can configure which entity managers are source of audit events by adding them to the `auditing_services` list.
@@ -32,7 +32,7 @@ dh_auditor:
 
 
 ## Audited entities and properties
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 By default, `auditor-bundle` won't audit any entity until you configure which ones have to be audited.
 
@@ -62,7 +62,7 @@ dh_auditor:
 
 
 ## Ignoring properties globally
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 By default, `auditor-bundle` audits every property of entities [declared auditable](#audited-entities-and-properties-doctrine-provider).
 But, you can define some properties to be always ignored by the audit process.
@@ -79,7 +79,7 @@ dh_auditor:
 
 
 ## Example configuration
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 ```yaml
 dh_auditor:
@@ -101,14 +101,14 @@ dh_auditor:
 ---
 
 ## Annotations
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 Several annotations are available and let you configure which entities are auditable, 
 which properties should ignored and even the security requirements (roles) to view audits.
 
-<div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-2 pl-4" role="alert">
-  <p class="font-bold">Note</p>
-  <p>Annotation take precedence over configuration coming from <code>dh_auditor.yaml</code> file.</p>
+<div class="note note-info" role="alert">
+  <p class="note-title">Note</p>
+  <p class="note-desc">Annotation take precedence over configuration coming from <code>dh_auditor.yaml</code> file.</p>
 </div>
 
 

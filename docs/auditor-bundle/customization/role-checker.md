@@ -13,14 +13,14 @@ A role checker is a service which goal is to return a `boolean` indicating wheth
 an entity's audit logs is granted for the current user.  
 
 ## Built-in role checker
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
 
 `auditor-bundle` provides a default built-in role checker based on Symfony's `Security`, 
 but if you don't use this component, you can still provide a custom role checker. 
 
 
 ## Custom role checker
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
 
 First you need to provide a service implementing the `RoleCheckerInterface` interface
 and reference it in the `dh_auditor.yaml`. This service has to be a `callable` and 
@@ -43,7 +43,7 @@ class RoleChecker implements RoleCheckerInterface
     }
 }
 ```
-
+  
 ```yaml
 # config/services.yaml
 services:

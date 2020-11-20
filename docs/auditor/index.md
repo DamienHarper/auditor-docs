@@ -1,5 +1,6 @@
 ---
 title: What is auditor?
+introduction: test intro
 title_border: no
 next:
     text: Installation

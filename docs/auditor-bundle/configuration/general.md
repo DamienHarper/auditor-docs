@@ -16,7 +16,7 @@ Depending on the Symfony version your application relies, configuration is locat
 
 
 ## Timezone
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
 
 You can configure the timezone the audit `created_at` is generated in. This by default is `UTC`.
 
@@ -26,7 +26,7 @@ dh_auditor:
 ```
 
 ## Enabling/Disabling auditing (globally)
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
 
 By default, `auditor-bundle` audits every entity [declared auditable](/docs/auditor-bundle/auditing-configuration#audited-entities-and-properties-doctrine-provider).
 
@@ -43,7 +43,7 @@ and at [runtime](/docs/auditor-bundle/enabling-disabling-at-runtime#enabling-dis
 
 
 ## User provider
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
 
 A user provider is a service which goal is to return information about current user.  
 `auditor` then invokes the user provider any time it receives an audit event.
@@ -56,7 +56,7 @@ dh_auditor:
 
 
 ## Security provider
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
 
 A security provider is a service which goal is to return security information such as current client IP, etc.  
 `auditor` then invokes the security provider any time it receives an audit event.
@@ -69,7 +69,7 @@ dh_auditor:
 
 
 ## Role checker
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
 
 A role checker is a service which goal is to return a `boolean` indicating whether permission to access 
 an entity's audit logs is granted for the current user.  
@@ -86,7 +86,7 @@ dh_auditor:
 ## Doctrine provider settings
 
 ### Enabling/Disabling auditing (per entity)
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 This lets you disable audit logging for an entity by default and only enable auditing 
 when needed for example. Per entity enabling/disabling is done in the configuration file.
@@ -107,7 +107,7 @@ but audit entries will only be saved when auditing is explicitly enabled [at run
 
 
 ### Enabling/Disabling audit viewer
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 `auditor-bundle` provides an [audit viewer](/docs/auditor-bundle/viewer) letting you review the full history of any audited entity.
 This viewer is enabled by default and can be accessed at `/audit`. 
@@ -131,7 +131,7 @@ dh_auditor:
 
 
 ### Inheritance
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 This bundle supports all of Doctrine inheritance types:
 

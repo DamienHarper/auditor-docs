@@ -13,7 +13,7 @@ Storage configuration is achieved using the YAML configuration file described in
 
 
 ## Audit tables naming format
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 Audit table names are composed of a prefix, a name and a suffix. 
 By default, the prefix is empty and the suffix is `_audit`. Though, they can be customized.
@@ -28,14 +28,14 @@ dh_auditor:
 
 
 ## Storage services
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 By default, `auditor-bundle` stores audits using Doctrine's default entity manager `doctrine.orm.default_entity_manager`.
 However, `auditor-bundle` lets you store audits using several entity managers by adding them to the `storage_services` list.
 
-<div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-2 pl-4" role="alert">
-  <p class="font-bold">Note</p>
-  <p>Using several entity managers for audit storage <b>requires</b> you to define a storage mapper (see below).</p>
+<div class="note note-info" role="alert">
+  <p class="note-title">Note</p>
+  <p class="note-desc">Using several entity managers for audit storage <b>requires</b> you to define a storage mapper (see below).</p>
 </div>
 
 ```yaml
@@ -49,30 +49,32 @@ dh_auditor:
                 - '@doctrine.orm.third_entity_manager'
 ```
 
-<div class="bg-orange-100 border-l-4 border-orange-500 text-oraneg-700 p-2 pl-4" role="alert">
-  <p class="font-bold">Warning</p>
-  <p>Using several entity managers for audit storage <b>breaks atomicity</b> provided by the bundle by default. 
-     Audits persistence operations are performed into different transactions than entity persistence operations.</p>
-     <p>This means that:</p>
-     <ul class="list-disc">
-        <li class="p-2 ml-10">
-         if one of the current audited entity operation <b>fails</b>, audit data is <b>still persisted</b> 
-         to the secondary database which is very bad (reference to entity data which doesn't exist 
-         in the main database or reference to entity data in main database which doesn't reflect changes 
-         logged in audit data)
-        </li>
-        <li class="p-2 ml-10">
-         if one of the current audited entity operation <b>succeed</b>, audit data persistence in the 
-         secondary database <b>still can fail</b> which is bad but can be acceptable in some use cases 
-         (depending on how critical audit data is for your application/business, missing audit data 
-         could be acceptable)
-        </li>
-     </ul>
+<div class="note note-warning" role="alert">
+  <p class="note-title">Warning</p>
+  <p>
+    Using several entity managers for audit storage <b>breaks atomicity</b> provided by the bundle by default. 
+    Audits persistence operations are performed into different transactions than entity persistence operations.
+  </p>
+  <p>This means that:</p>
+  <ul class="pl-4">
+    <li>
+      if one of the current audited entity operation <b>fails</b>, audit data is <b>still persisted</b> 
+      to the secondary database which is very bad (reference to entity data which doesn't exist 
+      in the main database or reference to entity data in main database which doesn't reflect changes 
+      logged in audit data)
+    </li>
+    <li>
+      if one of the current audited entity operation <b>succeed</b>, audit data persistence in the 
+      secondary database <b>still can fail</b> which is bad but can be acceptable in some use cases 
+      (depending on how critical audit data is for your application/business, missing audit data 
+      could be acceptable)
+    </li>
+  </ul>
 </div>
 
 
 ## Storage mapper
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 A storage mapper is a `callable` that routes audit events to storage services. 
 It's up to the storage mapper to choose which storage service should be used to persist audits logs for a given entity.

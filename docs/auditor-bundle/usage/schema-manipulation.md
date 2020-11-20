@@ -10,7 +10,7 @@ next:
 ---
 
 ## Creating audit tables
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 The process of audit table creation differs depending on your current setup:
 
@@ -96,7 +96,7 @@ bin/console audit:schema:update --force
 ---
 
 ## Updating the schema
-<span class="tag ml-3 mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 After updating `auditor` library of `auditor-bundle`, the schema might need to be updated, 
 you can do so by using the `audit:schema:update` command. 
