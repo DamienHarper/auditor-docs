@@ -51,11 +51,11 @@ dh_auditor:
 
 <div class="note note-warning" role="alert">
   <p class="note-title">Warning</p>
-  <p>
+  <p class="note-desc">
     Using several entity managers for audit storage <b>breaks atomicity</b> provided by the bundle by default. 
     Audits persistence operations are performed into different transactions than entity persistence operations.
   </p>
-  <p>This means that:</p>
+  <p class="note-desc">This means that:</p>
   <ul class="pl-4">
     <li>
       if one of the current audited entity operation <b>fails</b>, audit data is <b>still persisted</b> 

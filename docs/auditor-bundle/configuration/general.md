@@ -140,5 +140,8 @@ This bundle supports all of Doctrine inheritance types:
  - [class table inheritance](https://www.doctrine-project.org/projects/doctrine-orm/en/2.6/reference/inheritance-mapping.html#class-table-inheritance)
 
 
-**Note**: configuring the root table to be audited does not suffice to get all child tables audited in a 
-**single table inheritance** context. You have to configure every child table that needs to be audited as well.
+<div class="note note-info" role="alert">
+  <p class="note-title">Note</p>
+  <p class="note-desc">Configuring the root table to be audited does not suffice to get all child tables audited in a 
+  <b>single table inheritance</b> context. You have to configure every child table that needs to be audited as well.</p>
+</div>

@@ -82,11 +82,14 @@ $audits = $query->execute();
 $audits = $reader->createQuery(Author::class)->execute();
 ```
 
-**Note:** retrieving audits using the above method is scoped to a single entity. 
+<div class="note note-info" role="alert">
+  <p class="note-title">Note</p>
+  <p class="note-desc">Retrieving audits using the above method is scoped to a single entity. 
 A transaction generally spans across multiple entities so retrieving audit entries belonging to a transaction 
-could be tough. 
-To make it easier, a dedicated method is available: `Reader::getAuditsByTransactionHash(string $transactionHash): array`
+could be tough.</p>
+</div>
 
+To make it easier, a dedicated method is available: `Reader::getAuditsByTransactionHash(string $transactionHash): array`
 
 Example:
 ```php
@@ -152,7 +155,10 @@ $query->addFilter(Query::TRANSACTION_HASH, '123abc');
 #### Standard range filter
 A standard range filter can be applied by using `Query::addRangeFilter(string $name, $minValue = null, $maxValue = null): self` 
 
-**Note:** bounds (`$minValue` and `$maxValue`) can't be null simultaneously.
+<div class="note note-info" role="alert">
+  <p class="note-title">Note</p>
+  <p class="note-desc">Bounds (<code>$minValue</code> and <code>$maxValue</code>) can't be <code>null</code> simultaneously.</p>
+</div>
 
 Examples:
 ```php
@@ -172,7 +178,10 @@ $query->addRangeFilter(Query::OBJECT_ID, 10, 25);
 #### Date range filter
 A date range filter can be applied by using `Query::addDateRangeFilter(string $name, ?DateTime $minValue = null, ?DateTime $maxValue = null): self` 
 
-**Note:** bounds (`$minValue` and `$maxValue`) can't be null simultaneously.
+<div class="note note-info" role="alert">
+  <p class="note-title">Note</p>
+  <p class="note-desc">Bounds (<code>$minValue</code> and <code>$maxValue</code>) can't be <code>null</code> simultaneously.</p>
+</div>
 
 Examples:
 ```php
@@ -211,7 +220,10 @@ $entries = $query->execute();   // entries are ordered by ascendant creation dat
 ### Limit & offset
 It is possible to extract only a portion of the results at a specific offset by calling `Query::limit(int $limit, int $offset = 0): self`
 
-**Note:** offset starts at 0
+<div class="note note-info" role="alert">
+  <p class="note-title">Note</p>
+  <p class="note-desc"><code>$offset</code> starts at 0.</p>
+</div>
 
 Example:
 ```php

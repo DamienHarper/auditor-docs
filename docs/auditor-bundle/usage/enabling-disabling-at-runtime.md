@@ -9,13 +9,12 @@ next:
     url: /docs/auditor-bundle/usage/viewer.html
 ---
 
-<div class="bg-orange-100 border-l-4 border-orange-500 text-oraneg-700 p-2 pl-4" role="alert">
-  <p class="font-bold">Warning</p>
-  <p>disabling audit logging for an entity will make its audit logs <b>incomplete/partial</b> 
-     (no change applied to specified entity is logged in the relevant audit table while audit logging 
-     is disabled for that entity).</p>
+<div class="note note-warning" role="alert">
+  <p class="note-title">Warning</p>
+  <p class="note-desc">Disabling audit logging for an entity will make its audit logs <b>incomplete/partial</b> 
+  (no change applied to specified entity is logged in the relevant audit table while audit logging 
+  is disabled for that entity).</p>
 </div>
-
 
 ## Enabling/Disabling at runtime
 <span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>

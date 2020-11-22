@@ -1,10 +1,16 @@
+/*** fix anchors with static/fixed header  ***/
+:target {
+    @apply pt-28;
+    @apply -mt-28;
+    /*display: inline-block;*/
+}
+
+/*** Markdown styles ***/
 .markdown code {
     background-color: #f7fafc;
-    padding-left: .25rem;
-    padding-right: .25rem;
-    padding-top: .15rem;
-    padding-bottom: .15rem;
-    border-radius: .125rem;
+    @apply px-1;
+    @apply py-0.5;
+    @apply rounded-sm;
 }
 
 .markdown code::before {
@@ -14,11 +20,8 @@
     content: ""!important;
 }
 
-.tag {
-    margin-left: auto;
-    margin-right: 0;
-}
 
+/*** Note block styles ***/
 .note {
     @apply border-l-4;
     @apply py-2;
@@ -32,33 +35,44 @@
     @apply font-bold;
 }
 
+/* INFO note block */
 .note-info {
     @apply bg-blue-50;
     @apply border-blue-500;
-    @apply text-blue-400;
+    @apply text-blue-900;
 }
 .note-info .note-title {
     @apply text-blue-900;
 }
 .note-info .note-desc {
-    @apply text-blue-500;
+    @apply text-blue-900;
 }
 
+/* WARNING note block */
 .note-warning {
     @apply bg-orange-50;
     @apply border-orange-500;
-    @apply text-orange-400;
+    @apply text-orange-700;
 }
 .note-warning .note-title {
     @apply text-orange-900;
 }
 .note-warning .note-desc {
-    @apply text-orange-500;
+    @apply text-orange-700;
 }
 
+
+/*** Pager styles ***/
 .pager a {
     @apply text-gray-400 !important;
 }
 .pager a:hover {
     @apply text-gray-600 !important;
+}
+
+
+/*** Miscellaneous styles ***/
+.tag {
+    margin-left: auto;
+    margin-right: 0;
 }
