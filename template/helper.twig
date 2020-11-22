@@ -41,13 +41,13 @@
             {% set isCurrent = item.url|replace({'.html': ''}) == '/' ~ current|replace({'.md': ''}) %}
             <li>
             {% if isCurrent %}
-                <a class="px-3 py-2 transition-colors duration-200 relative block text-cyan-700" href="{{ item.url }}">
-                    <span class="rounded-md absolute inset-0 bg-cyan-50 opacity-100"></span>
+                <a class="px-3 py-2 transition-colors duration-200 relative block text-teal-700" href="{{ item.url }}">
+                    <span class="rounded-md absolute inset-0 bg-teal-200 opacity-30"></span>
                     <span class="relative">{{ item.text }}</span>
                 </a>
             {% else %}
                 <a class="px-3 py-2 transition-colors duration-200 relative block hover:text-gray-900 text-gray-500" href="{{ item.url }}">
-                    <span class="rounded-md absolute inset-0 bg-cyan-50 opacity-0"></span>
+                    <span class="rounded-md absolute inset-0 bg-teal-200 opacity-0"></span>
                     <span class="relative">{{ item.text }}</span>
                 </a>
             {% endif %}
@@ -59,22 +59,20 @@
 {% macro buildPager(previous, next) %}
     {% if next is not empty or previous is not empty %}
         <hr class="border-gray-200 mt-4 mb-4">
-        <nav class="pagination-nav mb-4">
-            <div class="pagination-nav__item">
-                {% if previous is not empty %}
-                    <a class="pagination-nav__link" href="{{ previous.url }}" title="{{ previous.title|e('html_attr') }}">
-{#                        <div class="pagination-nav__sublabel">Previous</div>#}
-                        <div class="pagination-nav__label">« {{ previous.text }}</div>
-                    </a>
-                {% endif %}
+        <nav class="pager flex">
+            <div class="w-1/2 mr-4 pl-4 rounded flex p-2 {% if previous is not empty %}border-solid border border-gray-400 hover:border-gray-600{% endif %}">
+            {% if previous is not empty %}
+                <a class="w-full text-left" href="{{ previous.url }}" title="{{ previous.title|e('html_attr') }}">
+                    « {{ previous.text }}
+                </a>
+            {% endif %}
             </div>
-            <div class="pagination-nav__item pagination-nav__item--next">
-                {% if next is not empty %}
-                    <a class="pagination-nav__link" href="{{ next.url }}" title="{{ next.title|e('html_attr') }}">
-{#                        <div class="pagination-nav__sublabel">Next</div>#}
-                        <div class="pagination-nav__label">{{ next.text }} »</div>
-                    </a>
-                {% endif %}
+            <div class="w-1/2 ml-4 pr-4 rounded flex p-2 {% if next is not empty %}border-solid border border-gray-400 hover:border-gray-600{% endif %}">
+            {% if next is not empty %}
+                <a class="w-full text-right" href="{{ next.url }}" title="{{ next.title|e('html_attr') }}">
+                    {{ next.text }} »
+                </a>
+            {% endif %}
             </div>
         </nav>
     {% endif %}

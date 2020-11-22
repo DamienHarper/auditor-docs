@@ -56,56 +56,9 @@
     @apply text-orange-500;
 }
 
-.pagination-nav {
-    display: flex;
+.pager a {
+    @apply text-gray-400 !important;
 }
-.pagination-nav__item {
-    display: flex;
-    flex-basis: 50%;
-    flex-grow: 1;
-    max-width:50%
-}
-
-.pagination-nav__item--next {
-    text-align:right
-}
-
-.pagination-nav__item + .pagination-nav__item {
-    margin-left: 1rem;
-}
-
-.pagination-nav__link {
-    @apply text-gray-600;
-    border-radius: .4rem;
-    border: 1px solid #dadde1;
-    display: block;
-    flex-grow: 1;
-    padding: .75rem;
-    color: rgba(96, 103, 112, 0.9);
-}
-
-.pagination-nav__link:hover {
-    @apply font-semibold !important;
-    @apply text-gray-900;
-    border-color: grey;
-    text-decoration:none;
-}
-
-.pagination-nav__label {
-    font-size: 1rem;
-    font-weight: 400;
-    margin-bottom: 0;
-    margin-top: 0;
-    word-break:break-word;
-}
-
-.pagination-nav__label, .pagination-nav__sublabel {
-    line-height: 1.25;
-}
-
-.pagination-nav__sublabel {
-    font-size: .875rem;
-    color: rgba(96, 103, 112, 0.49);
-    font-weight: 500;
-    margin-bottom:.25rem
+.pager a:hover {
+    @apply text-gray-600 !important;
 }
