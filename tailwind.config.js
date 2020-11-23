@@ -140,14 +140,6 @@ module.exports = {
                     },
                 },
             }),
-            fontFamily: {
-                sans: ['Inter var', ...defaultTheme.fontFamily.sans],
-                mono: ['Menlo', ...defaultTheme.fontFamily.mono],
-                source: ['Source Sans Pro', ...defaultTheme.fontFamily.sans],
-                'ubuntu-mono': ['Ubuntu Mono', ...defaultTheme.fontFamily.mono],
-                system: defaultTheme.fontFamily.sans,
-                flow: 'Flow',
-            },
             spacing: {
                 18: '4.5rem',
                 '15px': '0.9375rem',
