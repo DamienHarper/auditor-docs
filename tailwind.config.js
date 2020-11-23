@@ -6,6 +6,7 @@ module.exports = {
         './docs/**/*.md',
         './template/*.twig',
         './template/js/*.js',
+        './*.yml',
     ],
     darkMode: false, // or 'media' or 'class'
     theme: {

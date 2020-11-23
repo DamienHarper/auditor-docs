@@ -1,7 +1,5 @@
 ---
 title: What is auditor?
-introduction: test intro
-title_border: no
 next:
     text: Installation
     url: /docs/auditor/installation.html
@@ -44,9 +42,10 @@ Though, we can only really support the ones we can test with [Travis CI](https:/
 
 Basically you can track any change of any entity from audit logs.
 
-<div class="border-l-2 p-3 border-blue-400 bg-blue-100">
-<code>DoctrineProvider</code> does <strong>not</strong> allow tracking changes resulting from 
-direct DQL/SQL update or delete statements.
+<div class="note note-info" role="alert">
+  <p class="note-title">Note</p>
+  <p class="note-desc"><code>DoctrineProvider</code> does <strong>not</strong> allow tracking changes resulting from 
+   direct DQL/SQL update or delete statements.</p>
 </div>
 
 

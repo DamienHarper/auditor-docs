@@ -10,7 +10,7 @@
                 {% endfor %}
                 {% set isCurrent = value.url|split('/')[2] == ('/' ~ current)|split('/')[2] %}
                 <a href="{{ value.url }}" class="flex items-center px-3 hover:text-gray-900 transition-colors duration-200 {{ isCurrent ? 'text-gray-900 font-bold' : 'font-normal' }}">
-                    <div class="mr-3 rounded-md ">
+                    <div class="mr-3 rounded-md">
                         {{ item.icon|raw }}
                     </div>
                     {{ item.section }}
@@ -60,16 +60,16 @@
     {% if next is not empty or previous is not empty %}
         <hr class="border-gray-200 mt-4 mb-4">
         <nav class="pager flex">
-            <div class="w-1/2 mr-4 pl-4 rounded flex p-2 {% if previous is not empty %}border-solid border border-gray-400 hover:border-gray-600{% endif %}">
+            <div class="w-1/2 rounded flex {% if previous is not empty %}border-solid border border-gray-200 hover:border-gray-400{% endif %}">
             {% if previous is not empty %}
-                <a class="w-full text-left" href="{{ previous.url }}" title="{{ previous.title|e('html_attr') }}">
+                <a class="w-full text-left mr-4 pl-4 p-2" href="{{ previous.url }}" title="{{ previous.title|e('html_attr') }}">
                     « {{ previous.text }}
                 </a>
             {% endif %}
             </div>
-            <div class="w-1/2 ml-4 pr-4 rounded flex p-2 {% if next is not empty %}border-solid border border-gray-400 hover:border-gray-600{% endif %}">
+            <div class="w-1/2 rounded flex {% if next is not empty %}border-solid border border-gray-200 hover:border-gray-400{% endif %}">
             {% if next is not empty %}
-                <a class="w-full text-right" href="{{ next.url }}" title="{{ next.title|e('html_attr') }}">
+                <a class="w-full text-right ml-4 pr-4 p-2" href="{{ next.url }}" title="{{ next.title|e('html_attr') }}">
                     {{ next.text }} »
                 </a>
             {% endif %}

@@ -1,6 +1,5 @@
 ---
 title: What is auditor-bundle?
-title_border: no
 next:
     text: Installation
     url: /docs/auditor-bundle/installation.html

@@ -76,3 +76,16 @@
     margin-left: auto;
     margin-right: 0;
 }
+
+@font-face {
+    font-family: 'Horizon Rounded';
+    font-weight: 100 900;
+    font-display: swap;
+    font-style: normal;
+    /*font-named-instance: 'Regular';*/
+    src: url('../fonts/HorizonRounded.otf') format('opentype');
+}
+
+.horizon {
+    font-family: 'Horizon Rounded';
+}
