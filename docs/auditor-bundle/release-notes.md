@@ -35,6 +35,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version 3.x
 
+### DoctrineAuditBundle v3.4.2
+<div class="mt-3 italic text-gray-600">2020-11-26</div>
+
+### Fixes
+* [#200 - Template static datetime fix](https://github.com/DamienHarper/auditor-bundle/pull/200)
+* [#221 - Remove the ROLE_PREVIOUS_ADMIN deprecation warning from Symfony 5.1](https://github.com/DamienHarper/auditor-bundle/pull/221)
+* [#214 - Handle TableNotFoundException](https://github.com/DamienHarper/auditor-bundle/pull/214)
+* [#204 - Migration postUp](https://github.com/DamienHarper/auditor-bundle/pull/204)
+
+---
+
+### DoctrineAuditBundle v3.4.1
+<div class="mt-3 italic text-gray-600">2020-04-27</div>
+
+### Changes
+* Add operation type constants
+* Audit operations were stored in reverse order in a transaction
+
+---
+
 ### DoctrineAuditBundle v3.4.0
 <div class="mt-3 italic text-gray-600">2020-03-29</div>
 
