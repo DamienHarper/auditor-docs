@@ -298,6 +298,24 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <h4 id="how-to-upgrade">How to upgrade?</h4>
 <hr />
 <h2 id="version-3x">Version 3.x</h2>
+<h3 id="doctrineauditbundle-v342">DoctrineAuditBundle v3.4.2</h3>
+<div class="mt-3 italic text-gray-600">2020-11-26</div>
+<h3 id="fixes">Fixes</h3>
+<ul>
+<li><a href="https://github.com/DamienHarper/auditor-bundle/pull/200">#200 - Template static datetime fix</a></li>
+<li><a href="https://github.com/DamienHarper/auditor-bundle/pull/221">#221 - Remove the ROLE_PREVIOUS_ADMIN deprecation warning from Symfony 5.1</a></li>
+<li><a href="https://github.com/DamienHarper/auditor-bundle/pull/214">#214 - Handle TableNotFoundException</a></li>
+<li><a href="https://github.com/DamienHarper/auditor-bundle/pull/204">#204 - Migration postUp</a></li>
+</ul>
+<hr />
+<h3 id="doctrineauditbundle-v341">DoctrineAuditBundle v3.4.1</h3>
+<div class="mt-3 italic text-gray-600">2020-04-27</div>
+<h3 id="changes">Changes</h3>
+<ul>
+<li>Add operation type constants</li>
+<li>Audit operations were stored in reverse order in a transaction</li>
+</ul>
+<hr />
 <h3 id="doctrineauditbundle-v340">DoctrineAuditBundle v3.4.0</h3>
 <div class="mt-3 italic text-gray-600">2020-03-29</div>
 <p>Starting today (2020-03-29), <code>4.x</code> development begins in <code>master</code> branch.
@@ -308,12 +326,12 @@ A <code>3.x</code> branch has also been created and will host any 3.x related de
 <li>Added support for reading audits by date range (thanks to @McAnix)</li>
 <li>Cleanup command accepts an ISO 8601 date interval (thanks to @patrickmatsumura)</li>
 </ul>
-<h4 id="changes">Changes</h4>
+<h4 id="changes-1">Changes</h4>
 <ul>
 <li>Added audited entity FQCN to event payload</li>
 <li>Avoid proxy references in audit entries</li>
 </ul>
-<h4 id="fixes">Fixes</h4>
+<h4 id="fixes-1">Fixes</h4>
 <ul>
 <li><a href="https://github.com/DamienHarper/DoctrineAuditBundle/issues/144">#144 - Let the cleanup command accept an ISO 8601 duration</a></li>
 <li><a href="https://github.com/DamienHarper/DoctrineAuditBundle/issues/169">#169 - why DH\DoctrineAuditBundle\User\UserInterface::getId() must return int|string|null?</a></li>
@@ -323,21 +341,21 @@ A <code>3.x</code> branch has also been created and will host any 3.x related de
 <hr />
 <h3 id="doctrineauditbundle-v333">DoctrineAuditBundle v3.3.3</h3>
 <div class="mt-3 italic text-gray-600">2020-02-07</div>
-<h4 id="changes-1">Changes</h4>
+<h4 id="changes-2">Changes</h4>
 <ul>
 <li>Fixed PHP 7.1 BC break</li>
 </ul>
 <hr />
 <h3 id="doctrineauditbundle-v332">DoctrineAuditBundle v3.3.2</h3>
 <div class="mt-3 italic text-gray-600">2020-02-07</div>
-<h4 id="changes-2">Changes</h4>
+<h4 id="changes-3">Changes</h4>
 <ul>
 <li>Fixed a BC break with Symfony 4.3/4.4</li>
 </ul>
 <hr />
 <h3 id="doctrineauditbundle-v331">DoctrineAuditBundle v3.3.1</h3>
 <div class="mt-3 italic text-gray-600">2020-02-07</div>
-<h4 id="changes-3">Changes</h4>
+<h4 id="changes-4">Changes</h4>
 <ul>
 <li>Fixed a deprecation warning with Symfony 4.3+</li>
 <li>Adjusted PHPStan rules</li>
@@ -351,7 +369,7 @@ A <code>3.x</code> branch has also been created and will host any 3.x related de
 <li>Add a configuration option for enabling/disabling audit viewer (thanks to @p365labs)</li>
 <li>Add french, english, spanish, italian and german translations (thanks to @p365labs)</li>
 </ul>
-<h4 id="changes-4">Changes</h4>
+<h4 id="changes-5">Changes</h4>
 <ul>
 <li>Fixed some Doctrine deprecations</li>
 <li>Fixed pager when viewing a entity history with lots of entries</li>
@@ -362,7 +380,7 @@ A <code>3.x</code> branch has also been created and will host any 3.x related de
 <hr />
 <h3 id="doctrineauditbundle-v323">DoctrineAuditBundle v3.2.3</h3>
 <div class="mt-3 italic text-gray-600">2019-12-05</div>
-<h4 id="changes-5">Changes</h4>
+<h4 id="changes-6">Changes</h4>
 <ul>
 <li>Updated twig dependencies</li>
 <li>Fix a BC break introduced in <code>3.2.2</code> (#142)</li>
@@ -370,7 +388,7 @@ A <code>3.x</code> branch has also been created and will host any 3.x related de
 <hr />
 <h3 id="doctrineauditbundle-v322">DoctrineAuditBundle v3.2.2</h3>
 <div class="mt-3 italic text-gray-600">2019-12-03</div>
-<h4 id="changes-6">Changes</h4>
+<h4 id="changes-7">Changes</h4>
 <ul>
 <li>Fixed pagination when the pager has a lot of pages</li>
 <li>Fixed documentation related to <code>@Security</code> annotation (thanks to @jean-gui) </li>
@@ -378,14 +396,14 @@ A <code>3.x</code> branch has also been created and will host any 3.x related de
 <hr />
 <h3 id="doctrineauditbundle-v321">DoctrineAuditBundle v3.2.1</h3>
 <div class="mt-3 italic text-gray-600">2019-12-02</div>
-<h4 id="changes-7">Changes</h4>
+<h4 id="changes-8">Changes</h4>
 <ul>
 <li>Restored <code>AuditReader::getAuditsCount()</code> which was removed by error in <code>3.2.0</code> </li>
 </ul>
 <hr />
 <h3 id="doctrineauditbundle-v320">DoctrineAuditBundle v3.2.0</h3>
 <div class="mt-3 italic text-gray-600">2019-12-02</div>
-<h4 id="changes-8">Changes</h4>
+<h4 id="changes-9">Changes</h4>
 <ul>
 <li>Symfony 5 support</li>
 <li>PHP 7.4 support</li>
@@ -394,7 +412,7 @@ A <code>3.x</code> branch has also been created and will host any 3.x related de
 <hr />
 <h3 id="doctrineauditbundle-v310">DoctrineAuditBundle v3.1.0</h3>
 <div class="mt-3 italic text-gray-600">2019-11-21</div>
-<h4 id="changes-9">Changes</h4>
+<h4 id="changes-10">Changes</h4>
 <ul>
 <li>Fixed Doctrine deprecations</li>
 <li>Ensure compatibility with doctrine/dbal &lt;2.10.0</li>
@@ -459,7 +477,7 @@ or run </p>
 <h2 id="version-2x">Version 2.x</h2>
 <h3 id="doctrineauditbundle-v250">DoctrineAuditBundle v2.5.0</h3>
 <div class="mt-3 italic text-gray-600">2019-09-04</div>
-<h4 id="changes-10">Changes</h4>
+<h4 id="changes-11">Changes</h4>
 <ul>
 <li>Add an option to globally enable/disable auditing from configuration file (thanks to @MylesKingsnorth01)</li>
 <li>Allow to use a custom entity manager/secondary database for audits (thanks to @pawello92)
@@ -468,7 +486,7 @@ or run </p>
 <hr />
 <h3 id="doctrineauditbundle-v240">DoctrineAuditBundle v2.4.0</h3>
 <div class="mt-3 italic text-gray-600">2019-08-19</div>
-<h4 id="changes-11">Changes</h4>
+<h4 id="changes-12">Changes</h4>
 <ul>
 <li>Fix deprecated usage of <code>spaceless</code> tag (thanks to @maxhelias)</li>
 <li>Timezone can be set from configuration file. It affects audit entries creation date and defaults to UTC (thanks to @MylesKingsnorth01)</li>
@@ -476,14 +494,14 @@ or run </p>
 <hr />
 <h3 id="doctrineauditbundle-v232">DoctrineAuditBundle v2.3.2</h3>
 <div class="mt-3 italic text-gray-600">2019-07-29</div>
-<h4 id="changes-12">Changes</h4>
+<h4 id="changes-13">Changes</h4>
 <ul>
 <li>Add a new <code>AuditReader:getEntityTableAuditName()</code> method allowing to retrieve the audit table name for an entity (#68)</li>
 </ul>
 <hr />
 <h3 id="doctrineauditbundle-v231">DoctrineAuditBundle v2.3.1</h3>
 <div class="mt-3 italic text-gray-600">2019-06-13</div>
-<h4 id="changes-13">Changes</h4>
+<h4 id="changes-14">Changes</h4>
 <ul>
 <li>Fix <code>Unknown "spaceless" filter</code> encountered in some configurations (#65)</li>
 <li>Updated <code>README.md</code> regarding Symfony 3.4 configuration and <code>Unknown "pagerfanta" function</code> error (#64)</li>
@@ -491,7 +509,7 @@ or run </p>
 <hr />
 <h3 id="doctrineauditbundle-v230">DoctrineAuditBundle v2.3.0</h3>
 <div class="mt-3 italic text-gray-600">2019-04-18</div>
-<h4 id="changes-14">Changes</h4>
+<h4 id="changes-15">Changes</h4>
 <ul>
 <li>Add a way to globally enable and disable audit at runtime (#61 thanks to @webmasterMeyers)</li>
 <li>Fixed a Windows compatibility issue regarding URLs including backslashes (fixes #62)</li>
@@ -499,7 +517,7 @@ or run </p>
 <hr />
 <h3 id="doctrineauditbundle-v220">DoctrineAuditBundle v2.2.0</h3>
 <div class="mt-3 italic text-gray-600">2019-04-15</div>
-<h4 id="changes-15">Changes</h4>
+<h4 id="changes-16">Changes</h4>
 <ul>
 <li>Performance improvements in audit viewer</li>
 <li>Paginated timeline</li>
@@ -508,7 +526,7 @@ or run </p>
 <hr />
 <h3 id="doctrineauditbundle-v210">DoctrineAuditBundle v2.1.0</h3>
 <div class="mt-3 italic text-gray-600">2019-04-12</div>
-<h4 id="changes-16">Changes</h4>
+<h4 id="changes-17">Changes</h4>
 <ul>
 <li>Reworked default templates to display audit entries in a timeline instead of a <em>simple</em> tabular view.</li>
 <li>Fixed some deprecated references</li>
@@ -522,7 +540,7 @@ or run </p>
 <hr />
 <h3 id="doctrineauditbundle-v200">DoctrineAuditBundle v2.0.0</h3>
 <div class="mt-3 italic text-gray-600">2019-03-25</div>
-<h4 id="changes-17">Changes</h4>
+<h4 id="changes-18">Changes</h4>
 <ul>
 <li>Complete rewrite of many internal parts to improve testability and lessen complexity.</li>
 <li>Migration command allowing to change structure of concrete (currently used) audit tables.</li>
@@ -548,7 +566,7 @@ or run </p>
 <h2 id="version-1x">Version 1.x</h2>
 <h3 id="doctrineauditbundle-v160">DoctrineAuditBundle v1.6.0</h3>
 <div class="mt-3 italic text-gray-600">2019-03-04</div>
-<h4 id="changes-18">Changes</h4>
+<h4 id="changes-19">Changes</h4>
 <ul>
 <li>Unit tests and code coverage</li>
 <li>Travis CI integration</li>
@@ -562,7 +580,7 @@ or run </p>
 <hr />
 <h3 id="doctrineauditbundle-v150">DoctrineAuditBundle v1.5.0</h3>
 <div class="mt-3 italic text-gray-600">2019-02-06</div>
-<h4 id="changes-19">Changes</h4>
+<h4 id="changes-20">Changes</h4>
 <ul>
 <li>Tracking of impersonator in <code>blame_user</code> column (@webmasterMeyers)</li>
 <li>Add aliases for <code>@dh_doctrine_audit.configuration</code> and <code>dh_doctrine_audit.reader</code> services (fixes #36)</li>
@@ -571,7 +589,7 @@ or run </p>
 <hr />
 <h3 id="doctrineauditbundle-v140">DoctrineAuditBundle v1.4.0</h3>
 <div class="mt-3 italic text-gray-600">2019-01-28</div>
-<h4 id="changes-20">Changes</h4>
+<h4 id="changes-21">Changes</h4>
 <ul>
 <li>Schema support (fixes #32, thanks to @DrummerKH)</li>
 <li>Do not consider an entity as audited if its parent is (fixes #34)</li>
@@ -579,14 +597,14 @@ or run </p>
 <hr />
 <h3 id="doctrineauditbundle-v130">DoctrineAuditBundle v1.3.0</h3>
 <div class="mt-3 italic text-gray-600">2019-01-21</div>
-<h4 id="changes-21">Changes</h4>
+<h4 id="changes-22">Changes</h4>
 <ul>
 <li>Add a way to enable/disable auditing for an entity at runtime (@eduardoweiland)</li>
 </ul>
 <hr />
 <h3 id="doctrineauditbundle-v120">DoctrineAuditBundle v1.2.0</h3>
 <div class="mt-3 italic text-gray-600">2018-12-13</div>
-<h4 id="changes-22">Changes</h4>
+<h4 id="changes-23">Changes</h4>
 <ul>
 <li>Custom user provider support (thanks @eduardoweiland)</li>
 <li>Small <code>FAQ</code> update</li>
@@ -594,7 +612,7 @@ or run </p>
 <hr />
 <h3 id="doctrineauditbundle-v110">DoctrineAuditBundle v1.1.0</h3>
 <div class="mt-3 italic text-gray-600">2018-12-05</div>
-<h4 id="changes-23">Changes</h4>
+<h4 id="changes-24">Changes</h4>
 <ul>
 <li>Added a way to filter audit entries by type in the bundled controller (thanks @kl3sk)</li>
 <li>Added an <code>FAQ</code> section to the <code>README</code> (thanks @kl3sk)</li>
