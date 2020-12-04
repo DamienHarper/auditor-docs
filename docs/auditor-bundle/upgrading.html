@@ -276,8 +276,73 @@
                                             </div>
                     <div>
                         <div class="prose markdown">
-                            <h2 id="upgrading-from-doctrineauditbundle">Upgrading from DoctrineAuditBundle</h2>
-<p>...work in progress...</p>
+                            <p>Jump to the <a href="/docs/auditor/upgrading.html#upgrading-from-a-previous-version">Upgrading from a previous version</a> section
+if you're not upgrading from <code>DoctrineAuditBundle</code></p>
+<h2 id="upgrading-from">Upgrading from <code>DoctrineAuditBundle</code></h2>
+<p><code>DoctrineAuditBundle</code> is now deprecated since it has been split into two separate packages </p>
+<ul>
+<li><code>auditor</code> the core library</li>
+<li><code>auditor-bundle</code> a Symfony bundle providing <code>auditor</code> integration into Symfony applications</li>
+</ul>
+<p>So, upgrading from <code>DoctrineAuditBundle</code> to <code>auditor</code> + <code>auditor-bundle</code> requires a few steps</p>
+<h3 id="1-configuration-file">1. Configuration file</h3>
+<p>Create a new configuration file <code>dh_auditor.yaml</code>
+(full configuration reference available <a href="/docs/auditor-bundle/configuration/reference.html">here</a>)</p>
+<p>Minimal config file:</p>
+<pre><code class="language-yaml">dh_auditor:
+    enabled: true
+    providers:
+        doctrine:
+            table_prefix: ~
+            table_suffix: '_audit'</code></pre>
+<h3 id="2-add">2. Add <code>auditor-bundle</code> as a dependency</h3>
+<p>Run the following command in a console</p>
+<pre><code class="language-bash">composer require damienharper/auditor-bundle ^4.0</code></pre>
+<h3 id="3-fix-annotation-namespace-changes">3. Fix annotation namespace changes</h3>
+<p>Replace the <code>use</code> statement related to <code>Audit</code> annotation to reference the new namespace in your entities. </p>
+<pre><code class="language-diff-php">- use DH\DoctrineAuditBundle\Annotation as Audit;
++ use DH\Auditor\Provider\Doctrine\Auditing\Annotation as Audit;</code></pre>
+<h3 id="4-fix-route-name-changes">4. Fix route name changes</h3>
+<p>Reference the new routes in the <code>config/routes.yaml</code></p>
+<pre><code class="language-diff-yaml">- dh_doctrine_audit:
+-     resource: "@DHDoctrineAuditBundle/Controller/"
+-     type: annotation
++ dh_auditor:
++     resource: "@DHAuditorBundle/Controller/"
++     type: annotation</code></pre>
+<p>Route names have been renamed, change them accordingly in your code.
+You'll find below a summary of route name changes.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Before (<code>DoctrineAuditBundle</code> route name)</th>
+<th style="text-align: left;">After (<code>auditor-bundle</code> route name)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>dh_doctrine_audit_list_audits</code></td>
+<td style="text-align: left;"><code>dh_auditor_list_audits</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>dh_doctrine_audit_show_transaction</code></td>
+<td style="text-align: left;"><code>dh_auditor_show_transaction</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>dh_doctrine_audit_show_entity_history</code></td>
+<td style="text-align: left;"><code>dh_auditor_show_entity_history</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="5">5. <code>AuditReader</code> deprecation</h3>
+<p><code>AuditReader</code> has been replaced by <code>Reader</code> and <code>Query</code> objects, so if you used it to query
+the audit logs, dive into the <a href="/docs/auditor-bundle/usage/querying.html">Querying audits section</a> </p>
+<h3 id="6-remove">6. Remove <code>DoctrineAuditBundle</code></h3>
+<p>Run the following command in a console</p>
+<pre><code class="language-bash">composer remove damienharper/doctrine-audit-bundle</code></pre>
+<h3 id="7-ensure-your-schema-is-up-to-date">7. Ensure your schema is up to date</h3>
+<p>Check the <a href="/docs/auditor/upgrading.html#upgrading-from-a-previous-version">Upgrading from a previous version</a>
+below to ensure your schema is up to date.</p>
 <hr />
 <h2 id="upgrading-from-a-previous-version">Upgrading from a previous version</h2>
 <p>Once you upgraded the bundle to a newer version, you first have to
@@ -289,13 +354,13 @@ app/console audit:schema:update --force</code></pre>
 bin/console audit:schema:update --force</code></pre>
                                         <hr class="border-gray-200 mt-4 mb-4">
         <nav class="pager flex">
-            <div class="w-1/2 rounded flex border-solid border border-gray-200 hover:border-gray-400">
-                            <a class="w-full text-left mr-4 pl-4 p-2" href="https://damienharper.github.io/auditor-docs/docs/auditor-bundle/release-notes.html" title="">
+            <div class="w-1/2 rounded flex mr-6 border-solid border border-gray-200 hover:border-gray-400">
+                            <a class="w-full text-left pl-4 p-2" href="https://damienharper.github.io/auditor-docs/docs/auditor-bundle/release-notes.html" title="">
                     « Release notes
                 </a>
                         </div>
-            <div class="w-1/2 rounded flex border-solid border border-gray-200 hover:border-gray-400">
-                            <a class="w-full text-right ml-4 pr-4 p-2" href="https://damienharper.github.io/auditor-docs/docs/auditor-bundle/configuration/general.html" title="">
+            <div class="w-1/2 rounded flex ml-6 border-solid border border-gray-200 hover:border-gray-400">
+                            <a class="w-full text-right pr-4 p-2" href="https://damienharper.github.io/auditor-docs/docs/auditor-bundle/configuration/general.html" title="">
                     Configuration »
                 </a>
                         </div>

@@ -185,7 +185,7 @@
                                             </div>
                     <div>
                         <div class="prose markdown">
-                            <p><code>auditor</code>'s purpose is to provide an easy and standardized way to collect audit logs.</p>
+                            <p>The purpose of <code>auditor</code> is to provide an easy and standardized way to collect audit logs.</p>
 <h2 id="architecture">Architecture</h2>
 <p>This library is architected around two concepts:</p>
 <ul>
@@ -211,23 +211,20 @@ so that even if something fails the global state remains clean.</li>
 <li>PostgreSQL</li>
 <li>SQLite</li>
 </ul>
-<p><code>DoctrineProvider</code> <em>should work with <strong>any other</strong> database supported by <code>Doctrine</code>.
-Though, we can only really support the ones we can test with <a href="https://travis-ci.com">Travis CI</a>.</em></p>
+<p><code>DoctrineProvider</code> <strong>should</strong> work with <strong>any other</strong> database supported by <code>Doctrine</code>.
+Though, we can only really support the ones we can test with <a href="https://travis-ci.com">Travis CI</a> / Github actions.</p>
 <p>Basically you can track any change of any entity from audit logs.</p>
 <div class="note note-info" role="alert">
   <p class="note-title">Note</p>
   <p class="note-desc"><code>DoctrineProvider</code> does <strong>not</strong> allow tracking changes resulting from 
    direct DQL/SQL update or delete statements.</p>
 </div>
-<h2 id="demo">Demo</h2>
-<p>You can try out this bundle by cloning its companion demo app.
-Follow instructions at <a href="https://github.com/DamienHarper/auditor-demo">auditor-demo</a>.</p>
                                         <hr class="border-gray-200 mt-4 mb-4">
         <nav class="pager flex">
-            <div class="w-1/2 rounded flex ">
+            <div class="w-1/2 rounded flex mr-6 ">
                         </div>
-            <div class="w-1/2 rounded flex border-solid border border-gray-200 hover:border-gray-400">
-                            <a class="w-full text-right ml-4 pr-4 p-2" href="https://damienharper.github.io/auditor-docs/docs/auditor/installation.html" title="">
+            <div class="w-1/2 rounded flex ml-6 border-solid border border-gray-200 hover:border-gray-400">
+                            <a class="w-full text-right pr-4 p-2" href="https://damienharper.github.io/auditor-docs/docs/auditor/installation.html" title="">
                     Installation »
                 </a>
                         </div>
