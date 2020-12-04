@@ -17,6 +17,16 @@ in the [installation chapter](https://getcomposer.org/doc/00-intro.md)
 of the Composer documentation.
   
 
+## Requirements
+
+ Version   | Status                 | PHP requirements | Symfony requirements
+:----------|:-----------------------|:-----------------|:--------------------
+ **4.x**   | **Active development** | **PHP >= 7.2**   | **Symfony >= 3.4**
+ 3.x       | Active support         | PHP >= 7.1       | Symfony >= 3.4
+ 2.x       | End of life            | PHP >= 7.1       | Symfony >= 3.4
+ 1.x       | End of life            | PHP >= 7.1       | Symfony >= 3.4
+
+
 ## 1. Applications that use Symfony Flex
 
 Open a command console, enter your project directory and execute:

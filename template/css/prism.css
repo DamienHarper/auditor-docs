@@ -142,3 +142,19 @@ pre[class*="language-"] {
 .token.italic {
     font-style: italic;
 }
+
+pre[class*="language-diff-"] > code .token.deleted:not(.prefix),
+pre > code[class*="language-diff-"] .token.deleted:not(.prefix) {
+    /*background-color: rgba(255, 0, 0, .1);*/
+    background-color: rgba(251,113,133,.25);
+    color: inherit;
+    display: block;
+}
+
+pre[class*="language-diff-"] > code .token.inserted:not(.prefix),
+pre > code[class*="language-diff-"] .token.inserted:not(.prefix) {
+    /*background-color: rgba(0, 255, 128, .1);*/
+    background-color: rgba(4,120,87,.5);
+    color: inherit;
+    display: block;
+}

@@ -5,7 +5,8 @@ next:
     url: /docs/auditor/installation.html
 ---
 
-`auditor`'s purpose is to provide an easy and standardized way to collect audit logs.
+The purpose of `auditor` is to provide an easy and standardized way to collect audit logs.
+
 
 ## Architecture
 
@@ -37,8 +38,8 @@ so that even if something fails the global state remains clean.
 * PostgreSQL
 * SQLite
 
-`DoctrineProvider` *should work with **any other** database supported by `Doctrine`. 
-Though, we can only really support the ones we can test with [Travis CI](https://travis-ci.com).*
+`DoctrineProvider` **should** work with **any other** database supported by `Doctrine`. 
+Though, we can only really support the ones we can test with [Travis CI](https://travis-ci.com) / Github actions.
 
 Basically you can track any change of any entity from audit logs.
 
@@ -47,9 +48,3 @@ Basically you can track any change of any entity from audit logs.
   <p class="note-desc"><code>DoctrineProvider</code> does <strong>not</strong> allow tracking changes resulting from 
    direct DQL/SQL update or delete statements.</p>
 </div>
-
-
-## Demo
-
-You can try out this bundle by cloning its companion demo app. 
-Follow instructions at [auditor-demo](https://github.com/DamienHarper/auditor-demo).

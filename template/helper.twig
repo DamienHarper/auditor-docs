@@ -60,14 +60,14 @@
     {% if next is not empty or previous is not empty %}
         <hr class="border-gray-200 mt-4 mb-4">
         <nav class="pager flex">
-            <div class="w-1/2 rounded flex mr-8 {% if previous is not empty %}border-solid border border-gray-200 hover:border-gray-400{% endif %}">
+            <div class="w-1/2 rounded flex mr-6 {% if previous is not empty %}border-solid border border-gray-200 hover:border-gray-400{% endif %}">
             {% if previous is not empty %}
                 <a class="w-full text-left pl-4 p-2" href="{{ baseUrl }}{{ previous.url }}" title="{{ previous.title|e('html_attr') }}">
                     « {{ previous.text }}
                 </a>
             {% endif %}
             </div>
-            <div class="w-1/2 rounded flex ml-8 {% if next is not empty %}border-solid border border-gray-200 hover:border-gray-400{% endif %}">
+            <div class="w-1/2 rounded flex ml-6 {% if next is not empty %}border-solid border border-gray-200 hover:border-gray-400{% endif %}">
             {% if next is not empty %}
                 <a class="w-full text-right pr-4 p-2" href="{{ baseUrl }}{{ next.url }}" title="{{ next.title|e('html_attr') }}">
                     {{ next.text }} »
