@@ -62,7 +62,7 @@ menu:
             url: /docs/auditor-bundle/upgrading.html
           contributing:
             text: Contributing
-            url: /docs/auditor/contributing.html
+            url: /docs/auditor-bundle/contributing.html
 
       - section: Configuration
         items:
