@@ -31,6 +31,9 @@ menu:
           upgrading:
             text: Upgrade Guide
             url: /docs/auditor/upgrading.html
+          contributing:
+            text: Contributing
+            url: /docs/auditor/contributing.html
 
       - section: Core concepts
         items:
@@ -45,18 +48,21 @@ menu:
     items:
       - section: Getting started
         items:
-          ab-what-is-auditor:
+          what-is-auditor:
             text: What is auditor-bundle?
             url: /docs/auditor-bundle/index.html
-          ab-installation:
+          installation:
             text: Installation
             url: /docs/auditor-bundle/installation.html
           release-notes:
             text: Release notes
             url: /docs/auditor-bundle/release-notes.html
-          ab-upgrading:
+          upgrading:
             text: Upgrade Guide
             url: /docs/auditor-bundle/upgrading.html
+          contributing:
+            text: Contributing
+            url: /docs/auditor/contributing.html
 
       - section: Configuration
         items:

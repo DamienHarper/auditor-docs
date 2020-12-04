@@ -5,8 +5,8 @@ previous:
     text: Release notes
     url: /docs/auditor/release-notes.html
 next:
-    text: Providers
-    url: /docs/auditor/providers.html
+    text: Contributing
+    url: /docs/auditor/contributing.html
 ---
 
 Jump to the [Upgrading from a previous version](/docs/auditor/upgrading.html#upgrading-from-a-previous-version) section 

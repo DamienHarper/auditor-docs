@@ -5,8 +5,8 @@ previous:
     text: Release notes
     url: /docs/auditor-bundle/release-notes.html
 next:
-    text: Configuration
-    url: /docs/auditor-bundle/configuration/general.html
+    text: Contributing
+    url: /docs/auditor-bundle/contributing.html
 ---
 
 
