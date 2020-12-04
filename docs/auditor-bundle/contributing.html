@@ -216,8 +216,8 @@
                 <h5 class="px-3 mb-3 lg:mb-3 uppercase tracking-wide font-semibold text-sm lg:text-xs text-gray-900">Usage</h5>
                 <ul>
                                                         <li>
-                            <a class="px-3 py-2 transition-colors duration-200 relative block text-teal-700" href="/docs/auditor-bundle/usage/schema-manipulation.html">
-                    <span class="rounded-md absolute inset-0 bg-teal-200 opacity-30"></span>
+                            <a class="px-3 py-2 transition-colors duration-200 relative block hover:text-gray-900 text-gray-500" href="/docs/auditor-bundle/usage/schema-manipulation.html">
+                    <span class="rounded-md absolute inset-0 bg-teal-200 opacity-0"></span>
                     <span class="relative">Schema</span>
                 </a>
                         </li>
@@ -252,8 +252,8 @@
                 </a>
                         </li>
                                             <li>
-                            <a class="px-3 py-2 transition-colors duration-200 relative block text-teal-700" href="/docs/auditor-bundle/usage/schema-manipulation.html">
-                    <span class="rounded-md absolute inset-0 bg-teal-200 opacity-30"></span>
+                            <a class="px-3 py-2 transition-colors duration-200 relative block hover:text-gray-900 text-gray-500" href="/docs/auditor-bundle/usage/schema-manipulation.html">
+                    <span class="rounded-md absolute inset-0 bg-teal-200 opacity-0"></span>
                     <span class="relative">Contributing</span>
                 </a>
                         </li>
@@ -274,87 +274,45 @@
                     <div class="pb-4 border-b border-gray-200 mb-10">
                         <div class="flex items-center">
                             <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">
-                                Schema
+                                Contributing
                             </h1>
                         </div>
 
-                                                    <p class="mt-1 text-lg text-gray-500">A guide to using auditor-bundle.</p>
+                                                    <p class="mt-1 text-lg text-gray-500">How to contribute?</p>
                                             </div>
                     <div>
                         <div class="prose markdown">
-                            <h2 id="creating-audit-tables">Creating audit tables</h2>
-<p><span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span></p>
-<p>The process of audit table creation differs depending on your current setup:</p>
-<ul>
-<li><strong>single</strong> storage service setup: audit tables are stored in the <strong>same</strong> database than audited ones (most common use case)</li>
-<li><strong>multiple</strong> storage services setup: audit tables are stored in a <strong>multiple</strong> databases</li>
-</ul>
-<h3 id="single-storage-service-setup-most-common-use-case">Single storage service setup (most common use case)</h3>
-<p>Open a command console, enter your project directory and execute the
-following command to review the new audit tables in the update schema queue.</p>
-<pre><code class="language-bash"># symfony &lt; 3.4
-app/console doctrine:schema:update --dump-sql </code></pre>
-<pre><code class="language-bash"># symfony &gt;= 3.4
-bin/console doctrine:schema:update --dump-sql </code></pre>
-<h4 id="using-doctrinemigrationsbundle">Using DoctrineMigrationsBundle</h4>
-<p>see <a href="http://symfony.com/doc/current/bundles/DoctrineMigrationsBundle/index.html">DoctrineMigrationsBundle</a></p>
-<pre><code class="language-bash"># symfony &lt; 3.4
-app/console doctrine:migrations:diff
-app/console doctrine:migrations:migrate</code></pre>
-<pre><code class="language-bash"># symfony &gt;= 3.4
-bin/console doctrine:migrations:diff
-bin/console doctrine:migrations:migrate</code></pre>
-<h4 id="using-doctrine-schema">Using Doctrine Schema</h4>
-<pre><code class="language-bash"># symfony &lt; 3.4
-app/console doctrine:schema:update --force</code></pre>
-<pre><code class="language-bash"># symfony &gt;= 3.4
-bin/console doctrine:schema:update --force</code></pre>
-<h3 id="multiple-storage-services-setup">Multiple storage services setup</h3>
-<p>Doctrine <code>Schema-Tool</code> and <code>DoctrineMigrationsBundle</code> are not able to work with more than one
-database at once. To workaround that limitation, this bundle offers a migration command that
-focuses on audit schema manipulation.</p>
-<p>Open a command console, enter your project directory and execute the following command to
-review the new audit tables in the update schema queue.</p>
-<pre><code class="language-bash"># symfony &lt; 3.4
-app/console audit:schema:update --dump-sql </code></pre>
-<pre><code class="language-bash"># symfony &gt;= 3.4
-bin/console audit:schema:update --dump-sql </code></pre>
-<p>Once you're done, execute the following command to apply.</p>
-<pre><code class="language-bash"># symfony &lt; 3.4
-app/console audit:schema:update --force</code></pre>
-<pre><code class="language-bash"># symfony &gt;= 3.4
-bin/console audit:schema:update --force</code></pre>
-<hr />
-<h2 id="updating-the-schema">Updating the schema</h2>
-<p><span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span></p>
-<p>After updating <code>auditor</code> library of <code>auditor-bundle</code>, the schema might need to be updated,
-you can do so by using the <code>audit:schema:update</code> command. </p>
-<p>This ensures that:</p>
-<ul>
-<li>all audit tables are created</li>
-<li>all audit tables have the expected structure and updates them if needed </li>
-</ul>
-<p>Open a command console, enter your project directory and execute the following command to
-review the new audit tables in the update schema queue.</p>
-<pre><code class="language-bash"># symfony &lt; 3.4
-app/console audit:schema:update --dump-sql </code></pre>
-<pre><code class="language-bash"># symfony &gt;= 3.4
-bin/console audit:schema:update --dump-sql </code></pre>
-<p>Once you're done, execute the following command to apply.</p>
-<pre><code class="language-bash"># symfony &lt; 3.4
-app/console audit:schema:update --force</code></pre>
-<pre><code class="language-bash"># symfony &gt;= 3.4
-bin/console audit:schema:update --force</code></pre>
+                            <p>Contribution are always welcome and much appreciated!</p>
+<p>The development of <code>auditor-bundle</code> is hosted on <a href="https://github.com/DamienHarper/auditor-bundle">GitHub</a>.</p>
+<h2 id="requirements">Requirements</h2>
+<p>Before starting to contribute, you first need to install dev dependencies:</p>
+<pre><code class="language-bash">composer install --dev</code></pre>
+<p>Also, in an effort to maintain an homogeneous code base, we strongly encourage contributors
+to run <a href="https://github.com/FriendsOfPHP/PHP-CS-Fixer">PHP-CS-Fixer</a> and <a href="https://github.com/phpstan/phpstan">PHPStan</a>
+before submitting a Pull Request.</p>
+<h2 id="coding-standards">Coding standards</h2>
+<p>Coding standards are enforced using <a href="https://github.com/FriendsOfPHP/PHP-CS-Fixer">PHP-CS-Fixer</a></p>
+<pre><code class="language-bash">composer csfixer</code></pre>
+<h2 id="static-code-analysis">Static code analysis</h2>
+<p>Static code analysis can be achieved using <a href="https://github.com/phpstan/phpstan">PHPStan</a></p>
+<pre><code class="language-bash">composer phpstan</code></pre>
+<h2 id="running-tests">Running Tests</h2>
+<p>The test suite is configured to use an SQLite in-memory database and generates
+a code coverage report in <code>tests/coverage</code> folder.</p>
+<h3 id="default-configuration-sqlite">Default configuration (SQLite)</h3>
+<p>This configuration uses an in memory SQLite database and generates code coverage report
+in <code>tests/coverage</code> folder (requires <a href="https://github.com/krakjoe/pcov">PCOV extension</a>).</p>
+<pre><code class="language-bash">composer test</code></pre>
                                         <hr class="border-gray-200 mt-4 mb-4">
         <nav class="pager flex">
             <div class="w-1/2 rounded flex mr-6 border-solid border border-gray-200 hover:border-gray-400">
-                            <a class="w-full text-left pl-4 p-2" href="/docs/auditor-bundle/customization/role-checker.html" title="">
-                    « Role checker
+                            <a class="w-full text-left pl-4 p-2" href="/docs/auditor-bundle/upgrading.html" title="">
+                    « Upgrade Guide
                 </a>
                         </div>
             <div class="w-1/2 rounded flex ml-6 border-solid border border-gray-200 hover:border-gray-400">
-                            <a class="w-full text-right pr-4 p-2" href="/docs/auditor-bundle/usage/enabling-disabling-at-runtime.html" title="">
-                    Runtime Enabling/Disabling »
+                            <a class="w-full text-right pr-4 p-2" href="/docs/auditor-bundle/configuration/general.html" title="">
+                    Configuration »
                 </a>
                         </div>
         </nav>
