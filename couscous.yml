@@ -2,9 +2,9 @@ template:
   directory: template
 
 exclude:
-  - template
+  - 'template'
   # This special entry will ask Couscous to read the excluded directories from your ".gitignore" file
-  - %gitignore%
+  - '%gitignore%'
 
 scripts:
   # Scripts to execute before generating the website
