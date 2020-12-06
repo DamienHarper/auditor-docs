@@ -15,6 +15,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## auditor v1.0
-<div class="-mt-3 italic text-gray-600">Not yet released</div>
+<div class="mt-3 italic text-gray-600">2020-12-06</div>
 
-Initial release
+Initial release.
+
+The purpose of `auditor` is to provide an easy and standardized way to collect audit logs.
+
+This library is architected around two concepts:
+
+- Auditing services responsible for collecting audit events
+- Storage services responsible for persisting audit traces
+
+Those two kind of services are offered by Providers and a default one is included with this library: `DoctrineProvider`
+
+`DoctrineProvider` offers both auditing services and storage services and 
+creates audit logs for all `Doctrine ORM` database related changes.

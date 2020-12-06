@@ -20,9 +20,9 @@ Those two kind of services are offered by Providers.
 
 ## Default provider
 
-A default provider is included with this library: the `DoctrineProvider`
+A default provider is included with this library: `DoctrineProvider`
 
-`DoctrineProvider` offers both auditing services and sorage services.
+`DoctrineProvider` offers both auditing services and storage services.
 It creates audit logs for all `Doctrine ORM` database related changes:
 
 - inserts and updates including their diffs and relation field diffs.

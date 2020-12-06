@@ -17,19 +17,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Version 4.x
 
 ### auditor-bundle v4.0
-<div class="mt-3 italic text-gray-600">Not yet released</div>
+<div class="mt-3 italic text-gray-600">2020-12-06</div>
 
 #### What's new
 
 * `DoctrineAuditBundle` has been split into two different packages:
-  * `auditor` 
-  * `auditor-bundle`
+  * `auditor` the core library
+  * `auditor-bundle` a Symfony bundle providing `auditor` integration into Symfony applications
 * PHP 7.1 is not supported anymore.
 
 #### Breaking changes
-* Pretty much everything has been rewritten.
+* Pretty much everything has been rewritten so public API and namespaces have changed.
 
 #### How to upgrade?
+You'll find a detailed upgrade guide [here](/docs/auditor-bundle/upgrading.html). 
 
 ---
 
