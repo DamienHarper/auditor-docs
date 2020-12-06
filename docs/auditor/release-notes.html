@@ -196,8 +196,17 @@
 and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semantic Versioning</a>.</p>
 <hr />
 <h2 id="auditor-v10">auditor v1.0</h2>
-<div class="-mt-3 italic text-gray-600">Not yet released</div>
-<p>Initial release</p>
+<div class="mt-3 italic text-gray-600">2020-12-06</div>
+<p>Initial release.</p>
+<p>The purpose of <code>auditor</code> is to provide an easy and standardized way to collect audit logs.</p>
+<p>This library is architected around two concepts:</p>
+<ul>
+<li>Auditing services responsible for collecting audit events</li>
+<li>Storage services responsible for persisting audit traces</li>
+</ul>
+<p>Those two kind of services are offered by Providers and a default one is included with this library: <code>DoctrineProvider</code></p>
+<p><code>DoctrineProvider</code> offers both auditing services and storage services and
+creates audit logs for all <code>Doctrine ORM</code> database related changes.</p>
                                         <hr class="border-gray-200 mt-4 mb-4">
         <nav class="pager flex">
             <div class="w-1/2 rounded flex mr-6 border-solid border border-gray-200 hover:border-gray-400">
