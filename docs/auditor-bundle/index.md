@@ -12,6 +12,6 @@ everything can be configured from the `dh_auditor.yaml` file.
 
 <div class="note note-info" role="alert">
   <p class="note-title">Note</p>
-  <p class="note-desc">Configuration reference is available <a href="/docs/auditor-bundle/configuration/reference.html">here</a>.</p>
+  <p class="note-desc">Configuration reference is available <a href="configuration/reference.html">here</a>.</p>
 </div>
 
