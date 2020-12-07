@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <link rel="mask-icon" href="https://damienharper.github.io/auditor-docsfavicons/safari-pinned-tab.svg" color="#00b4b6">
-    <title>What is auditor? - auditor</title>
+    <title>Providers - auditor</title>
     <meta name="theme-color" content="#ffffff">
     
             <meta name="twitter:card" content="summary">
         <meta name="twitter:site" content="@DarkRaverZ">
-        <meta name="twitter:title" content="What&#x20;is&#x20;auditor&#x3F;&#x20;-&#x20;auditor">
+        <meta name="twitter:title" content="Providers&#x20;-&#x20;auditor">
         <meta name="twitter:description" content="auditor,&#x20;the&#x20;missing&#x20;audit&#x20;log&#x20;library.">
         <meta name="twitter:creator" content="@DarkRaverZ">
     
@@ -126,8 +126,8 @@
                 <h5 class="px-3 mb-3 lg:mb-3 uppercase tracking-wide font-semibold text-sm lg:text-xs text-gray-900">Getting started</h5>
                 <ul>
                                                         <li>
-                            <a class="px-3 py-2 transition-colors duration-200 relative block text-teal-700" href="https://damienharper.github.io/auditor-docs/docs/auditor/index.html">
-                    <span class="rounded-md absolute inset-0 bg-teal-200 opacity-30"></span>
+                            <a class="px-3 py-2 transition-colors duration-200 relative block hover:text-gray-900 text-gray-500" href="https://damienharper.github.io/auditor-docs/docs/auditor/index.html">
+                    <span class="rounded-md absolute inset-0 bg-teal-200 opacity-0"></span>
                     <span class="relative">What is auditor?</span>
                 </a>
                         </li>
@@ -162,8 +162,8 @@
                 <h5 class="px-3 mb-3 lg:mb-3 uppercase tracking-wide font-semibold text-sm lg:text-xs text-gray-900">Core concepts</h5>
                 <ul>
                                                         <li>
-                            <a class="px-3 py-2 transition-colors duration-200 relative block hover:text-gray-900 text-gray-500" href="https://damienharper.github.io/auditor-docs/docs/auditor/providers.html">
-                    <span class="rounded-md absolute inset-0 bg-teal-200 opacity-0"></span>
+                            <a class="px-3 py-2 transition-colors duration-200 relative block text-teal-700" href="https://damienharper.github.io/auditor-docs/docs/auditor/providers.html">
+                    <span class="rounded-md absolute inset-0 bg-teal-200 opacity-30"></span>
                     <span class="relative">Providers</span>
                 </a>
                         </li>
@@ -184,55 +184,23 @@
                     <div class="pb-4 border-b border-gray-200 mb-10">
                         <div class="flex items-center">
                             <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">
-                                What is auditor?
+                                Providers
                             </h1>
                         </div>
 
+                                                    <p class="mt-1 text-lg text-gray-500">What are providers?</p>
                                             </div>
                     <div>
                         <div class="prose markdown">
-                            <p>The purpose of <code>auditor</code> is to provide an easy and standardized way to collect audit logs.</p>
-<h2 id="architecture">Architecture</h2>
-<p>This library is architected around two concepts:</p>
-<ul>
-<li>Auditing services responsible for collecting audit events</li>
-<li>Storage services responsible for persisting audit traces</li>
-</ul>
-<p>Those two kind of services are offered by Providers.</p>
-<h2 id="default-provider">Default provider</h2>
-<p>A default provider is included with this library: <code>DoctrineProvider</code></p>
-<p><code>DoctrineProvider</code> offers both auditing services and storage services.
-It creates audit logs for all <code>Doctrine ORM</code> database related changes:</p>
-<ul>
-<li>inserts and updates including their diffs and relation field diffs.</li>
-<li>many to many relation changes, association and dissociation actions.</li>
-<li>if available, the user responsible for these changes and his IP address are recorded. </li>
-<li>audit entries are inserted within the same transaction during <strong>flush</strong> event
-so that even if something fails the global state remains clean.</li>
-</ul>
-<p><code>DoctrineProvider</code> supports following RDBMS</p>
-<ul>
-<li>MySQL</li>
-<li>MariaDB</li>
-<li>PostgreSQL</li>
-<li>SQLite</li>
-</ul>
-<p><code>DoctrineProvider</code> <strong>should</strong> work with <strong>any other</strong> database supported by <code>Doctrine</code>.
-Though, we can only really support the ones we can test with <a href="https://travis-ci.com">Travis CI</a> / Github actions.</p>
-<p>Basically you can track any change of any entity from audit logs.</p>
-<div class="note note-info" role="alert">
-  <p class="note-title">Note</p>
-  <p class="note-desc"><code>DoctrineProvider</code> does <strong>not</strong> allow tracking changes resulting from 
-   direct DQL/SQL update or delete statements.</p>
-</div>
+                            <p>... Work in progress ...</p>
                                         <hr class="border-gray-200 mt-4 mb-4">
         <nav class="pager flex">
-            <div class="w-1/2 rounded flex mr-6 ">
-                        </div>
-            <div class="w-1/2 rounded flex ml-6 border-solid border border-gray-200 hover:border-gray-400">
-                            <a class="w-full text-right pr-4 p-2" href="https://damienharper.github.io/auditor-docs/docs/auditor/installation.html" title="">
-                    Installation »
+            <div class="w-1/2 rounded flex mr-6 border-solid border border-gray-200 hover:border-gray-400">
+                            <a class="w-full text-left pl-4 p-2" href="https://damienharper.github.io/auditor-docs/docs/auditor-bundle/contributing.html" title="">
+                    « Contributing
                 </a>
+                        </div>
+            <div class="w-1/2 rounded flex ml-6 ">
                         </div>
         </nav>
     
