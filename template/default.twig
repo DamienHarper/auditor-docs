@@ -9,8 +9,10 @@ Supported meta:
 - feature_version
 - hide_table_of_contents
 #}
-
-{% set title = title|default('auditor, the missing audit log library') %}
+{% set title = title|default('') %}
+{% if title != '' %}
+    {% set metaTitle = title ~ ' - ' ~ (currentFile|replace({baseUrl: ''}))|split('/')[1] %}
+{% endif %}
 {% set introduction = introduction|default('') %}
 {% set title_border = title_border|default('yes') %}
 {% set feature_version = feature_version|default('') %}
