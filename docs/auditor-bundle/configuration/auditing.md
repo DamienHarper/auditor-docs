@@ -9,8 +9,8 @@ next:
     url: /docs/auditor-bundle/configuration/storage.html
 ---
 
-Audit configuration can be achieved using the YAML configuration file described in the [General](/docs/auditor-bundle/configuration) configuration section 
-and/or using [annotations](#configuration-using-annotations-doctrine-provider) (recommended).
+Audit configuration can be achieved using the YAML configuration file described in the [General](general.html) configuration section 
+and/or using [annotations](auditing.html#annotations) (recommended).
 
 
 ## Auditing services
@@ -64,7 +64,7 @@ dh_auditor:
 ## Ignoring properties globally
 <span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
-By default, `auditor-bundle` audits every property of entities [declared auditable](#audited-entities-and-properties-doctrine-provider).
+By default, `auditor-bundle` audits every property of entities [declared auditable](auditing.html#audited-entities-and-properties).
 But, you can define some properties to be always ignored by the audit process.
 
 ```yaml
@@ -178,7 +178,7 @@ class MyEntity
 The above example makes `MyEntity` auditable, auditing is **enabled** by default and `property2` 
 **won't be** audited.
 
-**Notice:** [globally ignored properties](#ignoring-properties-globally-doctrine-provider) 
+**Notice:** [globally ignored properties](auditing.html#ignoring-properties-globally) 
 do not have to have an `@Ignore` annotation.
 
 

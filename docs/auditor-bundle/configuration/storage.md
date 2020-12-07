@@ -9,7 +9,7 @@ next:
     url: /docs/auditor-bundle/configuration/reference.html
 ---
 
-Storage configuration is achieved using the YAML configuration file described in the [General](/docs/auditor-bundle/configuration) configuration section.
+Storage configuration is achieved using the YAML configuration file described in the [General](general.html) configuration section.
 
 
 ## Audit tables naming format

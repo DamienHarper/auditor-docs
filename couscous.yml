@@ -11,7 +11,7 @@ scripts:
   before:
     - yarn run postcss template/css/app.css -o template/css/app.min.css
 
-baseUrl: 'https://damienharper.github.io/auditor-docs/'
+baseUrl: 'https://damienharper.github.io/auditor-docs'
 
 menu:
   - section: 'auditor'

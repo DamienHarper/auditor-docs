@@ -28,18 +28,18 @@ dh_auditor:
 ## Enabling/Disabling auditing (globally)
 <span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
 
-By default, `auditor-bundle` audits every entity [declared auditable](/docs/auditor-bundle/auditing-configuration#audited-entities-and-properties-doctrine-provider).
+By default, `auditor-bundle` audits every entity [declared auditable](auditing.html#audited-entities-and-properties).
 
 It is however possible to disable audits by default. In this case, **nothing is audited** 
-until auditing is enabled [at runtime](24-enabling-disabling-audits.md#at-runtime-enabledisable).
+until auditing is enabled [at runtime](../usage/enabling-disabling-at-runtime.html#at-runtime-enabledisable).
 
 ```yaml
 dh_auditor:
     enabled: false
 ```
 
-You can also enable or disable the auditing of entities [per entity](/docs/auditor-bundle/configuration#enabling-disabling-auditing-per-entity-doctrine-provider) 
-and at [runtime](/docs/auditor-bundle/enabling-disabling-at-runtime#enabling-disabling-at-runtime-doctrine-provider) if you use the built-in Doctrine provider.
+You can also enable or disable the auditing of entities per entity 
+and at [runtime](../usage/enabling-disabling-at-runtime.html#at-runtime-enabledisable) if you use the built-in Doctrine provider.
 
 
 ## User provider
@@ -103,13 +103,13 @@ dh_auditor:
 ```
 
 In the above example, an audit table will be created for `MyAuditedEntity1`, 
-but audit entries will only be saved when auditing is explicitly enabled [at runtime](/docs/auditor-bundle/enabling-disabling-at-runtime#enabling-disabling-at-runtime-doctrine-provider).
+but audit entries will only be saved when auditing is explicitly enabled [at runtime](../usage/enabling-disabling-at-runtime.html#at-runtime-enabledisable).
 
 
 ### Enabling/Disabling audit viewer
 <span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
-`auditor-bundle` provides an [audit viewer](/docs/auditor-bundle/viewer) letting you review the full history of any audited entity.
+`auditor-bundle` provides an [audit viewer](../usage/viewer.html) letting you review the full history of any audited entity.
 This viewer is enabled by default and can be accessed at `/audit`. 
 
 It is however possible to disable the audit viewer.

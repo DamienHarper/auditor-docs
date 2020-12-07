@@ -30,7 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Pretty much everything has been rewritten so public API and namespaces have changed.
 
 #### How to upgrade?
-You'll find a detailed upgrade guide [here](/docs/auditor-bundle/upgrading.html). 
+You'll find a detailed upgrade guide [here](upgrading.html). 
 
 ---
 

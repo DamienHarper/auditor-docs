@@ -9,7 +9,7 @@ next:
     url: /docs/auditor/contributing.html
 ---
 
-Jump to the [Upgrading from a previous version](/docs/auditor/upgrading.html#upgrading-from-a-previous-version) section 
+Jump to the [Upgrading from a previous version](upgrading.html#upgrading-from-a-previous-version) section 
 if you're not upgrading from `DoctrineAuditBundle`
 
 
@@ -23,7 +23,7 @@ So, upgrading from `DoctrineAuditBundle` to `auditor` + `auditor-bundle` require
 
 ### 1. Configuration file
 Create a new configuration file `dh_auditor.yaml`
-(full configuration reference available [here](/docs/auditor-bundle/configuration/reference.html))
+(full configuration reference available [here](../auditor-bundle/configuration/reference.html))
 
 Minimal config file:
 ```yaml
@@ -71,7 +71,7 @@ You'll find below a summary of route name changes.
 
 ### 5. `AuditReader` deprecation
 `AuditReader` has been replaced by `Reader` and `Query` objects, so if you used it to query 
-the audit logs, dive into the [Querying audits section](/docs/auditor-bundle/usage/querying.html) 
+the audit logs, dive into the [Querying audits section](../auditor-bundle/usage/querying.html) 
 
 ### 6. Remove `DoctrineAuditBundle`
 Run the following command in a console
@@ -80,7 +80,7 @@ composer remove damienharper/doctrine-audit-bundle
 ```
 
 ### 7. Ensure your schema is up to date
-Check the [Upgrading from a previous version](/docs/auditor/upgrading.html#upgrading-from-a-previous-version) 
+Check the [Upgrading from a previous version](upgrading.html#upgrading-from-a-previous-version) 
 below to ensure your schema is up to date.
 
 ---
