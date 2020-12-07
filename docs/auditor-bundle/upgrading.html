@@ -282,7 +282,7 @@
                                             </div>
                     <div>
                         <div class="prose markdown">
-                            <p>Jump to the <a href="/docs/auditor/upgrading.html#upgrading-from-a-previous-version">Upgrading from a previous version</a> section
+                            <p>Jump to the <a href="upgrading.html#upgrading-from-a-previous-version">Upgrading from a previous version</a> section
 if you're not upgrading from <code>DoctrineAuditBundle</code></p>
 <h2 id="upgrading-from">Upgrading from <code>DoctrineAuditBundle</code></h2>
 <p><code>DoctrineAuditBundle</code> is now deprecated since it has been split into two separate packages </p>
@@ -293,7 +293,7 @@ if you're not upgrading from <code>DoctrineAuditBundle</code></p>
 <p>So, upgrading from <code>DoctrineAuditBundle</code> to <code>auditor</code> + <code>auditor-bundle</code> requires a few steps</p>
 <h3 id="1-configuration-file">1. Configuration file</h3>
 <p>Create a new configuration file <code>dh_auditor.yaml</code>
-(full configuration reference available <a href="/docs/auditor-bundle/configuration/reference.html">here</a>)</p>
+(full configuration reference available <a href="configuration/reference.html">here</a>)</p>
 <p>Minimal config file:</p>
 <pre><code class="language-yaml">dh_auditor:
     enabled: true
@@ -342,12 +342,12 @@ You'll find below a summary of route name changes.</p>
 </table>
 <h3 id="5">5. <code>AuditReader</code> deprecation</h3>
 <p><code>AuditReader</code> has been replaced by <code>Reader</code> and <code>Query</code> objects, so if you used it to query
-the audit logs, dive into the <a href="/docs/auditor-bundle/usage/querying.html">Querying audits section</a> </p>
+the audit logs, dive into the <a href="usage/querying.html">Querying audits section</a> </p>
 <h3 id="6-remove">6. Remove <code>DoctrineAuditBundle</code></h3>
 <p>Run the following command in a console</p>
 <pre><code class="language-bash">composer remove damienharper/doctrine-audit-bundle</code></pre>
 <h3 id="7-ensure-your-schema-is-up-to-date">7. Ensure your schema is up to date</h3>
-<p>Check the <a href="/docs/auditor/upgrading.html#upgrading-from-a-previous-version">Upgrading from a previous version</a>
+<p>Check the <a href="upgrading.html#upgrading-from-a-previous-version">Upgrading from a previous version</a>
 below to ensure your schema is up to date.</p>
 <hr />
 <h2 id="upgrading-from-a-previous-version">Upgrading from a previous version</h2>

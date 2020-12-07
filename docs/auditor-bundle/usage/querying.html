@@ -282,11 +282,11 @@
                                             </div>
                     <div>
                         <div class="prose markdown">
-                            <p><code>auditor</code> provides both a <a href="/docs/auditor-bundle/querying#query-doctrine-provider">query</a> object and a <a href="/docs/auditor-bundle/querying#reader-doctrine-provider">reader</a> to query the full history of any audited entity and even paginate results.</p>
+                            <p><code>auditor</code> provides both a <a href="querying.html#query">query</a> object and a <a href="querying.html#reader">reader</a> to query the full history of any audited entity and even paginate results.</p>
 <h2 id="reader">Reader</h2>
 <p><span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span></p>
 <p>The <code>Reader</code> makes it easy to query and retrieve audits from the storage.
-It heavily relies on the <a href="/docs/auditor-bundle/querying#query-doctrine-provider"><code>Query</code></a> object and takes care of checking roles and auditable state of a given entity.</p>
+It heavily relies on the <a href="querying.html#query"><code>Query</code></a> object and takes care of checking roles and auditable state of a given entity.</p>
 <p>The <code>Reader</code> takes a provider as the only parameter of its constructor.</p>
 <p>Example:</p>
 <pre><code class="language-php">$reader = new Reader($provider);</code></pre>

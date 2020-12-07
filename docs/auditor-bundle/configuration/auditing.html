@@ -282,8 +282,8 @@
                                             </div>
                     <div>
                         <div class="prose markdown">
-                            <p>Audit configuration can be achieved using the YAML configuration file described in the <a href="/docs/auditor-bundle/configuration">General</a> configuration section
-and/or using <a href="#configuration-using-annotations-doctrine-provider">annotations</a> (recommended).</p>
+                            <p>Audit configuration can be achieved using the YAML configuration file described in the <a href="general.html">General</a> configuration section
+and/or using <a href="auditing.html#annotations">annotations</a> (recommended).</p>
 <h2 id="auditing-services">Auditing services</h2>
 <p><span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span></p>
 <p>By default, <code>auditor-bundle</code> audits operations coming from Doctrine's default entity manager <code>doctrine.orm.default_entity_manager</code>.
@@ -318,7 +318,7 @@ Though it is possible to exclude some of them from the audit process.</p>
                         - updatedAt</code></pre>
 <h2 id="ignoring-properties-globally">Ignoring properties globally</h2>
 <p><span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span></p>
-<p>By default, <code>auditor-bundle</code> audits every property of entities <a href="#audited-entities-and-properties-doctrine-provider">declared auditable</a>.
+<p>By default, <code>auditor-bundle</code> audits every property of entities <a href="auditing.html#audited-entities-and-properties">declared auditable</a>.
 But, you can define some properties to be always ignored by the audit process.</p>
 <pre><code class="language-yaml">dh_auditor:
     providers:
@@ -408,7 +408,7 @@ class MyEntity
 }</code></pre>
 <p>The above example makes <code>MyEntity</code> auditable, auditing is <strong>enabled</strong> by default and <code>property2</code>
 <strong>won't be</strong> audited.</p>
-<p><strong>Notice:</strong> <a href="#ignoring-properties-globally-doctrine-provider">globally ignored properties</a>
+<p><strong>Notice:</strong> <a href="auditing.html#ignoring-properties-globally">globally ignored properties</a>
 do not have to have an <code>@Ignore</code> annotation.</p>
 <h3 id="security">@Security</h3>
 <p>This annotation rules the audit viewer and lets you specify which role(s) is(are) required to allow

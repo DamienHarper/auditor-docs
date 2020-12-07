@@ -294,13 +294,13 @@
     timezone: 'Europe/London'</code></pre>
 <h2 id="enablingdisabling-auditing-globally">Enabling/Disabling auditing (globally)</h2>
 <p><span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span></p>
-<p>By default, <code>auditor-bundle</code> audits every entity <a href="/docs/auditor-bundle/auditing-configuration#audited-entities-and-properties-doctrine-provider">declared auditable</a>.</p>
+<p>By default, <code>auditor-bundle</code> audits every entity <a href="auditing.html#audited-entities-and-properties">declared auditable</a>.</p>
 <p>It is however possible to disable audits by default. In this case, <strong>nothing is audited</strong>
-until auditing is enabled <a href="24-enabling-disabling-audits.html#at-runtime-enabledisable">at runtime</a>.</p>
+until auditing is enabled <a href="../usage/enabling-disabling-at-runtime.html#at-runtime-enabledisable">at runtime</a>.</p>
 <pre><code class="language-yaml">dh_auditor:
     enabled: false</code></pre>
-<p>You can also enable or disable the auditing of entities <a href="/docs/auditor-bundle/configuration#enabling-disabling-auditing-per-entity-doctrine-provider">per entity</a>
-and at <a href="/docs/auditor-bundle/enabling-disabling-at-runtime#enabling-disabling-at-runtime-doctrine-provider">runtime</a> if you use the built-in Doctrine provider.</p>
+<p>You can also enable or disable the auditing of entities per entity
+and at <a href="../usage/enabling-disabling-at-runtime.html#at-runtime-enabledisable">runtime</a> if you use the built-in Doctrine provider.</p>
 <h2 id="user-provider">User provider</h2>
 <p><span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span></p>
 <p>A user provider is a service which goal is to return information about current user.<br />
@@ -337,10 +337,10 @@ when needed for example. Per entity enabling/disabling is done in the configurat
                     enabled: false          # auditing of this entity is disabled
                 App\Entity\MyEntity2: ~     # auditing of this entity is enabled</code></pre>
 <p>In the above example, an audit table will be created for <code>MyAuditedEntity1</code>,
-but audit entries will only be saved when auditing is explicitly enabled <a href="/docs/auditor-bundle/enabling-disabling-at-runtime#enabling-disabling-at-runtime-doctrine-provider">at runtime</a>.</p>
+but audit entries will only be saved when auditing is explicitly enabled <a href="../usage/enabling-disabling-at-runtime.html#at-runtime-enabledisable">at runtime</a>.</p>
 <h3 id="enablingdisabling-audit-viewer">Enabling/Disabling audit viewer</h3>
 <p><span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span></p>
-<p><code>auditor-bundle</code> provides an <a href="/docs/auditor-bundle/viewer">audit viewer</a> letting you review the full history of any audited entity.
+<p><code>auditor-bundle</code> provides an <a href="../usage/viewer.html">audit viewer</a> letting you review the full history of any audited entity.
 This viewer is enabled by default and can be accessed at <code>/audit</code>. </p>
 <p>It is however possible to disable the audit viewer.</p>
 <pre><code class="language-yaml">dh_auditor:
