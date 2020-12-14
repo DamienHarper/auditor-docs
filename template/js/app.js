@@ -17,7 +17,7 @@ $.when($.ready).then(function() {
 
     // TOC
     $(function() {
-        let elts = $('.markdown h2, .markdown h3, .markdown h4, .markdown h5');
+        let elts = $('.markdown h1, .markdown h2, .markdown h3, .markdown h4, .markdown h5');
         if (elts.length > 0) {
             $('#in-page-menu').removeClass('hidden');
         }
@@ -25,14 +25,18 @@ $.when($.ready).then(function() {
         elts.each(function () {
             // prepend # to each section
             var url = document.URL.replace(/#.*$/, "") + '#' + $(this).attr('id');
-            $(this).addClass('group flex whitespace-pre-wrap');
+            $(this).addClass('group flex');
             $(this).prepend(' <a href="' + url + '" class="absolute after:hash opacity-0 group-hover:opacity-100" style="margin-left:-1em;padding-right:0.5em;box-shadow:none;color:#a1a1aa" aria-label="Anchor"></a>');
 
             // populate in-page-menu
             var caption = $(this).text().substr(1);
             var classes = '';
+            var inPageMenu = true;
 
             switch ($(this)[0].nodeName) {
+                case 'H1':
+                    inPageMenu = false;
+                    break;
                 case 'H2':
                     classes += '';
                     break;
@@ -47,7 +51,9 @@ $.when($.ready).then(function() {
                     break;
             }
 
-            $('#in-page-menu ul').append('<li class="'+classes+'"><a class="block transform transition-colors duration-200 py-2 hover:text-gray-900" href="#' + $(this).attr('id') + '">' + caption + '</a></li>');
+            if (inPageMenu) {
+                $('#in-page-menu ul').append('<li class="' + classes + '"><a class="block transform transition-colors duration-200 py-2 hover:text-gray-900" href="#' + $(this).attr('id') + '">' + caption + '</a></li>');
+            }
 
             // move tags to previous Hx DOM node
             var tag = $('#' + $(this).attr('id') + ' + p > span.tag');

@@ -20,6 +20,15 @@
     content: ""!important;
 }
 
+.markdown h1 code,
+.markdown h2 code,
+.markdown h3 code,
+.markdown h4 code,
+.markdown h5 code,
+.markdown h6 code {
+   margin-left: 0.35rem;
+}
+
 
 /*** Note block styles ***/
 .note {
