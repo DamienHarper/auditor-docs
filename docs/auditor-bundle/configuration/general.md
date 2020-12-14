@@ -121,7 +121,11 @@ dh_auditor:
             viewer: false
 ```
 
-Add the following routes to the routing configuration (`config/routes.yaml`) to enable the included audit viewer.
+If you're using flex, you are done, routes are automatically added to your application's
+routing configuration (see `config/routes/dh_auditor.yaml`).  
+
+Otherwise, you have to manually add the following routes to the routing configuration
+of your application (`config/routes/dh_auditor.yaml`).
 
 ```yaml
 dh_auditor:
