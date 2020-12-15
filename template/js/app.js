@@ -26,7 +26,7 @@ $.when($.ready).then(function() {
             // prepend # to each section
             var url = document.URL.replace(/#.*$/, "") + '#' + $(this).attr('id');
             $(this).addClass('group flex');
-            $(this).prepend(' <a href="' + url + '" class="absolute after:hash opacity-0 group-hover:opacity-100" style="margin-left:-1em;padding-right:0.5em;box-shadow:none;color:#a1a1aa" aria-label="Anchor"></a>');
+            $(this).prepend(' <a href="' + url + '" class="absolute after:hash opacity-0 group-hover:opacity-100" style="margin-left:-0.9em;padding-right:0.5em;box-shadow:none;color:#a1a1aa" aria-label="Anchor"></a>');
 
             // populate in-page-menu
             var caption = $(this).text().substr(1);

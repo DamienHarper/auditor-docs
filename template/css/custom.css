@@ -29,6 +29,13 @@
    margin-left: 0.35rem;
 }
 
+h1.title {
+    @apply mb-2 !important;
+}
+p.introduction {
+    @apply mt-1 !important;
+    @apply pb-4 !important;
+}
 
 /*** Note block styles ***/
 .note {
