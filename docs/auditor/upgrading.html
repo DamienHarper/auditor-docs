@@ -181,18 +181,12 @@
                 <div id="content-wrapper" class="min-w-0 w-full flex-auto lg:static lg:max-h-full lg:overflow-visible">
             <div class="pt-10 pb-16 w-full flex">
                 <div class="min-w-0 flex-auto px-4 sm:px-6 xl:px-8">
-                    <div class="pb-4 border-b border-gray-200 mb-10">
-                        <div class="flex items-center markdown">
-                            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">
-                                Upgrading
-                            </h1>
-                        </div>
-
-                                                    <p class="mt-1 text-lg text-gray-500">How to upgrade to a newer version</p>
-                                            </div>
-                    <div>
-                        <div class="prose markdown">
-                            <p>Jump to the <a href="upgrading.html#upgrading-from-a-previous-version">Upgrading from a previous version</a> section
+                    <div class="prose markdown">
+                        <h1 class="title text-3xl font-extrabold text-gray-900 tracking-tight">
+                            Upgrading
+                        </h1>
+                                                    <p class="introduction mt-0 text-lg text-gray-500 border-b border-gray-200">How to upgrade to a newer version</p>
+                                                <p>Jump to the <a href="upgrading.html#upgrading-from-a-previous-version">Upgrading from a previous version</a> section
 if you're not upgrading from <code>DoctrineAuditBundle</code></p>
 <h2 id="upgrading-from">Upgrading from <code>DoctrineAuditBundle</code></h2>
 <p><code>DoctrineAuditBundle</code> is now deprecated since it has been split into two separate packages </p>
@@ -268,7 +262,7 @@ be sure your current schema is up to date and upgrade it if necessary.</p>
 app/console audit:schema:update --force</code></pre>
 <pre><code class="language-bash"># symfony &gt;= 3.4
 bin/console audit:schema:update --force</code></pre>
-                                        <hr class="border-gray-200 mt-4 mb-4">
+                                    <hr class="border-gray-200 mt-4 mb-4">
         <nav class="pager flex">
             <div class="w-1/2 rounded flex mr-6 border-solid border border-gray-200 hover:border-gray-400">
                             <a class="w-full text-left pl-4 p-2" href="https://damienharper.github.io/auditor-docs/docs/auditor/release-notes.html" title="">
@@ -282,7 +276,6 @@ bin/console audit:schema:update --force</code></pre>
                         </div>
         </nav>
     
-                        </div>
                     </div>
                 </div>
 

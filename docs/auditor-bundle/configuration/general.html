@@ -271,18 +271,12 @@
                 <div id="content-wrapper" class="min-w-0 w-full flex-auto lg:static lg:max-h-full lg:overflow-visible">
             <div class="pt-10 pb-16 w-full flex">
                 <div class="min-w-0 flex-auto px-4 sm:px-6 xl:px-8">
-                    <div class="pb-4 border-b border-gray-200 mb-10">
-                        <div class="flex items-center markdown">
-                            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">
-                                General configuration
-                            </h1>
-                        </div>
-
-                                                    <p class="mt-1 text-lg text-gray-500">A guide to configuring auditor-bundle.</p>
-                                            </div>
-                    <div>
-                        <div class="prose markdown">
-                            <p>Depending on the Symfony version your application relies, configuration is located in the following file:</p>
+                    <div class="prose markdown">
+                        <h1 class="title text-3xl font-extrabold text-gray-900 tracking-tight">
+                            General configuration
+                        </h1>
+                                                    <p class="introduction mt-0 text-lg text-gray-500 border-b border-gray-200">A guide to configuring auditor-bundle.</p>
+                                                <p>Depending on the Symfony version your application relies, configuration is located in the following file:</p>
 <ul>
 <li>In a Symfony &gt;= 4.0 application: <code>config/packages/dh_auditor.yaml</code></li>
 <li>In a Symfony &lt;= 3.4 application: <code>app/config/config.yml</code></li>
@@ -367,7 +361,7 @@ of your application (<code>config/routes/dh_auditor.yaml</code>).</p>
   <p class="note-desc">Configuring the root table to be audited does not suffice to get all child tables audited in a 
   <b>single table inheritance</b> context. You have to configure every child table that needs to be audited as well.</p>
 </div>
-                                        <hr class="border-gray-200 mt-4 mb-4">
+                                    <hr class="border-gray-200 mt-4 mb-4">
         <nav class="pager flex">
             <div class="w-1/2 rounded flex mr-6 border-solid border border-gray-200 hover:border-gray-400">
                             <a class="w-full text-left pl-4 p-2" href="https://damienharper.github.io/auditor-docs/docs/auditor-bundle/upgrading.html" title="">
@@ -381,7 +375,6 @@ of your application (<code>config/routes/dh_auditor.yaml</code>).</p>
                         </div>
         </nav>
     
-                        </div>
                     </div>
                 </div>
 
