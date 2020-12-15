@@ -9,7 +9,8 @@ exclude:
 scripts:
   # Scripts to execute before generating the website
   before:
-    - yarn run postcss template/css/app.css -o template/css/app.min.css
+#    - yarn run postcss template/css/app.css -o template/css/app.min.css
+    - npx postcss template/css/app.css -o template/css/app.min.css
 
 baseUrl: 'https://damienharper.github.io/auditor-docs'
 
