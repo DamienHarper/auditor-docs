@@ -15,7 +15,10 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: '14'
-      - run: yarn install
+      - run: |
+        pwd
+        env
+        yarn install
 
       - uses: CouscousPHP/GitHub-Action@v1
 
