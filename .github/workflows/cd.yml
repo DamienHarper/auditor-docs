@@ -19,6 +19,7 @@ jobs:
           pwd
           env
           yarn install
+          yarn run postcss template/css/app.css -o template/css/app.min.css
 
       - uses: CouscousPHP/GitHub-Action@v1
 
