@@ -10,7 +10,7 @@ scripts:
   # Scripts to execute before generating the website
   before:
     # if run through Github actions, no need to run the following command here, it's already run from the Github action itself
-    - 'if [[ -z "${GITHUB_ACTION}" ]]; then yarn run postcss template/css/app.css -o template/css/app.min.css else; echo "nope"; fi;'
+    - 'if [[ -z "${GITHUB_ACTION}" ]]; then yarn run postcss template/css/app.css -o template/css/app.min.css; else; true; fi;'
 
 baseUrl: 'https://damienharper.github.io/auditor-docs'
 
