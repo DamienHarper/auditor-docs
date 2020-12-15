@@ -10,8 +10,7 @@ scripts:
   # Scripts to execute before generating the website
   before:
 #    - yarn run postcss template/css/app.css -o template/css/app.min.css
-#    - if [[ -z "${GITHUB_ACTIONS}" ]]; then yarn run postcss template/css/app.css -o template/css/app.min.css fi
-    - [ -z "${GITHUB_ACTIONS}" ] && yarn run postcss template/css/app.css -o template/css/app.min.css
+    - '[ -z "${GITHUB_ACTIONS}" ] && yarn run postcss template/css/app.css -o template/css/app.min.css'
 
 baseUrl: 'https://damienharper.github.io/auditor-docs'
 
