@@ -16,6 +16,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version 4.x
 
+### auditor-bundle v4.0.4
+
+#### Changes
+<div class="mt-3 italic text-gray-600">2021-01-25</div>
+
+* [#238 - Symfony 3.4 compatibility](https://github.com/DamienHarper/auditor-bundle/pull/238)
+* [#239, #241- Add estonian (ET) translation](https://github.com/DamienHarper/auditor-bundle/pull/239)
+* [#240 - Improved german translations](https://github.com/DamienHarper/auditor-bundle/pull/240)
+* Fixed link tag
+
+---
+
+### auditor-bundle v4.0.3
+
+#### Changes
+<div class="mt-3 italic text-gray-600">2020-12-11</div>
+
+* Updated CI to ensure proper Symfony versions are installed during tests (3.4, 4.4 and 5.x are tested)
+
+---
+
+### auditor-bundle v4.0.2
+
+#### Changes
+<div class="mt-3 italic text-gray-600">2020-12-08</div>
+
+* Fixed a BC break with Symfony 4.3/4.4
+
+---
+
+### auditor-bundle v4.0.1
+
+#### Changes
+<div class="mt-3 italic text-gray-600">2020-12-07</div>
+
+* [#224 - Changed `auditor` requirement from `dev-master` to `^1.0`](https://github.com/DamienHarper/auditor-bundle/pull/224)
+
+---
+
 ### auditor-bundle v4.0
 <div class="mt-3 italic text-gray-600">2020-12-06</div>
 
