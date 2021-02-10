@@ -16,6 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version 4.x
 
+### auditor-bundle v4.1.0
+
+#### Changes
+<div class="mt-3 italic text-gray-600">2021-02-10</div>
+
+* [#242 - Incompatible symfony/doctrine-bridge](https://github.com/DamienHarper/auditor-bundle/pull/242)
+
+---
+
 ### auditor-bundle v4.0.4
 
 #### Changes
