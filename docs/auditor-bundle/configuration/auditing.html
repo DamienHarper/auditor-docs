@@ -324,11 +324,11 @@ But, you can define some properties to be always ignored by the audit process.</
 <h2 id="example-configuration">Example configuration</h2>
 <p><span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span></p>
 <pre><code class="language-yaml">dh_auditor:
+    timezone: 'Europe/London'
     providers:
         doctrine:
             table_prefix: ''
             table_suffix: '_audit'
-            timezone: 'Europe/London'
             ignored_columns:
                 - createdAt
                 - updatedAt
