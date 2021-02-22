@@ -83,11 +83,11 @@ dh_auditor:
 
 ```yaml
 dh_auditor:
+    timezone: 'Europe/London'
     providers:
         doctrine:
             table_prefix: ''
             table_suffix: '_audit'
-            timezone: 'Europe/London'
             ignored_columns:
                 - createdAt
                 - updatedAt
