@@ -17,18 +17,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Version 4.x
 
 ### auditor-bundle v4.1.0
+<div class="mt-3 italic text-gray-600">2021-02-10</div>
 
 #### Changes
-<div class="mt-3 italic text-gray-600">2021-02-10</div>
 
 * [#242 - Incompatible symfony/doctrine-bridge](https://github.com/DamienHarper/auditor-bundle/pull/242)
 
 ---
 
 ### auditor-bundle v4.0.4
+<div class="mt-3 italic text-gray-600">2021-01-25</div>
 
 #### Changes
-<div class="mt-3 italic text-gray-600">2021-01-25</div>
 
 * [#238 - Symfony 3.4 compatibility](https://github.com/DamienHarper/auditor-bundle/pull/238)
 * [#239, #241- Add estonian (ET) translation](https://github.com/DamienHarper/auditor-bundle/pull/239)
@@ -38,27 +38,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ### auditor-bundle v4.0.3
+<div class="mt-3 italic text-gray-600">2020-12-11</div>
 
 #### Changes
-<div class="mt-3 italic text-gray-600">2020-12-11</div>
 
 * Updated CI to ensure proper Symfony versions are installed during tests (3.4, 4.4 and 5.x are tested)
 
 ---
 
 ### auditor-bundle v4.0.2
+<div class="mt-3 italic text-gray-600">2020-12-08</div>
 
 #### Changes
-<div class="mt-3 italic text-gray-600">2020-12-08</div>
 
 * Fixed a BC break with Symfony 4.3/4.4
 
 ---
 
 ### auditor-bundle v4.0.1
+<div class="mt-3 italic text-gray-600">2020-12-07</div>
 
 #### Changes
-<div class="mt-3 italic text-gray-600">2020-12-07</div>
 
 * [#224 - Changed `auditor` requirement from `dev-master` to `^1.0`](https://github.com/DamienHarper/auditor-bundle/pull/224)
 
@@ -87,7 +87,7 @@ You'll find a detailed upgrade guide [here](upgrading.html).
 ### DoctrineAuditBundle v3.4.2
 <div class="mt-3 italic text-gray-600">2020-11-26</div>
 
-### Fixes
+#### Fixes
 * [#200 - Template static datetime fix](https://github.com/DamienHarper/auditor-bundle/pull/200)
 * [#221 - Remove the ROLE_PREVIOUS_ADMIN deprecation warning from Symfony 5.1](https://github.com/DamienHarper/auditor-bundle/pull/221)
 * [#214 - Handle TableNotFoundException](https://github.com/DamienHarper/auditor-bundle/pull/214)
@@ -98,7 +98,7 @@ You'll find a detailed upgrade guide [here](upgrading.html).
 ### DoctrineAuditBundle v3.4.1
 <div class="mt-3 italic text-gray-600">2020-04-27</div>
 
-### Changes
+#### Changes
 * Add operation type constants
 * Audit operations were stored in reverse order in a transaction
 

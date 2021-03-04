@@ -126,7 +126,7 @@ But of course, you can refine the query by adding filters.
 There are three types of filters:
 
 - standard filter
-- standard range filter 
+- range filter 
 - date range filter 
 
 You can get the list of available filters by calling `Query::getSupportedFilters()`
@@ -143,18 +143,30 @@ They also are available as constants of the `Query` class.
 - `Query::DISCRIMINATOR` allows to filter by discriminator (cf. Doctrine inheritance)
 
 #### Standard filter
-A standard filter can be applied by using `Query::addFilter(string $name, $value): self` 
+A standard filter is materialized by `SimpleFilter` class.
+
+Since `1.2.0`, method `Query::addFilter(string $name, $value): self` is **deprecated** 
+in favor of `Query::addFilter(FilterInterface $filter): self`
 
 Examples:
 ```php
+use DH\Auditor\Provider\Doctrine\Persistence\Reader\Filter\SimpleFilter;
+
 // filtering audit entries whose transaction hash is exactly '123abc'
 $query = new Query('author_audit', $connection);
-$query->addFilter(Query::TRANSACTION_HASH, '123abc');
+$query->addFilter(new SimpleFilter(Query::TRANSACTION_HASH, '123abc'));
+
+// filtering audit entries whose transaction hash is either '123abc', '456def' or '789ghi'
+$query = new Query('author_audit', $connection);
+$query->addFilter(new SimpleFilter(Query::TRANSACTION_HASH, ['123abc', '456def', '789ghi']));
 ```
 
-#### Standard range filter
-A standard range filter can be applied by using `Query::addRangeFilter(string $name, $minValue = null, $maxValue = null): self` 
+#### Range filter
+A range filter is materialized by `RangeFilter` class.
 
+Since `1.2.0`, method `Query::addRangeFilter(string $name, $minValue = null, $maxValue = null): self` is **deprecated** 
+in favor of `Query::addFilter(FilterInterface $filter): self`
+ 
 <div class="note note-info" role="alert">
   <p class="note-title">Note</p>
   <p class="note-desc">Bounds (<code>$minValue</code> and <code>$maxValue</code>) can't be <code>null</code> simultaneously.</p>
@@ -162,21 +174,26 @@ A standard range filter can be applied by using `Query::addRangeFilter(string $n
 
 Examples:
 ```php
+use DH\Auditor\Provider\Doctrine\Persistence\Reader\Filter\RangeFilter;
+
 // filtering audit entries whose object ID (author ID) is >= 10
 $query = new Query('author_audit', $connection);
-$query->addRangeFilter(Query::OBJECT_ID, 10);       
+$query->addFilter(new RangeFilter(Query::OBJECT_ID, 10));
 
 // filtering audit entries whose object ID (author ID) is <= 10
 $query = new Query('author_audit', $connection);
-$query->addRangeFilter(Query::OBJECT_ID, null, 10); 
+$query->addFilter(new RangeFilter(Query::OBJECT_ID, null, 10));
 
 // filtering audit entries whose object ID (author ID) is >= 10 and <= 25
 $query = new Query('author_audit', $connection);
-$query->addRangeFilter(Query::OBJECT_ID, 10, 25);   
+$query->addFilter(new RangeFilter(Query::OBJECT_ID, 10, 25));
 ```
 
 #### Date range filter
-A date range filter can be applied by using `Query::addDateRangeFilter(string $name, ?DateTime $minValue = null, ?DateTime $maxValue = null): self` 
+A date range filter is materialized by `DateRangeFilter` class.
+
+Since `1.2.0`, method `Query::addDateRangeFilter(string $name, ?DateTime $minValue = null, ?DateTime $maxValue = null): self` is **deprecated**
+in favor of `Query::addFilter(FilterInterface $filter): self`
 
 <div class="note note-info" role="alert">
   <p class="note-title">Note</p>
@@ -185,20 +202,22 @@ A date range filter can be applied by using `Query::addDateRangeFilter(string $n
 
 Examples:
 ```php
+use DH\Auditor\Provider\Doctrine\Persistence\Reader\Filter\DateRangeFilter;
+
 $min = DateTime::createFromFormat('Y-m-d', '2020-01-17');
 $max = DateTime::createFromFormat('Y-m-d', '2020-01-19');
 
 // filtering audit entries whose creation date is >= 2020-01-17
 $query = new Query('author_audit', $connection);
-$query->addDateRangeFilter(Query::CREATED_AT, $min);        
+$query->addFilter(new DateRangeFilter(Query::CREATED_AT, $min));        
 
 // filtering audit entries whose creation date is <= 2020-01-19
 $query = new Query('author_audit', $connection);
-$query->addDateRangeFilter(Query::CREATED_AT, null, $max);  
+$query->addFilter(new DateRangeFilter(Query::CREATED_AT, null, $max));  
 
 // filtering audit entries whose creation date is between 2020-01-17 and 2020-01-19
 $query = new Query('author_audit', $connection);
-$query->addDateRangeFilter(Query::CREATED_AT, $min, $max);  
+$query->addFilter(new DateRangeFilter(Query::CREATED_AT, $min, $max));  
 ```
 
 #### Multiple filters
