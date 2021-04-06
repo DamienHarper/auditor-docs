@@ -110,15 +110,13 @@ but audit entries will only be saved when auditing is explicitly enabled [at run
 <span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
 
 `auditor-bundle` provides an [audit viewer](../usage/viewer.html) letting you review the full history of any audited entity.
-This viewer is enabled by default and can be accessed at `/audit`. 
-
-It is however possible to disable the audit viewer.
+This viewer is disabled by default but can easily be enabled in the configuration file as shown below and can be accessed at `/audit`. 
 
 ```yaml
 dh_auditor:
     providers:
         doctrine:
-            viewer: false
+            viewer: true
 ```
 
 If you're using flex, you are done, routes are automatically added to your application's
