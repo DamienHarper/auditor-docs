@@ -44,7 +44,10 @@ Though, we can only really support the ones we can test with [Travis CI](https:/
 Basically you can track any change of any entity from audit logs.
 
 <div class="note note-info" role="alert">
-  <p class="note-title">Note</p>
-  <p class="note-desc"><code>DoctrineProvider</code> does <strong>not</strong> allow tracking changes resulting from 
-   direct DQL/SQL update or delete statements.</p>
+  <p class="note-title">Notes</p>
+  <ul class="note-desc mt-2 ml-4">
+    <li><code>DoctrineProvider</code> does <strong>not</strong> support composite primary keys.</li>
+    <li><code>DoctrineProvider</code> does <strong>not</strong> allow tracking changes resulting from 
+   direct DQL/SQL update or delete statements.</li>
+  </ul>
 </div>

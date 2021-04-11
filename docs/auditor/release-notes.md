@@ -16,6 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version 1.x
 
+### auditor v1.2.x
+<div class="mt-3 italic text-gray-600">Not yet released</div>
+
+#### Changes
+
+* Properly handle (unsupported) composite primary keys: throw a dedicated exception when such an entity is audited.
+
+---
+
 ### auditor v1.2.0
 <div class="mt-3 italic text-gray-600">2021-03-04</div>
 
