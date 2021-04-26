@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 <div class="mt-3 italic text-gray-600">2021-03-04</div>
 
 #### Fixes
+* [#11 - Is auditor using the database during a cache:clear?](https://github.com/DamienHarper/auditor/issues/11)
 * [#29 - reader->createQuery->addFilter by array of object_ids](https://github.com/DamienHarper/auditor/issues/29)
 * [#243 (auditor-bundle) - How to store audit tables in other database ?](https://github.com/DamienHarper/auditor-bundle/issues/243)
 * [#244 (auditor-bundle) - AuditReader->getAudits by array of ids](https://github.com/DamienHarper/auditor-bundle/issues/244)
