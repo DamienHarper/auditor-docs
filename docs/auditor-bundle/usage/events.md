@@ -9,7 +9,7 @@ next:
     url: /docs/auditor-bundle/usage/maintenance.html
 ---
 
-`auditor` fires a `LyfecycleEvent` for every audit log entry.
+`auditor` fires a `LifecycleEvent` for every audit log entry.
 You can subscribe to these events and add your custom logic, this opens the doors to:
 
 - log entries in non SQL datastore such as Elasticsearch for example.
