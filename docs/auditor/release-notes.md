@@ -14,13 +14,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## Version 1.x
+## Version 2.x
 
-### auditor v1.2.x
+### auditor v2.0.0
 <div class="mt-3 italic text-gray-600">Not yet released</div>
 
 #### Changes
 
+* Drop PHP 7.2 support.
+* Drop Symfony 3.4 support.
+
+---
+
+## Version 1.x
+
+### auditor v1.3.0
+<div class="mt-3 italic text-gray-600">2021-09-27</div>
+
+#### Fixes
+
+* [#35 - Fixes storage mapper callable handling](https://github.com/DamienHarper/auditor/issues/35)
+* [#41 - Remove flusher callback from logger on rollback](https://github.com/DamienHarper/auditor/issues/41)
+* [#46 - Resets transaction once processed by the `onFlush` event subscriber](https://github.com/DamienHarper/auditor/issues/46)
+* [#50 - Fix an edge case where annotations where not loaded if audited entities were set in configuration](https://github.com/DamienHarper/auditor/issues/50)
+
+#### Changes
+
+* [#40 - Add support to php 8 attributes](https://github.com/DamienHarper/auditor/issues/40)
+* [#31 - Add audit event's database ID on LifecycleEvent payload in DoctrineProvider](https://github.com/DamienHarper/auditor/issues/31)
 * Properly handle (unsupported) composite primary keys: throw a dedicated exception when such an entity is audited.
 
 ---

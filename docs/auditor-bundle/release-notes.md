@@ -14,7 +14,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## Version 5.x
+
+### auditor-bundle v5.0.0
+<div class="mt-3 italic text-gray-600">Not yet released</div>
+
+#### Changes
+
+* Drop PHP 7.2 support.
+* Drop Symfony 3.4 support.
+
+---
+
 ## Version 4.x
+
+### auditor-bundle v4.2.0
+<div class="mt-3 italic text-gray-600">2021-09-27</div>
+
+#### Fixes
+
+* [#261 - Fixes multiple storage services setup](https://github.com/DamienHarper/auditor-bundle/pull/261)
+* [#273 - Fix deprecation notice regarding twig usage from controller](https://github.com/DamienHarper/auditor-bundle/pull/273)
+* [#274 - Attempt to fix dependabot alert (CVE-2019-10909)](https://github.com/DamienHarper/auditor-bundle/pull/274)
+
+#### Changes
+
+* [#252 - Added dutch translations](https://github.com/DamienHarper/auditor-bundle/pull/252)
+* [#255 - Viewer is disabled by default](https://github.com/DamienHarper/auditor-bundle/pull/255)
+* [#262 - Move the translation domain to auditor](https://github.com/DamienHarper/auditor-bundle/pull/262)
+
+---
 
 ### auditor-bundle v4.1.0
 <div class="mt-3 italic text-gray-600">2021-02-10</div>
