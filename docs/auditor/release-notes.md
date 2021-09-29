@@ -19,6 +19,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### auditor v2.0.0
 <div class="mt-3 italic text-gray-600">Not yet released</div>
 
+#### BC changes
+
+* Providing an integer value for the `keep` argument of the `audit:clean` command is no longer supported. Use the ISO 8601 duration format (e.g. `P12M`) instead.
+* Passing `name` and `value` to the `Query::addFilter()` method is no longer supported. Pass it a `FilterInterface` object instead.
+* `Query::addRangeFilter()` method has been removed, you should call `Query::addFilter()` instead and pass it a `RangeFilter` object.
+* `Query::addDateRangeFilter()` method has been removed, you should call `Query::addFilter()` instead and pass it a `DateRangeFilter` object.
+
 #### Changes
 
 * Drop PHP 7.2 support.
