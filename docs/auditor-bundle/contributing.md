@@ -37,7 +37,22 @@ composer csfixer
 Static code analysis can be achieved using [PHPStan](https://github.com/phpstan/phpstan)
 
 ```bash
-composer phpstan
+composer stan
+```
+
+
+## Building assets
+As the audit viewer relies on [Tailwind CSS](https://tailwindcss.com), you need to rebuild the assets as soon as 
+you reference new classes in templates before release.
+
+Building assets for release (production mode -- assets are minified).
+```bash
+yarn encore production
+```
+
+Building assets for development (development mode -- assets are **NOT** minified).
+```bash
+yarn encore dev
 ```
 
 

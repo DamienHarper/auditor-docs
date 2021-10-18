@@ -37,7 +37,7 @@ composer csfixer
 Static code analysis can be achieved using [PHPStan](https://github.com/phpstan/phpstan)
 
 ```bash
-composer phpstan
+composer stan
 ```
 
 
