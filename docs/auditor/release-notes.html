@@ -192,6 +192,13 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <h2 id="version-2x">Version 2.x</h2>
 <h3 id="auditor-v200">auditor v2.0.0</h3>
 <div class="mt-3 italic text-gray-600">Not yet released</div>
+<h4 id="bc-changes">BC changes</h4>
+<ul>
+<li>Providing an integer value for the <code>keep</code> argument of the <code>audit:clean</code> command is no longer supported. Use the ISO 8601 duration format (e.g. <code>P12M</code>) instead.</li>
+<li>Passing <code>name</code> and <code>value</code> to the <code>Query::addFilter()</code> method is no longer supported. Pass it a <code>FilterInterface</code> object instead.</li>
+<li><code>Query::addRangeFilter()</code> method has been removed, you should call <code>Query::addFilter()</code> instead and pass it a <code>RangeFilter</code> object.</li>
+<li><code>Query::addDateRangeFilter()</code> method has been removed, you should call <code>Query::addFilter()</code> instead and pass it a <code>DateRangeFilter</code> object.</li>
+</ul>
 <h4 id="changes">Changes</h4>
 <ul>
 <li>Drop PHP 7.2 support.</li>
@@ -322,7 +329,8 @@ creates audit logs for all <code>Doctrine ORM</code> database related changes.</
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.js"></script>
 <script type="text/javascript">
 docsearch({
-    apiKey: 'a1a8aecc3ea2505853cb898521ebf587',
+    appId: 'EC4P6M6L5W',
+    apiKey: 'a62e6da4d5b94a3dc21e7cb9047d5cc2',
     indexName: 'auditor_docs',
     inputSelector: '#docsearch',
         debug: false // Set debug to true if you want to inspect the dropdown
