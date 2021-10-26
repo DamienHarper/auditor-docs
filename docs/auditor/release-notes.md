@@ -35,6 +35,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version 1.x
 
+### auditor v1.3.1
+<div class="mt-3 italic text-gray-600">2021-10-26</div>
+
+#### Changes
+
+* Blocks installation along with `doctrine/dbal` 3.x 
+
+---
+
 ### auditor v1.3.0
 <div class="mt-3 italic text-gray-600">2021-09-27</div>
 
