@@ -206,6 +206,13 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 </ul>
 <hr />
 <h2 id="version-1x">Version 1.x</h2>
+<h3 id="auditor-v131">auditor v1.3.1</h3>
+<div class="mt-3 italic text-gray-600">2021-10-26</div>
+<h4 id="changes-1">Changes</h4>
+<ul>
+<li>Blocks installation along with <code>doctrine/dbal</code> 3.x </li>
+</ul>
+<hr />
 <h3 id="auditor-v130">auditor v1.3.0</h3>
 <div class="mt-3 italic text-gray-600">2021-09-27</div>
 <h4 id="fixes">Fixes</h4>
@@ -215,7 +222,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li><a href="https://github.com/DamienHarper/auditor/issues/46">#46 - Resets transaction once processed by the <code>onFlush</code> event subscriber</a></li>
 <li><a href="https://github.com/DamienHarper/auditor/issues/50">#50 - Fix an edge case where annotations where not loaded if audited entities were set in configuration</a></li>
 </ul>
-<h4 id="changes-1">Changes</h4>
+<h4 id="changes-2">Changes</h4>
 <ul>
 <li><a href="https://github.com/DamienHarper/auditor/issues/40">#40 - Add support to php 8 attributes</a></li>
 <li><a href="https://github.com/DamienHarper/auditor/issues/31">#31 - Add audit event's database ID on LifecycleEvent payload in DoctrineProvider</a></li>
@@ -233,7 +240,7 @@ and this project adheres to <a href="https://semver.org/spec/v2.0.0.html">Semant
 <li><a href="https://github.com/DamienHarper/auditor-bundle/issues/245">#245 (auditor-bundle) - Doctrine Migrations not managing audit table</a></li>
 <li><a href="https://github.com/DamienHarper/auditor-bundle/issues/249">#249 (auditor-bundle) - Doctrine migrations wants to drop tables</a></li>
 </ul>
-<h4 id="changes-2">Changes</h4>
+<h4 id="changes-3">Changes</h4>
 <ul>
 <li><a href="https://github.com/DamienHarper/auditor/pull/26">#26 - Fixed multiple entity manager setups</a></li>
 <li><a href="https://github.com/DamienHarper/auditor/pull/30">#30 - Annotations lazy loading</a></li>
@@ -254,7 +261,7 @@ Query::addDateRangeFilter(string $name, $minValue, $maxValue)</code></pre>
 <hr />
 <h3 id="auditor-v110">auditor v1.1.0</h3>
 <div class="mt-3 italic text-gray-600">2021-02-10</div>
-<h4 id="changes-3">Changes</h4>
+<h4 id="changes-4">Changes</h4>
 <ul>
 <li><a href="https://github.com/DamienHarper/auditor/pull/19">#19 - Better handling of binary data</a></li>
 <li><a href="https://github.com/DamienHarper/auditor/pull/20">#20 - UID support (Ramsey UUID/Symfony ULID)</a></li>
@@ -264,7 +271,7 @@ Query::addDateRangeFilter(string $name, $minValue, $maxValue)</code></pre>
 <hr />
 <h3 id="auditor-v101">auditor v1.0.1</h3>
 <div class="mt-3 italic text-gray-600">2020-12-10</div>
-<h4 id="changes-4">Changes</h4>
+<h4 id="changes-5">Changes</h4>
 <ul>
 <li>Updated CI to ensure proper Symfony versions are installed during tests (3.4, 4.4 and 5.x are tested)</li>
 <li>Fixed a failing test with Symfony 3.4</li>
