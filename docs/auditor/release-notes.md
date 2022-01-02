@@ -28,8 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Changes
 
-* Drop PHP 7.2 support.
+* Drop PHP 7.2 and 7.3 support.
 * Drop Symfony 3.4 support.
+* Audit relationship refs (#60)
 
 ---
 

@@ -20,6 +20,13 @@ Before starting to contribute, you first need to install dev dependencies:
 composer install --dev
 ```
 
+You also have to install external dev tools:
+
+```bash
+composer install --working-dir=tools/php-cs-fixer
+composer install --working-dir=tools/phpstan
+```
+
 Also, in an effort to maintain an homogeneous code base, we strongly encourage contributors
 to run [PHP-CS-Fixer](https://github.com/FriendsOfPHP/PHP-CS-Fixer) and [PHPStan](https://github.com/phpstan/phpstan)
 before submitting a Pull Request.
@@ -37,7 +44,7 @@ composer csfixer
 Static code analysis can be achieved using [PHPStan](https://github.com/phpstan/phpstan)
 
 ```bash
-composer stan
+composer phpstan
 ```
 
 
