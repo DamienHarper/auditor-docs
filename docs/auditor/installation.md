@@ -5,8 +5,8 @@ previous:
     text: What is auditor?
     url: /docs/auditor/index.html
 next:
-    text: Release notes
-    url: /docs/auditor/release-notes.html
+    text: Upgrade Guide
+    url: /docs/auditor/upgrading.html
 ---
 
 This library should to be installed with [Composer](https://getcomposer.org)
@@ -18,10 +18,10 @@ of the Composer documentation.
 
 ## Requirements
 
- Version   | Status             | PHP requirements | Symfony requirements
-:----------|:-------------------|:-----------------|:--------------------
- **1.x**   | **Active development** | **PHP >= 7.2**   | **Symfony >= 3.4**
-
+| Version | Status                    | Requirements                   |
+|:--------|:--------------------------|:-------------------------------|
+| **2.x** | **Active development** 🚀 | **PHP >= 7.4, Symfony >= 4.4** |
+| 1.x     | Active support            | PHP >= 7.2, Symfony >= 3.4     |
 
 ## Download the library
 

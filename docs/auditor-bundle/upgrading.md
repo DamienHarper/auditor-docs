@@ -2,8 +2,8 @@
 title: "Upgrading"
 introduction: "How to upgrade to a newer version"
 previous:
-    text: Release notes
-    url: /docs/auditor-bundle/release-notes.html
+    text: Installation
+    url: /docs/auditor-bundle/installation.html
 next:
     text: Contributing
     url: /docs/auditor-bundle/contributing.html

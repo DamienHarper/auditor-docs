@@ -5,8 +5,8 @@ previous:
     text: What is auditor-bundle?
     url: /docs/auditor-bundle/index.html
 next:
-    text: Release notes
-    url: /docs/auditor-bundle/release-notes.html
+    text: Upgrade Guide
+    url: /docs/auditor-bundle/upgrading.html
 ---
 
 This bundle should to be installed with [Composer](https://getcomposer.org)
@@ -19,13 +19,13 @@ of the Composer documentation.
 
 ## Requirements
 
- Version   | Status                 | PHP requirements | Symfony requirements
-:----------|:-----------------------|:-----------------|:--------------------
- **4.x**   | **Active development** | **PHP >= 7.2**   | **Symfony >= 3.4**
- 3.x       | Active support         | PHP >= 7.1       | Symfony >= 3.4
- 2.x       | End of life            | PHP >= 7.1       | Symfony >= 3.4
- 1.x       | End of life            | PHP >= 7.1       | Symfony >= 3.4
-
+| Version | Status                    | Requirements                   |
+|:--------|:--------------------------|:-------------------------------|
+| 5.x     | **Active development** 🚀 | **PHP >= 7.4, Symfony >= 4.4** |
+| 4.x     | Active support            | PHP >= 7.2, Symfony >= 3.4     |
+| 3.x     | End of life               | PHP >= 7.1, Symfony >= 3.4     |
+| 2.x     | End of life               | PHP >= 7.1, Symfony >= 3.4     |
+| 1.x     | End of life               | PHP >= 7.1, Symfony >= 3.4     |
 
 ## 1. Applications that use Symfony Flex
 

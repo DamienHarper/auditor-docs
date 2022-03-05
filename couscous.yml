@@ -27,15 +27,15 @@ menu:
           installation:
             text: Installation
             url: /docs/auditor/installation.html
-          release-notes:
-            text: Release notes
-            url: /docs/auditor/release-notes.html
           upgrading:
             text: Upgrade Guide
             url: /docs/auditor/upgrading.html
           contributing:
             text: Contributing
             url: /docs/auditor/contributing.html
+          release-notes:
+            text: Release notes
+            url: https://github.com/DamienHarper/auditor/releases
 
       - section: Core concepts
         items:
@@ -56,15 +56,15 @@ menu:
           installation:
             text: Installation
             url: /docs/auditor-bundle/installation.html
-          release-notes:
-            text: Release notes
-            url: /docs/auditor-bundle/release-notes.html
           upgrading:
             text: Upgrade Guide
             url: /docs/auditor-bundle/upgrading.html
           contributing:
             text: Contributing
             url: /docs/auditor-bundle/contributing.html
+          release-notes:
+            text: Release notes
+            url: https://github.com/DamienHarper/auditor-bundle/releases
 
       - section: Configuration
         items:
