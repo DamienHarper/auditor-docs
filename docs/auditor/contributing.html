@@ -138,12 +138,6 @@
                 </a>
                         </li>
                                             <li>
-                            <a class="px-3 py-2 transition-colors duration-200 relative block hover:text-gray-900 text-gray-500" href="https://damienharper.github.io/auditor-docs/docs/auditor/release-notes.html">
-                    <span class="rounded-md absolute inset-0 bg-teal-200 opacity-0"></span>
-                    <span class="relative">Release notes</span>
-                </a>
-                        </li>
-                                            <li>
                             <a class="px-3 py-2 transition-colors duration-200 relative block hover:text-gray-900 text-gray-500" href="https://damienharper.github.io/auditor-docs/docs/auditor/upgrading.html">
                     <span class="rounded-md absolute inset-0 bg-teal-200 opacity-0"></span>
                     <span class="relative">Upgrade Guide</span>
@@ -153,6 +147,12 @@
                             <a class="px-3 py-2 transition-colors duration-200 relative block text-teal-700" href="https://damienharper.github.io/auditor-docs/docs/auditor/contributing.html">
                     <span class="rounded-md absolute inset-0 bg-teal-200 opacity-30"></span>
                     <span class="relative">Contributing</span>
+                </a>
+                        </li>
+                                            <li>
+                            <a class="px-3 py-2 transition-colors duration-200 relative block hover:text-gray-900 text-gray-500" href="https://damienharper.github.io/auditor-docshttps://github.com/DamienHarper/auditor/releases">
+                    <span class="rounded-md absolute inset-0 bg-teal-200 opacity-0"></span>
+                    <span class="relative">Release notes</span>
                 </a>
                         </li>
             
@@ -191,6 +191,9 @@
 <h2 id="requirements">Requirements</h2>
 <p>Before starting to contribute, you first need to install dev dependencies:</p>
 <pre><code class="language-bash">composer install --dev</code></pre>
+<p>You also have to install external dev tools:</p>
+<pre><code class="language-bash">composer install --working-dir=tools/php-cs-fixer
+composer install --working-dir=tools/phpstan</code></pre>
 <p>Also, in an effort to maintain an homogeneous code base, we strongly encourage contributors
 to run <a href="https://github.com/FriendsOfPHP/PHP-CS-Fixer">PHP-CS-Fixer</a> and <a href="https://github.com/phpstan/phpstan">PHPStan</a>
 before submitting a Pull Request.</p>
@@ -199,7 +202,7 @@ before submitting a Pull Request.</p>
 <pre><code class="language-bash">composer csfixer</code></pre>
 <h2 id="static-code-analysis">Static code analysis</h2>
 <p>Static code analysis can be achieved using <a href="https://github.com/phpstan/phpstan">PHPStan</a></p>
-<pre><code class="language-bash">composer stan</code></pre>
+<pre><code class="language-bash">composer phpstan</code></pre>
 <h2 id="running-tests">Running Tests</h2>
 <p>By default, test suite is configured to use an SQLite in-memory database and generates
 a code coverage report in <code>tests/coverage</code> folder.</p>
