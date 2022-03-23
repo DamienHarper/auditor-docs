@@ -113,6 +113,3 @@ menu:
           maintenance:
             text: Maintenance
             url: /docs/auditor-bundle/usage/maintenance.html
-          contributing:
-            text: Contributing
-            url: /docs/auditor-bundle/usage/schema-manipulation.html
