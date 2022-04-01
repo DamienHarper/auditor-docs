@@ -9,7 +9,13 @@
                     {% set value = v %}
                 {% endfor %}
                 {% set isCurrent = value.url|split('/')[2] == ('/' ~ current|replace({baseUrl: ''}))|split('/')[2] %}
-                <a href="{{ baseUrl }}{{ value.url }}" class="flex items-center px-3 hover:text-gray-900 transition-colors duration-200 {{ isCurrent ? 'text-gray-900 font-bold' : 'font-normal' }}">
+                {% set isAbsoluteUrl = value.url matches '#^https?:\/\/.*$#' %}
+                {% if isAbsoluteUrl %}
+                    {% set itemLink = value.url %}
+                {% else %}
+                    {% set itemLink = baseUrl ~ value.url %}
+                {% endif %}
+                <a href="{{ itemLink }}" {% if isAbsoluteUrl %}target="_blank"{% endif %} class="flex items-center px-3 hover:text-gray-900 transition-colors duration-200 {{ isCurrent ? 'text-gray-900 font-bold' : 'font-normal' }}">
                     <div class="mr-3 rounded-md">
                         {{ item.icon|raw }}
                     </div>
@@ -39,14 +45,20 @@
             </div>
         {% else %}
             {% set isCurrent = item.url|replace({'.html': ''}) == '/' ~ current|replace({'.md': ''}) %}
+            {% set isAbsoluteUrl = item.url matches '#^https?:\/\/.*$#' %}
+            {% if isAbsoluteUrl %}
+                {% set itemLink = item.url %}
+            {% else %}
+                {% set itemLink = baseUrl ~ item.url %}
+            {% endif %}
             <li>
             {% if isCurrent %}
-                <a class="px-3 py-2 transition-colors duration-200 relative block text-teal-700" href="{{ baseUrl }}{{ item.url }}">
+                <a class="px-3 py-2 transition-colors duration-200 relative block text-teal-700" href="{{ itemLink }}" {% if isAbsoluteUrl %}target="_blank"{% endif %}>
                     <span class="rounded-md absolute inset-0 bg-teal-200 opacity-30"></span>
                     <span class="relative">{{ item.text }}</span>
                 </a>
             {% else %}
-                <a class="px-3 py-2 transition-colors duration-200 relative block hover:text-gray-900 text-gray-500" href="{{ baseUrl }}{{ item.url }}">
+                <a class="px-3 py-2 transition-colors duration-200 relative block hover:text-gray-900 text-gray-500" href="{{ itemLink }}" {% if isAbsoluteUrl %}target="_blank"{% endif %}>
                     <span class="rounded-md absolute inset-0 bg-teal-200 opacity-0"></span>
                     <span class="relative">{{ item.text }}</span>
                 </a>
