@@ -58,7 +58,7 @@ $query = $reader->createQuery(Author::class, [
 // the above code could also be written like this 
 $query = $reader
     ->createQuery(Author::class)
-    ->addFilter(Query::OBJECT_ID, 5);
+    ->addFilter(new \DH\Auditor\Provider\Doctrine\Persistence\Reader\Filter\SimpleFilter(Query::OBJECT_ID, 5));
 ;
 ```
 
