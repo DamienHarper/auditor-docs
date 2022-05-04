@@ -55,10 +55,12 @@ $query = $reader->createQuery(Author::class, [
     'object_id' => 5,
 ]);
 
-// the above code could also be written like this 
+// the above code could also be written like this
+use \DH\Auditor\Provider\Doctrine\Persistence\Reader\Filter\SimpleFilter;
+
 $query = $reader
     ->createQuery(Author::class)
-    ->addFilter(Query::OBJECT_ID, 5);
+    ->addFilter(new SimpleFilter(Query::OBJECT_ID, 5));
 ;
 ```
 
