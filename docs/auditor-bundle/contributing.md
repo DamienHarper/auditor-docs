@@ -23,6 +23,7 @@ composer install --dev
 You also have to install external dev tools:
 
 ```bash
+composer reinstall damienharper/auditor --prefer-install=source
 composer install --working-dir=tools/php-cs-fixer
 composer install --working-dir=tools/phpstan
 ```
