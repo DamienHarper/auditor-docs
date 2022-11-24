@@ -304,10 +304,12 @@ $query = $reader-&gt;createQuery(Author::class, [
     'object_id' =&gt; 5,
 ]);
 
-// the above code could also be written like this 
+// the above code could also be written like this
+use \DH\Auditor\Provider\Doctrine\Persistence\Reader\Filter\SimpleFilter;
+
 $query = $reader
     -&gt;createQuery(Author::class)
-    -&gt;addFilter(Query::OBJECT_ID, 5);
+    -&gt;addFilter(new SimpleFilter(Query::OBJECT_ID, 5));
 ;</code></pre>
 <h3 id="retrieving-audits">Retrieving audits</h3>
 <p>Once a query has been created and prepared, it has to be executed to retrieve audits.</p>
