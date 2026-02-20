@@ -1,12 +1,30 @@
 {
+  "name": "auditor-docs",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "docusaurus": "docusaurus",
+    "start": "docusaurus start --port 4000",
+    "build": "docusaurus build",
+    "clear": "docusaurus clear",
+    "serve": "docusaurus serve --port 4000"
+  },
   "dependencies": {
-    "@tailwindcss/typography": "^0.3.1",
-    "autoprefixer": "^10.0.2",
-    "cssnano": "^4.1.10",
-    "postcss": "^8.4.31",
-    "postcss-cli": "^8.3.0",
-    "postcss-import": "^13.0.0",
-    "postcss-nested": "^5.0.1",
-    "tailwindcss": "^2.0.1"
+    "@docusaurus/core": "^3.7.0",
+    "@docusaurus/preset-classic": "^3.7.0",
+    "@docusaurus/theme-mermaid": "^3.9.2",
+    "@mdx-js/react": "^3.0.0",
+    "clsx": "^2.0.0",
+    "docusaurus-lunr-search": "^3.6.0",
+    "prism-react-renderer": "^2.3.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "remark-github-blockquote-alert": "^2.0.1"
+  },
+  "devDependencies": {
+    "@docusaurus/module-type-aliases": "^3.7.0"
+  },
+  "engines": {
+    "node": ">=18.0"
   }
 }

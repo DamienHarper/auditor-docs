@@ -1,4 +1,8 @@
+# IDE
 /.idea/
-/.couscous/
+# Docusaurus
 /node_modules/
-/template/css/app.min.css
+/build/
+/.docusaurus/
+# Legacy couscous
+/.couscous/

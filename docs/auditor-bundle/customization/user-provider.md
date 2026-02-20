@@ -1,61 +1,271 @@
----
-title: "User provider setup"
-introduction: "A guide to configuring auditor-bundle."
-previous:
-    text: Configuration reference
-    url: /docs/auditor-bundle/configuration/reference.html
-next:
-    text: Security provider
-    url: /docs/auditor-bundle/customization/security-provider.html
----
+# User Provider
 
-A user provider is a service which goal is to return an object implementing `DH\Auditor\User\UserInterface`.  
-`auditor` then invokes the user provider any time it receives an audit event.
+> **Customize how the current user is identified in audit entries**
 
-## Built-in user provider
-<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
+A user provider returns information about the current user for audit entries.
 
-`auditor-bundle` provides a default built-in user provider based on Symfony's `TokenStorage`, 
-but if you don't use `TokenStorage`, you can still provide a custom user provider. 
+## 📝 Interface
 
+```php
+namespace DH\Auditor\User;
 
-## Custom user provider
-<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
+interface UserProviderInterface
+{
+    public function __invoke(): ?UserInterface;
+}
+```
 
-First you need to provide a service implementing the `UserProviderInterface` interface
-and reference it in the `dh_auditor.yaml`. This service has to be a `callable` and 
-returns user information as an object implementing `DH\Auditor\User\UserInterface`.
+The provider must return a `UserInterface` or `null`:
 
-### Example
+```php
+namespace DH\Auditor\User;
+
+interface UserInterface
+{
+    public function getIdentifier(): ?string;
+    public function getUsername(): ?string;
+}
+```
+
+## 📦 Built-in Provider
+
+The default `DH\AuditorBundle\User\UserProvider`:
+
+```php
+public function __invoke(): ?UserInterface
+{
+    $tokenUser = $this->getTokenUser();
+    $impersonatorUser = $this->getImpersonatorUser();
+
+    // Get identifier if getId() method exists
+    $identifier = null;
+    if ($tokenUser instanceof SymfonyUserInterface) {
+        if (method_exists($tokenUser, 'getId')) {
+            $identifier = $tokenUser->getId();
+        }
+        $username = $tokenUser->getUserIdentifier();
+    }
+
+    // Track impersonation
+    if ($impersonatorUser instanceof SymfonyUserInterface) {
+        $username .= '[impersonator '.$impersonatorUser->getUserIdentifier().']';
+    }
+
+    if (null === $identifier && null === $username) {
+        return null;
+    }
+
+    return new User((string) $identifier, $username);
+}
+```
+
+## 🖥️ Console Commands
+
+For CLI commands, the bundle provides `DH\AuditorBundle\User\ConsoleUserProvider` which automatically tracks the command name:
+
+```php
+public function __invoke(): ?UserInterface
+{
+    if (null === $this->currentCommand) {
+        return null;
+    }
+
+    // Command name is used as both ID and username
+    return new User(
+        $this->currentCommand,  // e.g., 'app:import-users'
+        $this->currentCommand
+    );
+}
+```
+
+> [!TIP]
+> This allows you to:
+> - 🔍 Identify which command made specific changes
+> - 🔎 Filter audit entries by command in the viewer
+> - 📊 Track automated processes separately from user actions
+
+**Example audit entries:**
+- `app:import-users` - Import command
+- `doctrine:fixtures:load` - Fixtures loading
+- `app:sync-products` - Sync command
+
+## 🔧 Creating a Custom Provider
+
+### Basic Example
+
 ```php
 <?php
 
-namespace App\Audit\User;
+namespace App\Audit;
 
+use DH\Auditor\User\User;
 use DH\Auditor\User\UserInterface;
 use DH\Auditor\User\UserProviderInterface;
 
-class UserProvider implements UserProviderInterface
+class CustomUserProvider implements UserProviderInterface
 {
+    public function __construct(
+        private readonly MyAuthService $authService,
+    ) {}
+
     public function __invoke(): ?UserInterface
     {
-        // ... do your stuff here to get current user
-        // then return an object implementing `DH\Auditor\User\UserInterface` ...
+        $user = $this->authService->getCurrentUser();
+
+        if (null === $user) {
+            return null;
+        }
+
+        return new User(
+            (string) $user->getId(),
+            $user->getEmail()
+        );
     }
 }
 ```
 
-```yaml
-# config/services.yaml
-services:
-  dh_auditor.user_provider: '@App\Audit\UserProvider'
-```
-
-And finally, reference it in the bundle's configuration file `dh_auditor.yaml`.
+### Registration
 
 ```yaml
 # config/packages/dh_auditor.yaml
 dh_auditor:
-    # Invokable service (callable) that provides user information
-    user_provider: 'dh_auditor.user_provider'
+    user_provider: 'App\Audit\CustomUserProvider'
 ```
+
+The service is auto-wired. If you need explicit configuration:
+
+```yaml
+# config/services.yaml
+services:
+    App\Audit\CustomUserProvider:
+        arguments:
+            - '@App\Security\MyAuthService'
+```
+
+## 📚 Examples
+
+### 🔑 API Token Authentication
+
+```php
+<?php
+
+namespace App\Audit;
+
+use App\Security\ApiTokenManager;
+use DH\Auditor\User\User;
+use DH\Auditor\User\UserInterface;
+use DH\Auditor\User\UserProviderInterface;
+
+class ApiUserProvider implements UserProviderInterface
+{
+    public function __construct(
+        private readonly ApiTokenManager $tokenManager,
+    ) {}
+
+    public function __invoke(): ?UserInterface
+    {
+        $token = $this->tokenManager->getCurrentToken();
+
+        if (null === $token) {
+            return null;
+        }
+
+        return new User(
+            $token->getClientId(),
+            sprintf('API: %s', $token->getClientName())
+        );
+    }
+}
+```
+
+### 🌐 External OAuth/SSO
+
+```php
+<?php
+
+namespace App\Audit;
+
+use DH\Auditor\User\User;
+use DH\Auditor\User\UserInterface;
+use DH\Auditor\User\UserProviderInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
+
+class OAuthUserProvider implements UserProviderInterface
+{
+    public function __construct(
+        private readonly RequestStack $requestStack,
+    ) {}
+
+    public function __invoke(): ?UserInterface
+    {
+        $request = $this->requestStack->getCurrentRequest();
+
+        if (null === $request) {
+            return null;
+        }
+
+        // User info from OAuth headers
+        $userId = $request->headers->get('X-User-Id');
+        $userName = $request->headers->get('X-User-Email');
+
+        if (null === $userId) {
+            return null;
+        }
+
+        return new User($userId, $userName ?? 'unknown');
+    }
+}
+```
+
+### 🔀 Combining Multiple Sources
+
+```php
+<?php
+
+namespace App\Audit;
+
+use App\Security\ApiTokenManager;
+use DH\Auditor\User\User;
+use DH\Auditor\User\UserInterface;
+use DH\Auditor\User\UserProviderInterface;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+
+class CompositeUserProvider implements UserProviderInterface
+{
+    public function __construct(
+        private readonly TokenStorageInterface $tokenStorage,
+        private readonly ApiTokenManager $apiTokenManager,
+    ) {}
+
+    public function __invoke(): ?UserInterface
+    {
+        // Try Symfony security first
+        $token = $this->tokenStorage->getToken();
+        if (null !== $token && null !== $token->getUser()) {
+            $user = $token->getUser();
+            return new User(
+                method_exists($user, 'getId') ? (string) $user->getId() : '',
+                $user->getUserIdentifier()
+            );
+        }
+
+        // Fall back to API token
+        $apiToken = $this->apiTokenManager->getCurrentToken();
+        if (null !== $apiToken) {
+            return new User(
+                $apiToken->getClientId(),
+                'API: ' . $apiToken->getClientName()
+            );
+        }
+
+        return null;
+    }
+}
+```
+
+---
+
+## 🚀 Next Steps
+
+- 🔒 [Security Provider](security-provider.md) - Customize IP/context detection
+- 🛡️ [Role Checker](role-checker.md) - Customize access control

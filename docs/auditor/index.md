@@ -1,53 +1,146 @@
 ---
-title: What is auditor?
-next:
-    text: Installation
-    url: /docs/auditor/installation.html
+id: intro
+title: Introduction
+slug: /intro
 ---
+# auditor
 
-The purpose of `auditor` is to provide an easy and standardized way to collect audit logs.
+> **The missing audit log library for PHP**
 
+[![Latest Stable Version](https://poser.pugx.org/damienharper/auditor/v/stable)](https://packagist.org/packages/damienharper/auditor)
+[![License](https://poser.pugx.org/damienharper/auditor/license)](https://packagist.org/packages/damienharper/auditor)
+[![Total Downloads](https://poser.pugx.org/damienharper/auditor/downloads)](https://packagist.org/packages/damienharper/auditor)
 
-## Architecture
+## What is auditor?
 
-This library is architected around two concepts:
+**auditor** is a PHP library that provides an easy and standardized way to collect audit logs. It is designed to track changes made to your entities and persist them as audit trails.
 
-- Auditing services responsible for collecting audit events
-- Storage services responsible for persisting audit traces
+### Key Features
 
-Those two kind of services are offered by Providers.
+- 📝 **Automatic change tracking** - Captures inserts, updates, and deletes automatically
+- 🔗 **Relationship tracking** - Records many-to-many associations and dissociations
+- 👤 **User attribution** - Records who made the changes and their IP address
+- 🔒 **Transactional integrity** - Audit entries are inserted within the same database transaction
+- 🎯 **Flexible configuration** - Choose which entities and fields to audit
+- 🔐 **Security controls** - Define who can view audit logs
+- 🗄️ **Multi-database support** - Store audits in separate databases if needed
 
+## Architecture Overview
 
-## Default provider
+The library is architected around two core concepts:
 
-A default provider is included with this library: `DoctrineProvider`
+1. **Auditing Services** - Responsible for collecting audit events when changes occur
+2. **Storage Services** - Responsible for persisting audit traces to the database
 
-`DoctrineProvider` offers both auditing services and storage services.
-It creates audit logs for all `Doctrine ORM` database related changes:
+These services are provided by **Providers**. The library ships with a default provider for Doctrine ORM.
 
-- inserts and updates including their diffs and relation field diffs.
-- many to many relation changes, association and dissociation actions.
-- if available, the user responsible for these changes and his IP address are recorded. 
-- audit entries are inserted within the same transaction during **flush** event 
-so that even if something fails the global state remains clean.
+```mermaid
+flowchart TD
+    APP["Your Application"] --> AUDITOR
 
-`DoctrineProvider` supports following RDBMS
+    subgraph AUDITOR["AUDITOR"]
+        direction TB
 
-* MySQL
-* MariaDB
-* PostgreSQL
-* SQLite
+        subgraph CONFIG["Configuration"]
+            direction LR
+            enabled
+            timezone
+            userProvider
+            securityProvider
+            roleChecker
+        end
 
-`DoctrineProvider` **should** work with **any other** database supported by `Doctrine`. 
-Though, we can only really support the ones we can test with [GitHub Actions](https://github.com/features/actions).
+        subgraph PROVIDER["DoctrineProvider"]
+            direction TB
 
-Basically you can track any change of any entity from audit logs.
+            subgraph AUDITING["AuditingService(s)"]
+                EMA["EntityManager A
+                (source data)"]
+            end
 
-<div class="note note-info" role="alert">
-  <p class="note-title">Notes</p>
-  <ul class="note-desc mt-2 ml-4">
-    <li><code>DoctrineProvider</code> does <strong>not</strong> support composite primary keys.</li>
-    <li><code>DoctrineProvider</code> does <strong>not</strong> allow tracking changes resulting from 
-   direct DQL/SQL update or delete statements.</li>
-  </ul>
-</div>
+            subgraph STORAGE["StorageService(s)"]
+                EMX["EntityManager X
+                (audit storage)"]
+            end
+
+            AUDITING --> TP
+            STORAGE --> TP
+
+            TP["TransactionProcessor
+            Track inserts, updates, deletes, relations
+            Build payload (diffs, blame, extra_data = null)"]
+        end
+
+        subgraph EVENTS["EventDispatcher"]
+            direction TB
+            TP --> LE
+
+            LE["LifecycleEvent
+            payload (diffs, blame, extra_data)
+            entity (the audited object)"]
+
+            LE --> LISTENER
+
+            LISTENER["Your Listener(s) — optional
+            Enrich extra_data from entity state"]:::optional
+        end
+    end
+
+    LISTENER --> DB
+
+    DB[("Audit Tables
+    users_audit, posts_audit, ...
+    Columns: type, diffs, extra_data, blame, ...")]
+
+    classDef optional stroke-dasharray: 5 5
+```
+
+### Data Flow
+
+1. **Entity Change** → Your application modifies an entity via Doctrine
+2. **Detection** → `AuditingService` detects the change through Doctrine events
+3. **Processing** → `TransactionProcessor` computes diffs and prepares audit data (with `extra_data = null`)
+4. **Event** → A `LifecycleEvent` is dispatched with the audit payload and the entity object
+5. **Enrichment** *(optional)* → Your listener(s) inspect the entity and populate `extra_data` in the payload
+6. **Persistence** → `StorageService` persists the audit entry to the database
+
+## Supported Databases
+
+The DoctrineProvider supports the following RDBMS:
+
+| Database   | Support Level |
+|------------|---------------|
+| MySQL      | ✅ Full       |
+| MariaDB    | ✅ Full       |
+| PostgreSQL | ✅ Full       |
+| SQLite     | ✅ Full       |
+
+> [!NOTE]
+> The DoctrineProvider should work with any database supported by Doctrine, though only the above are actively tested.
+
+## Version Compatibility
+
+| Version | Status                     | Requirements                                                          |
+|---------|----------------------------|-----------------------------------------------------------------------|
+| 4.x     | Active development 🚀      | PHP >= 8.4, Symfony >= 8.0, Doctrine DBAL >= 4.0, Doctrine ORM >= 3.2 |
+| 3.x     | Active support             | PHP >= 8.2, Symfony >= 5.4                                            |
+| 2.x     | End of Life                | PHP >= 7.4, Symfony >= 4.4                                            |
+| 1.x     | End of Life                | PHP >= 7.2, Symfony >= 3.4                                            |
+
+## Quick Links
+
+- [Installation Guide](getting-started/installation.md)
+- [Quick Start](getting-started/quick-start.md)
+- [Configuration Reference](configuration/index.md)
+- [DoctrineProvider](providers/doctrine/index.md)
+- [Querying Audits](querying/index.md)
+- [Extra Data](extra-data.md)
+- [API Reference](api/index.md)
+
+## Related Projects
+
+- **[auditor-bundle](https://github.com/DamienHarper/auditor-bundle)** - Symfony bundle for seamless integration
+
+## License
+
+This library is released under the [MIT License](https://opensource.org/licenses/MIT).

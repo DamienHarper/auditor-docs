@@ -1,62 +1,260 @@
----
-title: "Security provider setup"
-introduction: "A guide to configuring auditor-bundle."
-previous:
-    text: User provider
-    url: /docs/auditor-bundle/customization/user-provider.html
-next:
-    text: Role checker
-    url: /docs/auditor-bundle/customization/role-checker.html
----
+# Security Provider
 
-A security provider is a service which goal is to return an `array` containing the current client IP 
-and firewall name.  
-`auditor` then invokes the security provider any time it receives an audit event.
+> **Customize IP address and context detection for audit entries**
 
+A security provider returns contextual security information for audit entries.
 
-## Built-in security provider
-<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
+## 📝 Interface
 
-`auditor-bundle` provides a default built-in security provider based on Symfony's `RequestStack` and `FirewallMap`, 
-but if you don't use those components, you can still provide a custom security provider. 
+```php
+namespace DH\Auditor\Security;
 
+interface SecurityProviderInterface
+{
+    public function __invoke(): array;
+}
+```
 
-## Custom security provider
-<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-green-100 text-green-700">auditor</span>
+Returns an array with two elements:
 
-First you need to provide a service implementing the `SecurityProviderInterface` interface
-and reference it in the `dh_auditor.yaml`. This service has to be a `callable` and 
-returns security information as an `array` of client IP and firewall name.
+```php
+return [
+    $clientIp,      // string|null - Client IP address
+    $firewallName,  // string|null - Firewall or context name
+];
+```
 
-### Example
+## 📦 Built-in Provider
+
+The default `DH\AuditorBundle\Security\SecurityProvider`:
+
+```php
+public function __invoke(): array
+{
+    $request = $this->requestStack->getCurrentRequest();
+
+    if (!$request instanceof Request) {
+        return [null, null];
+    }
+
+    $firewallConfig = $this->firewallMap->getFirewallConfig($request);
+
+    return [
+        $request->getClientIp(),
+        $firewallConfig?->getName(),
+    ];
+}
+```
+
+## 🔧 Creating a Custom Provider
+
+### Basic Example
+
 ```php
 <?php
 
-namespace App\Audit\Security;
+namespace App\Audit;
 
 use DH\Auditor\Security\SecurityProviderInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
 
-class SecurityProvider implements SecurityProviderInterface
+class CustomSecurityProvider implements SecurityProviderInterface
 {
+    public function __construct(
+        private readonly RequestStack $requestStack,
+    ) {}
+
     public function __invoke(): array
     {
-        // ... do your stuff here to get current client IP and firewall name
-        // then return them in an `array` ...
+        $request = $this->requestStack->getCurrentRequest();
+
+        if (null === $request) {
+            return [null, null];
+        }
+
+        return [
+            $request->getClientIp(),
+            'my-app',
+        ];
     }
 }
 ```
 
-```yaml
-# config/services.yaml
-services:
-  dh_auditor.security_provider: '@App\Audit\SecurityProvider'
-```
-
-And finally, reference it in the bundle's configuration file `dh_auditor.yaml`.
+### Registration
 
 ```yaml
 # config/packages/dh_auditor.yaml
 dh_auditor:
-    # Invokable service (callable) that provides security information (IP, firewall name, etc)
-    security_provider: 'dh_auditor.security_provider'
+    security_provider: 'App\Audit\CustomSecurityProvider'
 ```
+
+## 📚 Examples
+
+### 🔄 Behind a Proxy/Load Balancer
+
+> [!IMPORTANT]
+> When behind a proxy, the client IP may be in forwarded headers rather than the direct connection IP.
+
+```php
+<?php
+
+namespace App\Audit;
+
+use DH\Auditor\Security\SecurityProviderInterface;
+use Symfony\Bundle\SecurityBundle\Security\FirewallMap;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
+
+class ProxyAwareSecurityProvider implements SecurityProviderInterface
+{
+    public function __construct(
+        private readonly RequestStack $requestStack,
+        private readonly FirewallMap $firewallMap,
+    ) {}
+
+    public function __invoke(): array
+    {
+        $request = $this->requestStack->getCurrentRequest();
+
+        if (!$request instanceof Request) {
+            return [null, null];
+        }
+
+        // Check proxy headers in order of preference
+        $clientIp = $request->headers->get('X-Real-IP')
+            ?? $request->headers->get('X-Forwarded-For')
+            ?? $request->getClientIp();
+
+        // Handle X-Forwarded-For with multiple IPs
+        if (str_contains($clientIp ?? '', ',')) {
+            $clientIp = trim(explode(',', $clientIp)[0]);
+        }
+
+        $firewallConfig = $this->firewallMap->getFirewallConfig($request);
+
+        return [$clientIp, $firewallConfig?->getName()];
+    }
+}
+```
+
+### ☁️ Cloudflare
+
+```php
+<?php
+
+namespace App\Audit;
+
+use DH\Auditor\Security\SecurityProviderInterface;
+use Symfony\Bundle\SecurityBundle\Security\FirewallMap;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
+
+class CloudflareSecurityProvider implements SecurityProviderInterface
+{
+    public function __construct(
+        private readonly RequestStack $requestStack,
+        private readonly FirewallMap $firewallMap,
+    ) {}
+
+    public function __invoke(): array
+    {
+        $request = $this->requestStack->getCurrentRequest();
+
+        if (!$request instanceof Request) {
+            return [null, null];
+        }
+
+        // Cloudflare provides original IP in CF-Connecting-IP
+        $clientIp = $request->headers->get('CF-Connecting-IP')
+            ?? $request->getClientIp();
+
+        $firewallConfig = $this->firewallMap->getFirewallConfig($request);
+
+        return [$clientIp, $firewallConfig?->getName()];
+    }
+}
+```
+
+### 🌩️ AWS ALB / API Gateway
+
+```php
+<?php
+
+namespace App\Audit;
+
+use DH\Auditor\Security\SecurityProviderInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
+
+class AwsSecurityProvider implements SecurityProviderInterface
+{
+    public function __construct(
+        private readonly RequestStack $requestStack,
+    ) {}
+
+    public function __invoke(): array
+    {
+        $request = $this->requestStack->getCurrentRequest();
+
+        if (null === $request) {
+            return [null, null];
+        }
+
+        // AWS ALB/API Gateway headers
+        $clientIp = $request->headers->get('X-Forwarded-For');
+        if (null !== $clientIp && str_contains($clientIp, ',')) {
+            // First IP is the original client
+            $clientIp = trim(explode(',', $clientIp)[0]);
+        }
+
+        // Use API Gateway stage as context
+        $context = $request->headers->get('X-Amzn-Api-Gateway-Stage', 'unknown');
+
+        return [$clientIp ?? $request->getClientIp(), $context];
+    }
+}
+```
+
+### 🖥️ Console Context Aware
+
+```php
+<?php
+
+namespace App\Audit;
+
+use DH\Auditor\Security\SecurityProviderInterface;
+use Symfony\Component\HttpFoundation\RequestStack;
+
+class ConsoleAwareSecurityProvider implements SecurityProviderInterface
+{
+    private ?string $consoleContext = null;
+
+    public function __construct(
+        private readonly RequestStack $requestStack,
+    ) {}
+
+    public function __invoke(): array
+    {
+        $request = $this->requestStack->getCurrentRequest();
+
+        // HTTP context
+        if (null !== $request) {
+            return [$request->getClientIp(), 'http'];
+        }
+
+        // Console context
+        return ['127.0.0.1', $this->consoleContext ?? 'console'];
+    }
+
+    public function setConsoleContext(?string $context): void
+    {
+        $this->consoleContext = $context;
+    }
+}
+```
+
+---
+
+## 🚀 Next Steps
+
+- 🛡️ [Role Checker](role-checker.md) - Customize access control
+- 👤 [User Provider](user-provider.md) - Customize user identification

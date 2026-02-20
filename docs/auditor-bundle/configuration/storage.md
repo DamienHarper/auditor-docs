@@ -1,121 +1,257 @@
----
-title: "Storage configuration"
-introduction: "A guide to configuring auditor-bundle."
-previous:
-    text: Auditing configuration
-    url: /docs/auditor-bundle/configuration/auditing.html
-next:
-    text: Configuration reference
-    url: /docs/auditor-bundle/configuration/reference.html
----
+# Storage Configuration
 
-Storage configuration is achieved using the YAML configuration file described in the [General](general.html) configuration section.
+> **Configure audit storage, including multi-database setups**
 
+This guide covers audit storage configuration, including multi-database setups.
 
-## Audit tables naming format
-<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+## 🗄️ Default Setup
 
-Audit table names are composed of a prefix, a name and a suffix. 
-By default, the prefix is empty and the suffix is `_audit`. Though, they can be customized.
+By default, audits are stored in the same database as your entities using the default entity manager:
 
 ```yaml
 dh_auditor:
     providers:
         doctrine:
-            table_prefix: ~
-            table_suffix: '_audit'
-```
-
-
-## Storage services
-<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
-
-By default, `auditor-bundle` stores audits using Doctrine's default entity manager `doctrine.orm.default_entity_manager`.
-However, `auditor-bundle` lets you store audits using several entity managers by adding them to the `storage_services` list.
-
-<div class="note note-info" role="alert">
-  <p class="note-title">Note</p>
-  <p class="note-desc">Using several entity managers for audit storage <b>requires</b> you to define a storage mapper (see below).</p>
-</div>
-
-```yaml
-dh_auditor:
-    providers:
-        doctrine:
-            # storage entity managers (storage services)
             storage_services:
                 - '@doctrine.orm.default_entity_manager'
-                - '@doctrine.orm.second_entity_manager'
-                - '@doctrine.orm.third_entity_manager'
 ```
 
-<div class="note note-warning" role="alert">
-  <p class="note-title">Warning</p>
-  <p class="note-desc">
-    Using several entity managers for audit storage <b>breaks atomicity</b> provided by the bundle by default. 
-    Audits persistence operations are performed into different transactions than entity persistence operations.
-  </p>
-  <p class="note-desc">This means that:</p>
-  <ul class="pl-4">
-    <li>
-      if one of the current audited entity operation <b>fails</b>, audit data is <b>still persisted</b> 
-      to the secondary database which is very bad (reference to entity data which doesn't exist 
-      in the main database or reference to entity data in main database which doesn't reflect changes 
-      logged in audit data)
-    </li>
-    <li>
-      if one of the current audited entity operation <b>succeed</b>, audit data persistence in the 
-      secondary database <b>still can fail</b> which is bad but can be acceptable in some use cases 
-      (depending on how critical audit data is for your application/business, missing audit data 
-      could be acceptable)
-    </li>
-  </ul>
-</div>
+This provides **transactional integrity**: audit entries are part of the same database transaction as entity changes.
 
+## 📝 Table Naming
 
-## Storage mapper
-<span class="tag mt-0 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium leading-4 bg-blue-100 text-blue-700">doctrine-provider</span>
+Audit tables are named: `{prefix}{entity_table}{suffix}`
 
-A storage mapper is a `callable` that routes audit events to storage services. 
-It's up to the storage mapper to choose which storage service should be used to persist audits logs for a given entity.
+| Option         | Default    | Example (entity: `users`) |
+|----------------|------------|---------------------------|
+| `table_prefix` | `''`       | → `users_audit`           |
+| `table_suffix` | `'_audit'` | → `users_audit`           |            
 
-A storage mapper expects 2 parameters as arguments and returns an object implementing `StorageServiceInterface`
-
-- an entity FQCN (`string`)
-- the list of registered storage services indexed by name (`array`)
-
-### Example
-
-Below is an example of a storage mapper `MyStorageMapper` routing audit logs from `MyEntity1` and `MyEntity2` 
-to a particular storage service, all other audit logs are persisted by another storage service.
-
-```php
-<?php
-namespace App;
-
-use App\Entity\MyEntity1; 
-use App\Entity\MyEntity2; 
-use App\Entity\MyEntity3; 
-use DH\Auditor\Provider\Service\StorageServiceInterface;
-
-/**
- * MyStorageMapper is an invokable service
- */
-class MyStorageMapper
-{
-    // the service expects 2 parameters and should return an object 
-    // implementing StorageServiceInterface
-    public function __invoke(string $entity, array $storageServices): StorageServiceInterface {
-        return \in_array($entity, [MyEntity1::class, MyEntity2::class], true) ? $storageServices['db1'] : $storageServices['db2'];
-    }
-}
+```yaml
+dh_auditor:
+    providers:
+        doctrine:
+            table_prefix: 'audit_'
+            table_suffix: ''
 ```
+
+Result: `users` → `audit_users`
+
+## 🗃️ Multi-Database Setup
+
+Store audits in a separate database from your entities.
+
+> [!CAUTION]
+> **Warning: Atomicity**
+> 
+> Using separate databases **breaks transactional integrity**:
+> - Entity changes and audits are in **different transactions**
+> - If entity operation succeeds but audit fails → missing audit
+> - If entity operation fails but audit succeeds → orphan audit
+> 
+> Only use this when the trade-offs are acceptable.
+
+### Configuration
+
+#### 1️⃣ Configure Multiple Entity Managers
+
+```yaml
+# config/packages/doctrine.yaml
+doctrine:
+    dbal:
+        default_connection: default
+        connections:
+            default:
+                url: '%env(DATABASE_URL)%'
+            audit:
+                url: '%env(AUDIT_DATABASE_URL)%'
+    
+    orm:
+        default_entity_manager: default
+        entity_managers:
+            default:
+                connection: default
+                mappings:
+                    App:
+                        type: attribute
+                        dir: '%kernel.project_dir%/src/Entity'
+                        prefix: 'App\Entity'
+            audit:
+                connection: audit
+                # No mappings needed - audit tables are created dynamically
+```
+
+#### 2️⃣ Configure Storage Services
 
 ```yaml
 # config/packages/dh_auditor.yaml
 dh_auditor:
     providers:
         doctrine:
-            # Invokable service that maps audit events to storage services
-            storage_mapper: my_storage_mapper.map_storage
+            storage_services:
+                - '@doctrine.orm.audit_entity_manager'
+            
+            auditing_services:
+                - '@doctrine.orm.default_entity_manager'
+            
+            entities:
+                App\Entity\User: ~
 ```
+
+### 🗺️ Storage Mapper
+
+When using multiple storage services, a storage mapper routes audits to the correct database.
+
+#### Creating a Storage Mapper
+
+```php
+<?php
+
+namespace App\Audit;
+
+use DH\Auditor\Provider\Service\StorageServiceInterface;
+
+class StorageMapper
+{
+    /**
+     * @param string $entity The audited entity FQCN
+     * @param array<string, StorageServiceInterface> $storageServices
+     */
+    public function __invoke(string $entity, array $storageServices): StorageServiceInterface
+    {
+        // All audits go to the audit database
+        return $storageServices['dh_auditor.provider.doctrine.storage_services.doctrine.orm.audit_entity_manager'];
+    }
+}
+```
+
+#### Routing by Entity
+
+```php
+<?php
+
+namespace App\Audit;
+
+use App\Entity\HighSecurityEntity;
+use App\Entity\SensitiveData;
+use DH\Auditor\Provider\Service\StorageServiceInterface;
+
+class StorageMapper
+{
+    private const SECURE_ENTITIES = [
+        HighSecurityEntity::class,
+        SensitiveData::class,
+    ];
+
+    public function __invoke(string $entity, array $storageServices): StorageServiceInterface
+    {
+        if (in_array($entity, self::SECURE_ENTITIES, true)) {
+            return $storageServices['dh_auditor.provider.doctrine.storage_services.doctrine.orm.secure_entity_manager'];
+        }
+
+        return $storageServices['dh_auditor.provider.doctrine.storage_services.doctrine.orm.default_entity_manager'];
+    }
+}
+```
+
+#### Configuration
+
+```yaml
+# config/packages/dh_auditor.yaml
+dh_auditor:
+    providers:
+        doctrine:
+            storage_services:
+                - '@doctrine.orm.default_entity_manager'
+                - '@doctrine.orm.secure_entity_manager'
+            
+            storage_mapper: 'App\Audit\StorageMapper'
+```
+
+## 🔧 Schema Management
+
+### Single Database
+
+Use standard Doctrine tools:
+
+```bash
+# With migrations (recommended)
+bin/console doctrine:migrations:diff
+bin/console doctrine:migrations:migrate
+
+# Or schema tool
+bin/console doctrine:schema:update --force
+```
+
+### Multiple Databases
+
+Use the audit schema command:
+
+```bash
+# Preview changes
+bin/console audit:schema:update --dump-sql
+
+# Apply changes
+bin/console audit:schema:update --force
+```
+
+This command handles all configured storage services.
+
+## 🏗️ Architecture Comparison
+
+### Single Database (Recommended)
+
+```mermaid
+flowchart TB
+    subgraph DB["Main Database"]
+        direction TB
+        subgraph ENTITIES["Entity Tables"]
+            users
+            posts
+            comments
+        end
+        subgraph AUDITS["Audit Tables"]
+            users_audit
+            posts_audit
+            comments_audit
+        end
+    end
+    
+    ENTITIES -.->|Same transaction| AUDITS
+    
+    style DB fill:#e8f5e9
+```
+
+✅ **Same transaction = Data integrity**
+
+### Separate Database
+
+```mermaid
+flowchart LR
+    subgraph MAIN["Main Database"]
+        direction TB
+        users
+        posts
+    end
+    
+    subgraph AUDIT["Audit Database"]
+        direction TB
+        users_audit
+        posts_audit
+    end
+    
+    MAIN -.->|Different transactions| AUDIT
+    
+    style MAIN fill:#e3f2fd
+    style AUDIT fill:#fff3e0
+```
+
+⚠️ **Different transactions = Possible inconsistency**
+
+---
+
+## 🚀 Next Steps
+
+- ⚙️ [Configuration Reference](index.md) - All options
+- ⬆️ [Upgrade Guide](../upgrade/index.md) - Managing audit tables
+- 🔧 [Customization](../customization/index.md) - Custom providers
