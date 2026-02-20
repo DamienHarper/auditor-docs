@@ -135,8 +135,8 @@ const config = {
       {
         redirects: [
           // ── Entrées principales ───────────────────────────────────────────
-          { from: ['/docs/auditor/index.html', '/docs/auditor/index', '/docs/auditor/'], to: '/auditor/intro' },
-          { from: ['/docs/auditor-bundle/index.html', '/docs/auditor-bundle/index', '/docs/auditor-bundle/'], to: '/auditor-bundle/intro' },
+          { from: ['/docs/auditor/index.html', '/docs/auditor/index', '/docs/auditor/'], to: '/auditor/' },
+          { from: ['/docs/auditor-bundle/index.html', '/docs/auditor-bundle/index', '/docs/auditor-bundle/'], to: '/auditor-bundle/' },
 
           // ── auditor ───────────────────────────────────────────────────────
           { from: ['/docs/auditor/installation.html', '/docs/auditor/installation'], to: '/auditor/getting-started/installation' },
@@ -161,11 +161,11 @@ const config = {
           { from: ['/docs/auditor-bundle/customization/user-provider.html', '/docs/auditor-bundle/customization/user-provider'], to: '/auditor-bundle/customization/user-provider' },
           // Usage — pages renommées/déplacées en 7.x, on redirige vers la page d'accueil
           { from: ['/docs/auditor-bundle/usage/viewer.html', '/docs/auditor-bundle/usage/viewer'], to: '/auditor-bundle/viewer' },
-          { from: ['/docs/auditor-bundle/usage/querying.html', '/docs/auditor-bundle/usage/querying'], to: '/auditor-bundle/intro' },
-          { from: ['/docs/auditor-bundle/usage/events.html', '/docs/auditor-bundle/usage/events'], to: '/auditor-bundle/intro' },
-          { from: ['/docs/auditor-bundle/usage/enabling-disabling-at-runtime.html', '/docs/auditor-bundle/usage/enabling-disabling-at-runtime'], to: '/auditor-bundle/intro' },
-          { from: ['/docs/auditor-bundle/usage/maintenance.html', '/docs/auditor-bundle/usage/maintenance'], to: '/auditor-bundle/intro' },
-          { from: ['/docs/auditor-bundle/usage/schema-manipulation.html', '/docs/auditor-bundle/usage/schema-manipulation'], to: '/auditor-bundle/intro' },
+          { from: ['/docs/auditor-bundle/usage/querying.html', '/docs/auditor-bundle/usage/querying'], to: '/auditor-bundle/' },
+          { from: ['/docs/auditor-bundle/usage/events.html', '/docs/auditor-bundle/usage/events'], to: '/auditor-bundle/' },
+          { from: ['/docs/auditor-bundle/usage/enabling-disabling-at-runtime.html', '/docs/auditor-bundle/usage/enabling-disabling-at-runtime'], to: '/auditor-bundle/' },
+          { from: ['/docs/auditor-bundle/usage/maintenance.html', '/docs/auditor-bundle/usage/maintenance'], to: '/auditor-bundle/' },
+          { from: ['/docs/auditor-bundle/usage/schema-manipulation.html', '/docs/auditor-bundle/usage/schema-manipulation'], to: '/auditor-bundle/' },
         ],
       },
     ],

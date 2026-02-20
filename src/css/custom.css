@@ -333,7 +333,8 @@ button[class*='copyButton']:hover {
 /* ---- Tableaux ---- */
 .markdown table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.9rem;
   margin: 1.25rem 0;
   border-radius: 8px;
@@ -345,16 +346,29 @@ button[class*='copyButton']:hover {
 }
 
 .markdown thead tr {
-  background: linear-gradient(90deg, #076f61, #0a9e8a);
+  background: linear-gradient(135deg, #d0f5ef 0%, #e8faf6 50%, #f0fdfb 100%);
 }
 .markdown thead th {
-  color: rgba(255,255,255,.92) !important;
-  font-weight: 600;
+  color: #076f61 !important;
+  font-weight: 700;
   font-size: 0.8rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   padding: 0.7rem 1rem;
   border: none !important;
+}
+/* Arrondi sur les cellules th (border-collapse:separate requis) */
+.markdown thead th:first-child { border-radius: 8px 0 0 0; }
+.markdown thead th:last-child  { border-radius: 0 8px 0 0; }
+/* Arrondi bas de table */
+.markdown tbody tr:last-child td:first-child { border-radius: 0 0 0 8px; }
+.markdown tbody tr:last-child td:last-child  { border-radius: 0 0 8px 0; }
+
+[data-theme='dark'] .markdown thead tr {
+  background: linear-gradient(135deg, #0d3d36 0%, #115e54 50%, #16736a 100%);
+}
+[data-theme='dark'] .markdown thead th {
+  color: #a7f3e8 !important;
 }
 
 .markdown tbody tr {
@@ -362,15 +376,16 @@ button[class*='copyButton']:hover {
   transition: background .12s;
 }
 .markdown tbody tr:hover { background: rgba(14,186,161,.04); }
-.markdown tbody tr:last-child { border-bottom: none; }
-[data-theme='dark'] .markdown tbody tr { border-bottom-color: rgba(14,186,161,.07); }
-[data-theme='dark'] .markdown tbody tr:hover { background: rgba(14,186,161,.06); }
-
+.markdown tbody tr:last-child td { border-bottom: none; }
 .markdown tbody td {
   padding: 0.65rem 1rem;
   border: none !important;
+  border-bottom: 1px solid rgba(14,186,161,.08) !important;
   vertical-align: top;
 }
+.markdown tbody tr:last-child td { border-bottom: none !important; }
+[data-theme='dark'] .markdown tbody td { border-bottom-color: rgba(14,186,161,.07) !important; }
+[data-theme='dark'] .markdown tbody tr:hover { background: rgba(14,186,161,.06); }
 
 /* ---- Listes ---- */
 .markdown ul, .markdown ol { padding-left: 1.5rem; }

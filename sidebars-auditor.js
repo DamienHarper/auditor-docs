@@ -4,7 +4,7 @@ const sidebars = {
   auditorSidebar: [
     {
       type: 'doc',
-      id: 'intro',
+      id: 'index',
       label: 'Introduction',
     },
     {
