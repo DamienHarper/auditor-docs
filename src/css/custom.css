@@ -585,156 +585,69 @@ button[class*='copyButton']:hover {
 }
 
 /* ============================================================
-   RECHERCHE — dropdown autocomplete
+   RECHERCHE — @easyops-cn/docusaurus-search-local
    ============================================================ */
 
-/* ---- Largeur & scroll desktop (>600px) ---- */
-@media (min-width: 601px) {
-  .algolia-autocomplete .ds-dropdown-menu {
-    min-width: 560px !important;
-    max-width: 720px !important;
-    /* Scroll quand les résultats dépassent le viewport */
-    max-height: calc(100vh - 120px) !important;
-    overflow-y: auto !important;
-  }
+/* ---- Dropdown panel ---- */
+.dropdownMenu_node_modules-\@easyops-cn-docusaurus-search-local-dist-client-theme-SearchBar-SearchBar-module,
+[class*='dropdownMenu'] {
+  border-radius: 12px !important;
+  box-shadow: 0 12px 32px rgba(10,109,130,.18), 0 2px 8px rgba(0,0,0,.08) !important;
+  border: 1px solid rgba(14,186,161,.2) !important;
+  overflow: hidden;
+  /* Scroll si les résultats dépassent le viewport */
+  max-height: calc(100vh - 120px) !important;
+  overflow-y: auto !important;
+  /* Largeur */
+  min-width: 560px !important;
+  max-width: 720px !important;
+}
+[data-theme='dark'] [class*='dropdownMenu'] {
+  background: #161b22 !important;
+  border-color: rgba(14,186,161,.18) !important;
+  box-shadow: 0 12px 32px rgba(0,0,0,.5) !important;
 }
 
-/* ---- Mobile (≤600px) : déjà en position fixed, juste affiner la largeur ---- */
 @media (max-width: 600px) {
-  .algolia-autocomplete .ds-dropdown-menu {
+  [class*='dropdownMenu'] {
     min-width: 0 !important;
     max-width: calc(100vw - 1.5rem) !important;
     max-height: calc(100vh - 80px) !important;
-    overflow-y: auto !important;
   }
 }
 
-/* Panel */
-.algolia-autocomplete .ds-dropdown-menu [class^='ds-dataset-'] {
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(10,109,130,.18), 0 2px 8px rgba(0,0,0,.08);
-  border: 1px solid rgba(14,186,161,.2);
-  overflow: hidden;
-}
-[data-theme='dark'] .algolia-autocomplete .ds-dropdown-menu [class^='ds-dataset-'] {
-  background: #161b22;
-  border-color: rgba(14,186,161,.18);
-  box-shadow: 0 12px 32px rgba(0,0,0,.5);
-}
-
-/* Flèche du dropdown */
-.algolia-autocomplete .ds-dropdown-menu::before {
-  background: #076f61 !important;
-  border-top-color: #076f61 !important;
-  border-right-color: #076f61 !important;
-}
-
-/* En-tête de catégorie */
-.algolia-autocomplete .algolia-docsearch-suggestion--category-header {
-  background: linear-gradient(90deg, #076f61 0%, #0a9e8a 100%) !important;
-  color: rgba(255,255,255,.92) !important;
-  font-size: 0.7rem;
+/* ---- En-tête de section ---- */
+[class*='searchResultItemHeading'] {
   font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 7px 14px;
+  font-size: 0.875rem;
+  color: var(--ifm-heading-color) !important;
 }
 
-/* Wrapper item */
-.algolia-autocomplete .algolia-docsearch-suggestion--wrapper {
-  padding: 6px 0 0 !important;
-}
-[data-theme='dark'] .algolia-autocomplete .algolia-docsearch-suggestion--wrapper {
-  background: #161b22 !important;
-}
-
-/* Survol item */
-.algolia-autocomplete .ds-cursor .algolia-docsearch-suggestion--wrapper {
+/* ---- Item surligné (hover/actif) ---- */
+[class*='searchResultItem']:hover,
+[class*='searchResultItem'][class*='active'] {
   background: rgba(14,186,161,.08) !important;
   box-shadow: inset -3px 0 0 var(--ifm-color-primary) !important;
 }
-[data-theme='dark'] .algolia-autocomplete .ds-cursor .algolia-docsearch-suggestion--wrapper {
+[data-theme='dark'] [class*='searchResultItem']:hover,
+[data-theme='dark'] [class*='searchResultItem'][class*='active'] {
   background: rgba(14,186,161,.12) !important;
 }
 
-/* Titre du résultat */
-.algolia-autocomplete .algolia-docsearch-suggestion--title {
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: var(--ifm-heading-color) !important;
-  margin-bottom: 2px;
-}
-[data-theme='dark'] .algolia-autocomplete .algolia-docsearch-suggestion--title {
-  color: #f1f5f9 !important;
-}
-
-/* Extrait */
-.algolia-autocomplete .algolia-docsearch-suggestion--text {
-  font-size: 0.8rem;
-  color: var(--ifm-color-emphasis-600) !important;
-  line-height: 1.45;
-}
-[data-theme='dark'] .algolia-autocomplete .algolia-docsearch-suggestion--text {
-  color: #64748b !important;
-}
-
-/* Terme surligné */
-.algolia-autocomplete .algolia-docsearch-suggestion--highlight {
-  background: rgba(14,186,161,.2) !important;
+/* ---- Terme surligné ---- */
+[class*='searchResultItem'] mark,
+[class*='dropdownMenu'] mark {
+  background: rgba(14,186,161,.22) !important;
   color: #076f61 !important;
   border-radius: 3px;
   padding: 0 3px;
+  font-weight: 600;
 }
-[data-theme='dark'] .algolia-autocomplete .algolia-docsearch-suggestion--highlight {
-  color: #0ebaa1 !important;
-}
-.algolia-autocomplete .algolia-docsearch-suggestion--text
-  .algolia-docsearch-suggestion--highlight {
-  background: transparent !important;
-  box-shadow: inset 0 -2px 0 rgba(14,186,161,.6) !important;
-  color: inherit !important;
-  padding: 0 !important;
+[data-theme='dark'] [class*='dropdownMenu'] mark {
+  color: #47d6c0 !important;
 }
 
-/* Sous-catégorie — autoriser le retour à la ligne, pas de troncature */
-.algolia-autocomplete .algolia-docsearch-suggestion--subcategory-column {
-  color: var(--ifm-color-primary-darkest);
-  font-size: 0.78rem;
-  font-weight: 500;
-  overflow: visible !important;
-  white-space: normal !important;
-  word-break: break-word !important;
-}
-[data-theme='dark'] .algolia-autocomplete .algolia-docsearch-suggestion--subcategory-column {
-  color: var(--ifm-color-primary-lighter);
-}
-
-/* Badge de version masqué : bug docusaurus-lunr-search avec plusieurs instances
-   plugin-content-docs — les versions d'auditor (4.x) sont appliquées à tort
-   aux résultats d'auditor-bundle (7.x) */
-.algolia-docsearch-suggestion--version {
-  display: none !important;
-}
-
-/* code inline dans résultats */
-.algolia-autocomplete .algolia-docsearch-suggestion code {
-  background: rgba(14,186,161,.1) !important;
-  border: 1px solid rgba(14,186,161,.2) !important;
-  color: #076f61 !important;
-  font-size: 0.8em;
-  border-radius: 3px;
-  padding: 1px 4px;
-}
-[data-theme='dark'] .algolia-autocomplete .algolia-docsearch-suggestion code {
-  color: #0ebaa1 !important;
-}
-
-/* Séparateur entre items */
-.algolia-autocomplete .algolia-docsearch-suggestion {
-  border-bottom-color: rgba(14,186,161,.08) !important;
-}
-
-/* Terme surligné sur la page cible après navigation */
+/* ---- Terme surligné sur la page cible ---- */
 mark {
   background: rgba(14,186,161,.22);
   color: #076f61;

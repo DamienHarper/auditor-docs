@@ -38,6 +38,28 @@ const config = {
   themes: [
     // Support des diagrammes Mermaid
     '@docusaurus/theme-mermaid',
+    // Recherche locale — supporte nativement les multi-instances plugin-content-docs
+    [
+      '@easyops-cn/docusaurus-search-local',
+      /** @type {import("@easyops-cn/docusaurus-search-local").PluginOptions} */
+      ({
+        hashed: true,
+        language: 'en',
+        highlightSearchTermsOnTargetPage: true,
+        explicitSearchResultPath: true,
+        searchResultLimits: 10,
+        // Deux instances plugin-content-docs : auditor et auditor-bundle
+        docsRouteBasePath: ['auditor', 'auditor-bundle'],
+        docsDir: ['docs/auditor', 'docs/auditor-bundle'],
+        // Version préférée tirée du plugin auditor (pour le sélecteur de version)
+        docsPluginIdForPreferredVersion: 'auditor',
+        // Exclure les anciennes versions de l'index
+        ignoreFiles: [
+          /auditor\/3\.x/,
+          /auditor-bundle\/6\.x/,
+        ],
+      }),
+    ],
   ],
 
   presets: [
@@ -55,21 +77,7 @@ const config = {
   ],
 
   plugins: [
-    // Recherche locale (offline, pas besoin de clé Algolia)
-    [
-      'docusaurus-lunr-search',
-      {
-        languages: ['en'],
-        highlightResult: true,
-        maxHits: 10,
-        // N'indexer que les versions courantes (4.x et 7.x)
-        // Les anciennes versions (3.x, 6.x, ...) polluent les résultats
-        excludeRoutes: [
-          '/auditor-docs/auditor/3.x/**',
-          '/auditor-docs/auditor-bundle/6.x/**',
-        ],
-      },
-    ],
+    // Redirections depuis les anciennes URLs Couscous
     [
       '@docusaurus/plugin-content-docs',
       {
