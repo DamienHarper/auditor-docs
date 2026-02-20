@@ -62,6 +62,12 @@ const config = {
         languages: ['en'],
         highlightResult: true,
         maxHits: 10,
+        // N'indexer que les versions courantes (4.x et 7.x)
+        // Les anciennes versions (3.x, 6.x, ...) polluent les résultats
+        excludeRoutes: [
+          '/auditor-docs/auditor/3.x/**',
+          '/auditor-docs/auditor-bundle/6.x/**',
+        ],
       },
     ],
     [
