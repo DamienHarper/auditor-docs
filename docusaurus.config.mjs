@@ -110,6 +110,47 @@ const config = {
         },
       },
     ],
+    // Redirections depuis les anciennes URLs Couscous (format /docs/auditor/xxx.html)
+    // Doit être en dernier pour que les pages cibles soient déjà générées
+    [
+      '@docusaurus/plugin-client-redirects',
+      {
+        redirects: [
+          // ── Entrées principales ───────────────────────────────────────────
+          { from: ['/docs/auditor/index.html', '/docs/auditor/index', '/docs/auditor/'], to: '/auditor/intro' },
+          { from: ['/docs/auditor-bundle/index.html', '/docs/auditor-bundle/index', '/docs/auditor-bundle/'], to: '/auditor-bundle/intro' },
+
+          // ── auditor ───────────────────────────────────────────────────────
+          { from: ['/docs/auditor/installation.html', '/docs/auditor/installation'], to: '/auditor/getting-started/installation' },
+          { from: ['/docs/auditor/contributing.html', '/docs/auditor/contributing'], to: '/auditor/contributing' },
+          { from: ['/docs/auditor/release-notes.html', '/docs/auditor/release-notes'], to: '/auditor/upgrade' },
+          { from: ['/docs/auditor/upgrading.html', '/docs/auditor/upgrading'], to: '/auditor/upgrade' },
+          { from: ['/docs/auditor/providers.html', '/docs/auditor/providers'], to: '/auditor/providers/doctrine' },
+
+          // ── auditor-bundle ────────────────────────────────────────────────
+          { from: ['/docs/auditor-bundle/installation.html', '/docs/auditor-bundle/installation'], to: '/auditor-bundle/getting-started/installation' },
+          { from: ['/docs/auditor-bundle/contributing.html', '/docs/auditor-bundle/contributing'], to: '/auditor-bundle/contributing' },
+          { from: ['/docs/auditor-bundle/release-notes.html', '/docs/auditor-bundle/release-notes'], to: '/auditor-bundle/upgrade' },
+          { from: ['/docs/auditor-bundle/upgrading.html', '/docs/auditor-bundle/upgrading'], to: '/auditor-bundle/upgrade' },
+          // Configuration
+          { from: ['/docs/auditor-bundle/configuration/general.html', '/docs/auditor-bundle/configuration/general'], to: '/auditor-bundle/configuration' },
+          { from: ['/docs/auditor-bundle/configuration/auditing.html', '/docs/auditor-bundle/configuration/auditing'], to: '/auditor-bundle/configuration/attributes' },
+          { from: ['/docs/auditor-bundle/configuration/storage.html', '/docs/auditor-bundle/configuration/storage'], to: '/auditor-bundle/configuration/storage' },
+          { from: ['/docs/auditor-bundle/configuration/reference.html', '/docs/auditor-bundle/configuration/reference'], to: '/auditor-bundle/configuration' },
+          // Customization
+          { from: ['/docs/auditor-bundle/customization/role-checker.html', '/docs/auditor-bundle/customization/role-checker'], to: '/auditor-bundle/customization/role-checker' },
+          { from: ['/docs/auditor-bundle/customization/security-provider.html', '/docs/auditor-bundle/customization/security-provider'], to: '/auditor-bundle/customization/security-provider' },
+          { from: ['/docs/auditor-bundle/customization/user-provider.html', '/docs/auditor-bundle/customization/user-provider'], to: '/auditor-bundle/customization/user-provider' },
+          // Usage — pages renommées/déplacées en 7.x, on redirige vers la page d'accueil
+          { from: ['/docs/auditor-bundle/usage/viewer.html', '/docs/auditor-bundle/usage/viewer'], to: '/auditor-bundle/viewer' },
+          { from: ['/docs/auditor-bundle/usage/querying.html', '/docs/auditor-bundle/usage/querying'], to: '/auditor-bundle/intro' },
+          { from: ['/docs/auditor-bundle/usage/events.html', '/docs/auditor-bundle/usage/events'], to: '/auditor-bundle/intro' },
+          { from: ['/docs/auditor-bundle/usage/enabling-disabling-at-runtime.html', '/docs/auditor-bundle/usage/enabling-disabling-at-runtime'], to: '/auditor-bundle/intro' },
+          { from: ['/docs/auditor-bundle/usage/maintenance.html', '/docs/auditor-bundle/usage/maintenance'], to: '/auditor-bundle/intro' },
+          { from: ['/docs/auditor-bundle/usage/schema-manipulation.html', '/docs/auditor-bundle/usage/schema-manipulation'], to: '/auditor-bundle/intro' },
+        ],
+      },
+    ],
   ],
 
   themeConfig:
