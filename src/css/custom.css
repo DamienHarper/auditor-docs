@@ -588,6 +588,27 @@ button[class*='copyButton']:hover {
    RECHERCHE — dropdown autocomplete
    ============================================================ */
 
+/* ---- Largeur & scroll desktop (>600px) ---- */
+@media (min-width: 601px) {
+  .algolia-autocomplete .ds-dropdown-menu {
+    min-width: 560px !important;
+    max-width: 720px !important;
+    /* Scroll quand les résultats dépassent le viewport */
+    max-height: calc(100vh - 120px) !important;
+    overflow-y: auto !important;
+  }
+}
+
+/* ---- Mobile (≤600px) : déjà en position fixed, juste affiner la largeur ---- */
+@media (max-width: 600px) {
+  .algolia-autocomplete .ds-dropdown-menu {
+    min-width: 0 !important;
+    max-width: calc(100vw - 1.5rem) !important;
+    max-height: calc(100vh - 80px) !important;
+    overflow-y: auto !important;
+  }
+}
+
 /* Panel */
 .algolia-autocomplete .ds-dropdown-menu [class^='ds-dataset-'] {
   border-radius: 12px;
@@ -675,14 +696,24 @@ button[class*='copyButton']:hover {
   padding: 0 !important;
 }
 
-/* Sous-catégorie */
+/* Sous-catégorie — autoriser le retour à la ligne, pas de troncature */
 .algolia-autocomplete .algolia-docsearch-suggestion--subcategory-column {
   color: var(--ifm-color-primary-darkest);
   font-size: 0.78rem;
   font-weight: 500;
+  overflow: visible !important;
+  white-space: normal !important;
+  word-break: break-word !important;
 }
 [data-theme='dark'] .algolia-autocomplete .algolia-docsearch-suggestion--subcategory-column {
   color: var(--ifm-color-primary-lighter);
+}
+
+/* Badge de version masqué : bug docusaurus-lunr-search avec plusieurs instances
+   plugin-content-docs — les versions d'auditor (4.x) sont appliquées à tort
+   aux résultats d'auditor-bundle (7.x) */
+.algolia-docsearch-suggestion--version {
+  display: none !important;
 }
 
 /* code inline dans résultats */
