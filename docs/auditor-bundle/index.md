@@ -1,8 +1,3 @@
----
-id: intro
-title: Introduction
-slug: /intro
----
 # auditor-bundle
 
 > **Symfony integration for the auditor library**
