@@ -588,6 +588,17 @@ button[class*='copyButton']:hover {
    RECHERCHE — @easyops-cn/docusaurus-search-local
    ============================================================ */
 
+/* Champ de recherche mobile : toujours visible, pas de réduction à 2rem */
+@media (max-width: 576px) {
+  .navbar__search-input {
+    width: 8rem !important;
+    min-width: 8rem !important;
+  }
+  .navbar__search-input:focus {
+    width: 12rem !important;
+  }
+}
+
 /* ---- Dropdown panel ---- */
 .dropdownMenu_node_modules-\@easyops-cn-docusaurus-search-local-dist-client-theme-SearchBar-SearchBar-module,
 [class*='dropdownMenu'] {
