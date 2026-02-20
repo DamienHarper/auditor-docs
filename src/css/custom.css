@@ -566,6 +566,24 @@ button[class*='copyButton']:hover {
 .footer__link-item:hover { color: #ffffff; }
 .footer__copyright { color: rgba(255,255,255,.5); font-size: 0.8rem; margin-top: 2rem; }
 
+/* ---- Dark mode footer ---- */
+[data-theme='dark'] .footer {
+  background: linear-gradient(135deg, #020f0d 0%, #051f1a 40%, #0a3d34 100%);
+  border-top: 1px solid rgba(14, 186, 161, 0.15);
+}
+[data-theme='dark'] .footer__title {
+  color: #0ebaa1;
+}
+[data-theme='dark'] .footer__link-item {
+  color: rgba(148, 163, 184, 0.8);
+}
+[data-theme='dark'] .footer__link-item:hover {
+  color: #47d6c0;
+}
+[data-theme='dark'] .footer__copyright {
+  color: rgba(100, 116, 139, 0.7);
+}
+
 /* ============================================================
    RECHERCHE — dropdown autocomplete
    ============================================================ */

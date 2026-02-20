@@ -156,6 +156,11 @@ const config = {
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
+      colorMode: {
+        defaultMode: 'light',
+        disableSwitch: false,
+        respectPrefersColorScheme: true, // mode auto : suit le réglage système
+      },
       navbar: {
         title: 'auditor',
         logo: {
