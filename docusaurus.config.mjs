@@ -23,11 +23,11 @@ const config = {
   projectName: 'auditor-docs',
   trailingSlash: false,
   onBrokenLinks: 'warn',
-  onBrokenMarkdownLinks: 'warn',
-
-  // Activer le support Mermaid dans les blocs de code
   markdown: {
     mermaid: true,
+    hooks: {
+      onBrokenMarkdownLinks: 'warn',
+    },
   },
 
   i18n: {
