@@ -32,7 +32,7 @@ function HomepageHeader() {
           with first-class Symfony integration.
         </p>
         <div className={styles.heroCta}>
-          <Link className={styles.ctaPrimary} to="/auditor/intro">
+          <Link className={styles.ctaPrimary} to="/auditor/getting-started/installation">
             Get started
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
           </Link>
@@ -54,7 +54,7 @@ const projects = [
       <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/><path d="m9 9.5 2 2 4-4"/></svg>
     ),
     description: 'A standalone PHP library providing an easy and standardized way to collect audit logs. Supports Doctrine ORM, multiple databases, and flexible storage providers.',
-    docsHref: '/auditor/intro',
+    docsHref: '/auditor/',
     githubHref: 'https://github.com/DamienHarper/auditor',
     features: ['Doctrine ORM', 'Multi-database', 'Custom providers'],
   },
@@ -65,7 +65,7 @@ const projects = [
       <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="7.5 4.21 12 6.81 16.5 4.21"/><polyline points="7.5 19.79 7.5 14.6 3 12"/><polyline points="21 12 16.5 14.6 16.5 19.79"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
     ),
     description: 'A Symfony bundle that seamlessly integrates the auditor library. Auto-wiring, YAML configuration, a built-in audit log viewer and runtime controls.',
-    docsHref: '/auditor-bundle/intro',
+    docsHref: '/auditor-bundle/',
     githubHref: 'https://github.com/DamienHarper/auditor-bundle',
     features: ['Symfony integration', 'Audit viewer', 'Runtime controls'],
   },
