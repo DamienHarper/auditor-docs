@@ -1,9 +1,5 @@
 # Querying Audits
 
-> [!NOTE]
-> This page documents the querying API provided by the DoctrineProvider, which is now distributed as a separate package: [`damienharper/auditor-doctrine-provider`](https://github.com/DamienHarper/auditor-doctrine-provider).
-> For standalone usage, see the [auditor-doctrine-provider docs](https://github.com/DamienHarper/auditor-doctrine-provider/tree/main/docs/providers/doctrine/).
-
 > **Read and query audit entries with the powerful Reader and Query APIs**
 
 This guide covers how to read and query audit entries using the Reader and Query APIs.

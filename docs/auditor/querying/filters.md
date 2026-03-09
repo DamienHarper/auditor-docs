@@ -1,9 +1,5 @@
 # Filters Reference
 
-> [!NOTE]
-> This page documents the querying API provided by the DoctrineProvider, which is now distributed as a separate package: [`damienharper/auditor-doctrine-provider`](https://github.com/DamienHarper/auditor-doctrine-provider).
-> For standalone usage, see the [auditor-doctrine-provider docs](https://github.com/DamienHarper/auditor-doctrine-provider/tree/main/docs/providers/doctrine/).
-
 > **Narrow down audit query results with powerful filters**
 
 Filters allow you to narrow down audit query results. This page documents all available filter types.

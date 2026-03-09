@@ -1,8 +1,5 @@
 # DoctrineProvider Configuration
 
-> [!NOTE]
-> This page documents the DoctrineProvider as used within `auditor-bundle`. For standalone usage, see the [auditor-doctrine-provider docs](https://github.com/DamienHarper/auditor-doctrine-provider/tree/main/docs/providers/doctrine/).
-
 > **All configuration options for the DoctrineProvider**
 
 This page covers all configuration options for the DoctrineProvider.

@@ -1,8 +1,5 @@
 # Schema Management
 
-> [!NOTE]
-> This page documents the DoctrineProvider as used within `auditor-bundle`. For standalone usage, see the [auditor-doctrine-provider docs](https://github.com/DamienHarper/auditor-doctrine-provider/tree/main/docs/providers/doctrine/).
-
 > **Create and manage audit tables in your database**
 
 This guide covers how to create and manage audit tables in your database.
