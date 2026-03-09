@@ -25,7 +25,21 @@ This guide covers the installation of the auditor library using Composer.
 
 ## 📦 Install via Composer
 
-Open a terminal in your project directory and run:
+`damienharper/auditor` is the core library. Providers are distributed as separate packages and must be installed alongside it.
+
+### Core + Doctrine ORM provider
+
+```bash
+composer require damienharper/auditor damienharper/auditor-doctrine-provider
+```
+
+### Core + Eloquent ORM provider
+
+```bash
+composer require damienharper/auditor damienharper/auditor-eloquent-provider
+```
+
+### Core only (bring your own provider)
 
 ```bash
 composer require damienharper/auditor
@@ -39,7 +53,7 @@ To install a specific version:
 
 ```bash
 # Install the latest 4.x version
-composer require damienharper/auditor:^4.0
+composer require damienharper/auditor:^4.0 damienharper/auditor-doctrine-provider:^4.0
 
 # Install the latest 3.x version
 composer require damienharper/auditor:^3.0
@@ -69,7 +83,7 @@ See the [Quick Start Guide](quick-start.md) for a complete setup example.
 
 ## 📚 Dependencies
 
-The library automatically installs the following dependencies:
+When using `damienharper/auditor-doctrine-provider`, the following dependencies are pulled in automatically:
 
 | Package                      | Purpose                        |
 |------------------------------|--------------------------------|

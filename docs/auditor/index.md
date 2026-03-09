@@ -32,7 +32,7 @@ The library is architected around two core concepts:
 1. **Auditing Services** - Responsible for collecting audit events when changes occur
 2. **Storage Services** - Responsible for persisting audit traces to the database
 
-These services are provided by **Providers**. The library ships with a default provider for Doctrine ORM.
+These services are provided by **Providers**. Providers for Doctrine ORM and Eloquent ORM are available as separate packages.
 
 ```mermaid
 flowchart TD
@@ -50,7 +50,7 @@ flowchart TD
             roleChecker
         end
 
-        subgraph PROVIDER["DoctrineProvider"]
+        subgraph PROVIDER["DoctrineProvider (damienharper/auditor-doctrine-provider)"]
             direction TB
 
             subgraph AUDITING["AuditingService(s)"]
@@ -126,6 +126,13 @@ The DoctrineProvider supports the following RDBMS:
 | 3.x     | Active support             | PHP >= 8.2, Symfony >= 5.4                                            |
 | 2.x     | End of Life                | PHP >= 7.4, Symfony >= 4.4                                            |
 | 1.x     | End of Life                | PHP >= 7.2, Symfony >= 3.4                                            |
+
+## Available Providers
+
+| Package | ORM | Description |
+|---------|-----|-------------|
+| [`damienharper/auditor-doctrine-provider`](https://github.com/DamienHarper/auditor-doctrine-provider) | Doctrine ORM | Tracks entity changes via Doctrine events |
+| [`damienharper/auditor-eloquent-provider`](https://github.com/DamienHarper/auditor-eloquent-provider) | Eloquent ORM | Tracks model changes via Eloquent events |
 
 ## Quick Links
 

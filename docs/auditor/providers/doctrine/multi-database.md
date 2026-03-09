@@ -1,5 +1,8 @@
 # Multi-Database Configuration
 
+> [!NOTE]
+> This page documents the DoctrineProvider as used within `auditor-bundle`. For standalone usage, see the [auditor-doctrine-provider docs](https://github.com/DamienHarper/auditor-doctrine-provider/tree/main/docs/providers/doctrine/).
+
 > **Store audit logs in a separate database from your application data**
 
 This guide explains how to store audit logs in a separate database from your application data.

@@ -2,6 +2,13 @@
 
 > **Set up auditing for your Doctrine entities in minutes**
 
+> [!NOTE]
+> This quick start uses the **DoctrineProvider**, which is distributed as a separate package.
+> Make sure you have both packages installed before proceeding:
+> ```bash
+> composer require damienharper/auditor damienharper/auditor-doctrine-provider
+> ```
+
 This guide will help you set up auditing for your Doctrine entities in minutes.
 
 ## 🔍 Overview

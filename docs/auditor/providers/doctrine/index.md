@@ -1,5 +1,11 @@
 # DoctrineProvider
 
+> [!NOTE]
+> The DoctrineProvider is now distributed as a separate package: [`damienharper/auditor-doctrine-provider`](https://github.com/DamienHarper/auditor-doctrine-provider).
+> Install it with: `composer require damienharper/auditor-doctrine-provider`
+>
+> This documentation page covers the DoctrineProvider as integrated via `auditor-bundle`. For standalone usage, refer to the [auditor-doctrine-provider documentation](https://github.com/DamienHarper/auditor-doctrine-provider/tree/main/docs).
+
 > **The default provider for auditing Doctrine ORM entities**
 
 The `DoctrineProvider` is the default and primary provider shipped with auditor. It provides both **auditing** and **storage** capabilities for Doctrine ORM entities.
