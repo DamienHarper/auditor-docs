@@ -27,27 +27,15 @@ const sidebars = {
     },
     {
       type: 'category',
-      label: '⚠️ Providers (deprecated)',
-      collapsed: true,
+      label: 'Providers',
       items: [
-        {
-          type: 'category',
-          label: 'Doctrine (deprecated)',
-          items: [
-            'providers/doctrine/index',
-            'providers/doctrine/configuration',
-            'providers/doctrine/schema',
-            'providers/doctrine/attributes',
-            'providers/doctrine/services',
-            'providers/doctrine/multi-database',
-          ],
-        },
+        'providers/doctrine/index',
       ],
     },
     {
       type: 'doc',
       id: 'querying/index',
-      label: 'Querying',
+      label: 'Querying Audits',
     },
     'commands/index',
     'api/index',
@@ -60,7 +48,6 @@ const sidebars = {
         'upgrade/index',
         'upgrade/v3',
         'upgrade/v4',
-        'upgrade/v5',
       ],
     },
   ],

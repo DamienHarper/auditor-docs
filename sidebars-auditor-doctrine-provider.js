@@ -16,16 +16,29 @@ const sidebars = {
       ],
     },
     {
-      type: 'category',
-      label: 'DoctrineProvider',
-      items: [
-        'providers/doctrine/index',
-        'providers/doctrine/configuration',
-        'providers/doctrine/schema',
-        'providers/doctrine/attributes',
-        'providers/doctrine/services',
-        'providers/doctrine/multi-database',
-      ],
+      type: 'doc',
+      id: 'providers/doctrine/configuration',
+      label: 'Configuration',
+    },
+    {
+      type: 'doc',
+      id: 'providers/doctrine/schema',
+      label: 'Schema',
+    },
+    {
+      type: 'doc',
+      id: 'providers/doctrine/attributes',
+      label: 'Attributes',
+    },
+    {
+      type: 'doc',
+      id: 'providers/doctrine/services',
+      label: 'Services',
+    },
+    {
+      type: 'doc',
+      id: 'providers/doctrine/multi-database',
+      label: 'Multi-database',
     },
     {
       type: 'category',

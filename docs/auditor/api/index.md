@@ -106,6 +106,10 @@ interface ConfigurationInterface
 
 ## 🗄️ DoctrineProvider
 
+> [!WARNING]
+> The built-in `DoctrineProvider` is **deprecated** since auditor 4.x and will be removed in v5.0.
+> Use the standalone [auditor-doctrine-provider](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/) package instead.
+
 ### 🗄️ DoctrineProvider
 
 ```php
@@ -173,6 +177,10 @@ final class Configuration implements ConfigurationInterface
 
 ## 🔍 Reader & Query
 
+> [!WARNING]
+> `Reader`, `Query` and all filter classes belong to the DoctrineProvider and are **deprecated** in auditor core.
+> See [auditor-doctrine-provider › Querying](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/querying/) for the current API reference.
+
 ### Reader
 
 ```php
@@ -230,6 +238,10 @@ final class Query implements QueryInterface
 ```
 
 ## 🎯 Filters
+
+> [!WARNING]
+> Filter classes (`FilterInterface`, `SimpleFilter`, `DateRangeFilter`, `RangeFilter`, `NullFilter`, `JsonFilter`) are part of the DoctrineProvider and are **deprecated** in auditor core.
+> See [auditor-doctrine-provider › Filters](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/querying/filters) for the current API reference.
 
 ### FilterInterface
 
@@ -379,6 +391,10 @@ final class Security
 
 ## 🛠️ Schema Management
 
+> [!WARNING]
+> `SchemaManager` is part of the DoctrineProvider and is **deprecated** in auditor core.
+> See [auditor-doctrine-provider › Schema](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/schema) for the current reference.
+
 ### SchemaManager
 
 ```php
@@ -433,6 +449,10 @@ class ProviderException extends \Exception {}
 ```
 
 ## ⚙️ Services
+
+> [!WARNING]
+> `AuditingService` and `StorageService` are part of the DoctrineProvider and are **deprecated** in auditor core.
+> See [auditor-doctrine-provider › Services](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/services) for the current reference.
 
 ### AuditingService
 
