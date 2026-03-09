@@ -48,9 +48,9 @@ const config = {
         highlightSearchTermsOnTargetPage: true,
         explicitSearchResultPath: true,
         searchResultLimits: 10,
-        // Deux instances plugin-content-docs : auditor et auditor-bundle
-        docsRouteBasePath: ['auditor', 'auditor-bundle'],
-        docsDir: ['docs/auditor', 'docs/auditor-bundle'],
+        // Deux instances plugin-content-docs : auditor, auditor-bundle et auditor-doctrine-provider
+        docsRouteBasePath: ['auditor', 'auditor-bundle', 'auditor-doctrine-provider'],
+        docsDir: ['docs/auditor', 'docs/auditor-bundle', 'docs/auditor-doctrine-provider'],
         // Version préférée tirée du plugin auditor (pour le sélecteur de version)
         docsPluginIdForPreferredVersion: 'auditor',
         // Exclure les anciennes versions de l'index
@@ -123,6 +123,23 @@ const config = {
           },
           '6.x': {
             label: '6.x',
+            badge: true,
+          },
+        },
+      },
+    ],
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'auditor-doctrine-provider',
+        path: 'docs/auditor-doctrine-provider',
+        routeBasePath: 'auditor-doctrine-provider',
+        sidebarPath: require.resolve('./sidebars-auditor-doctrine-provider.js'),
+        beforeDefaultRemarkPlugins: [remarkGithubBlockquoteAlert],
+        lastVersion: 'current',
+        versions: {
+          current: {
+            label: '1.x',
             badge: true,
           },
         },
@@ -211,6 +228,18 @@ const config = {
             activeBaseRegex: '/auditor-bundle/',
           },
           {
+            type: 'docsVersionDropdown',
+            docsPluginId: 'auditor-doctrine-provider',
+            position: 'left',
+            dropdownActiveClassDisabled: true,
+          },
+          {
+            to: '/auditor-doctrine-provider/',
+            label: 'auditor-doctrine-provider',
+            position: 'left',
+            activeBaseRegex: '/auditor-doctrine-provider/',
+          },
+          {
             href: 'https://github.com/DamienHarper/auditor',
             label: 'GitHub',
             position: 'right',
@@ -232,6 +261,13 @@ const config = {
             items: [
               { label: 'Documentation (7.x)', to: '/auditor-bundle/intro' },
               { label: 'GitHub', href: 'https://github.com/DamienHarper/auditor-bundle' },
+            ],
+          },
+          {
+            title: 'auditor-doctrine-provider',
+            items: [
+              { label: 'Documentation (1.x)', to: '/auditor-doctrine-provider/' },
+              { label: 'GitHub', href: 'https://github.com/DamienHarper/auditor-doctrine-provider' },
             ],
           },
         ],
