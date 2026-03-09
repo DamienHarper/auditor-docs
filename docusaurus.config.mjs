@@ -210,7 +210,7 @@ const config = {
             dropdownActiveClassDisabled: true,
           },
           {
-            to: '/auditor/intro',
+            to: '/auditor/',
             label: 'auditor',
             position: 'left',
             activeBaseRegex: '/auditor/',
@@ -222,7 +222,7 @@ const config = {
             dropdownActiveClassDisabled: true,
           },
           {
-            to: '/auditor-bundle/intro',
+            to: '/auditor-bundle/',
             label: 'auditor-bundle',
             position: 'left',
             activeBaseRegex: '/auditor-bundle/',
@@ -252,14 +252,14 @@ const config = {
           {
             title: 'auditor',
             items: [
-              { label: 'Documentation (4.x)', to: '/auditor/intro' },
+              { label: 'Documentation (4.x)', to: '/auditor/' },
               { label: 'GitHub', href: 'https://github.com/DamienHarper/auditor' },
             ],
           },
           {
             title: 'auditor-bundle',
             items: [
-              { label: 'Documentation (7.x)', to: '/auditor-bundle/intro' },
+              { label: 'Documentation (7.x)', to: '/auditor-bundle/' },
               { label: 'GitHub', href: 'https://github.com/DamienHarper/auditor-bundle' },
             ],
           },
