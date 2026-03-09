@@ -1,8 +1,5 @@
 # Auditing and Storage Services
 
-> [!NOTE]
-> This page documents the DoctrineProvider as used within `auditor-bundle`. For standalone usage, see the [auditor-doctrine-provider docs](https://github.com/DamienHarper/auditor-doctrine-provider/tree/main/docs/providers/doctrine/).
-
 > **Understand how DoctrineProvider detects and persists audit logs**
 
 The DoctrineProvider uses two types of services: **Auditing Services** for detecting changes and **Storage Services** for persisting audit logs.

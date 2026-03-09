@@ -1,8 +1,5 @@
 # Attributes Reference
 
-> [!NOTE]
-> This page documents the DoctrineProvider as used within `auditor-bundle`. For standalone usage, see the [auditor-doctrine-provider docs](https://github.com/DamienHarper/auditor-doctrine-provider/tree/main/docs/providers/doctrine/).
-
 > **Configure entity auditing with PHP 8 attributes**
 
 Auditor uses PHP 8 attributes to configure entity auditing. This page documents all available attributes.
