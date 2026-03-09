@@ -27,11 +27,12 @@ const sidebars = {
     },
     {
       type: 'category',
-      label: 'Providers',
+      label: '⚠️ Providers (deprecated)',
+      collapsed: true,
       items: [
         {
           type: 'category',
-          label: 'Doctrine',
+          label: 'Doctrine (deprecated)',
           items: [
             'providers/doctrine/index',
             'providers/doctrine/configuration',
@@ -44,13 +45,9 @@ const sidebars = {
       ],
     },
     {
-      type: 'category',
+      type: 'doc',
+      id: 'querying/index',
       label: 'Querying',
-      items: [
-        'querying/index',
-        'querying/entry',
-        'querying/filters',
-      ],
     },
     'commands/index',
     'api/index',
@@ -63,6 +60,7 @@ const sidebars = {
         'upgrade/index',
         'upgrade/v3',
         'upgrade/v4',
+        'upgrade/v5',
       ],
     },
   ],
