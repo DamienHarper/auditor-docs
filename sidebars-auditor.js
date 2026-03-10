@@ -29,28 +29,13 @@ const sidebars = {
       type: 'category',
       label: 'Providers',
       items: [
-        {
-          type: 'category',
-          label: 'Doctrine',
-          items: [
-            'providers/doctrine/index',
-            'providers/doctrine/configuration',
-            'providers/doctrine/schema',
-            'providers/doctrine/attributes',
-            'providers/doctrine/services',
-            'providers/doctrine/multi-database',
-          ],
-        },
+        'providers/doctrine/index',
       ],
     },
     {
-      type: 'category',
-      label: 'Querying',
-      items: [
-        'querying/index',
-        'querying/entry',
-        'querying/filters',
-      ],
+      type: 'doc',
+      id: 'querying/index',
+      label: 'Querying Audits',
     },
     'commands/index',
     'api/index',

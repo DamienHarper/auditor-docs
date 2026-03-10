@@ -48,9 +48,9 @@ const config = {
         highlightSearchTermsOnTargetPage: true,
         explicitSearchResultPath: true,
         searchResultLimits: 10,
-        // Deux instances plugin-content-docs : auditor et auditor-bundle
-        docsRouteBasePath: ['auditor', 'auditor-bundle'],
-        docsDir: ['docs/auditor', 'docs/auditor-bundle'],
+        // Deux instances plugin-content-docs : auditor, auditor-bundle et auditor-doctrine-provider
+        docsRouteBasePath: ['auditor', 'auditor-bundle', 'auditor-doctrine-provider'],
+        docsDir: ['docs/auditor', 'docs/auditor-bundle', 'docs/auditor-doctrine-provider'],
         // Version préférée tirée du plugin auditor (pour le sélecteur de version)
         docsPluginIdForPreferredVersion: 'auditor',
         // Exclure les anciennes versions de l'index
@@ -128,6 +128,23 @@ const config = {
         },
       },
     ],
+    [
+      '@docusaurus/plugin-content-docs',
+      {
+        id: 'auditor-doctrine-provider',
+        path: 'docs/auditor-doctrine-provider',
+        routeBasePath: 'auditor-doctrine-provider',
+        sidebarPath: require.resolve('./sidebars-auditor-doctrine-provider.js'),
+        beforeDefaultRemarkPlugins: [remarkGithubBlockquoteAlert],
+        lastVersion: 'current',
+        versions: {
+          current: {
+            label: '1.x',
+            badge: true,
+          },
+        },
+      },
+    ],
     // Redirections depuis les anciennes URLs Couscous (format /docs/auditor/xxx.html)
     // Doit être en dernier pour que les pages cibles soient déjà générées
     [
@@ -193,7 +210,7 @@ const config = {
             dropdownActiveClassDisabled: true,
           },
           {
-            to: '/auditor/intro',
+            to: '/auditor/',
             label: 'auditor',
             position: 'left',
             activeBaseRegex: '/auditor/',
@@ -205,7 +222,7 @@ const config = {
             dropdownActiveClassDisabled: true,
           },
           {
-            to: '/auditor-bundle/intro',
+            to: '/auditor-bundle/',
             label: 'auditor-bundle',
             position: 'left',
             activeBaseRegex: '/auditor-bundle/',
@@ -223,15 +240,22 @@ const config = {
           {
             title: 'auditor',
             items: [
-              { label: 'Documentation (4.x)', to: '/auditor/intro' },
+              { label: 'Documentation (4.x)', to: '/auditor/' },
               { label: 'GitHub', href: 'https://github.com/DamienHarper/auditor' },
             ],
           },
           {
             title: 'auditor-bundle',
             items: [
-              { label: 'Documentation (7.x)', to: '/auditor-bundle/intro' },
+              { label: 'Documentation (7.x)', to: '/auditor-bundle/' },
               { label: 'GitHub', href: 'https://github.com/DamienHarper/auditor-bundle' },
+            ],
+          },
+          {
+            title: 'auditor-doctrine-provider',
+            items: [
+              { label: 'Documentation (1.x)', to: '/auditor-doctrine-provider/' },
+              { label: 'GitHub', href: 'https://github.com/DamienHarper/auditor-doctrine-provider' },
             ],
           },
         ],
