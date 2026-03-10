@@ -228,18 +228,6 @@ const config = {
             activeBaseRegex: '/auditor-bundle/',
           },
           {
-            type: 'docsVersionDropdown',
-            docsPluginId: 'auditor-doctrine-provider',
-            position: 'left',
-            dropdownActiveClassDisabled: true,
-          },
-          {
-            to: '/auditor-doctrine-provider/',
-            label: 'auditor-doctrine-provider',
-            position: 'left',
-            activeBaseRegex: '/auditor-doctrine-provider/',
-          },
-          {
             href: 'https://github.com/DamienHarper/auditor',
             label: 'GitHub',
             position: 'right',
