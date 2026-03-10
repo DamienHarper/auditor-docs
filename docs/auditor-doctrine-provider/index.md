@@ -123,7 +123,6 @@ flowchart TD
 
 - **[auditor](https://github.com/DamienHarper/auditor)** — The core audit-log library
 - **[auditor-bundle](https://github.com/DamienHarper/auditor-bundle)** — Symfony bundle integrating DoctrineProvider
-- **[auditor-eloquent-provider](https://github.com/DamienHarper/auditor-eloquent-provider)** — Eloquent ORM provider
 
 ## License
 
