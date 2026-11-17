@@ -19,7 +19,7 @@
 <link rel="icon" type="image/svg+xml" href="/auditor-docs/img/favicon.svg">
 <link rel="alternate icon" type="image/x-icon" href="/auditor-docs/img/favicon.ico">
 <link rel="apple-touch-icon" sizes="180x180" href="/auditor-docs/img/apple-touch-icon.png"><link rel="stylesheet" href="/auditor-docs/assets/css/styles.a6590af6.css">
-<script src="/auditor-docs/assets/js/runtime~main.ba6a480b.js" defer="defer"></script>
+<script src="/auditor-docs/assets/js/runtime~main.45d98db7.js" defer="defer"></script>
 <script src="/auditor-docs/assets/js/main.3ab5a1c8.js" defer="defer"></script>
 </head>
 <body>
@@ -100,7 +100,8 @@
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="postgresql">PostgreSQL<a href="#postgresql" class="hash-link" aria-label="Direct link to PostgreSQL" title="Direct link to PostgreSQL" translate="no">​</a></h3>
 <ul>
-<li class="">Native <code>JSON</code> support</li>
+<li class="">Native <code>JSONB</code> column type is used for <code>diffs</code> and <code>extra_data</code></li>
+<li class="">Audit tables created with <code>JSON</code> columns by previous versions are converted to <code>JSONB</code> by <code>audit:schema:update</code> (or by your next migration if you manage audit tables with Doctrine Migrations)</li>
 <li class="">Indexed columns use PostgreSQL-compatible index names</li>
 </ul>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="sqlite">SQLite<a href="#sqlite" class="hash-link" aria-label="Direct link to SQLite" title="Direct link to SQLite" translate="no">​</a></h3>
