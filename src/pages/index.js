@@ -52,7 +52,6 @@ const groups = [
     items: [
       {
         name: 'auditor',
-        badge: '4.x',
         icon: (
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20"/><path d="m9 9.5 2 2 4-4"/></svg>
         ),
@@ -68,7 +67,6 @@ const groups = [
     items: [
       {
         name: 'auditor-bundle',
-        badge: '7.x',
         icon: (
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="7.5 4.21 12 6.81 16.5 4.21"/><polyline points="7.5 19.79 7.5 14.6 3 12"/><polyline points="21 12 16.5 14.6 16.5 19.79"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
         ),
@@ -84,7 +82,6 @@ const groups = [
     items: [
       {
         name: 'auditor-doctrine-provider',
-        badge: '1.x',
         icon: (
           <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4.03 3-9 3S3 13.66 3 12"/><path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5"/></svg>
         ),
@@ -144,7 +141,7 @@ export default function Home() {
               <section key={group.label} className={styles.group}>
                 <h2 className={styles.groupLabel}>{group.label}</h2>
                 <div className={styles.cards}>
-                  {group.items.map(p => <ProjectCard key={p.name} {...p} />)}
+                  {group.items.map(p => <ProjectCard key={p.name} badge={siteConfig.customFields.currentVersions[p.name]} {...p} />)}
                 </div>
               </section>
             ))}

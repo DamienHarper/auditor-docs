@@ -4,6 +4,21 @@ import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
+const docsPluginIds = ['auditor', 'auditor-bundle', 'auditor-doctrine-provider'];
+
+// Frozen versions of a docs plugin, most recent first (e.g. ['3.x']).
+const frozenVersions = (pluginId) => require(`./${pluginId}_versions.json`);
+
+// Label of the current (unversioned) docs of a plugin: the major following the latest frozen one.
+// The sync-docs.yml workflow of each package freezes (X-1).x when X.0.0 is tagged, so this label
+// follows major releases without any manual edit.
+const currentVersionLabel = (pluginId) => {
+  const [latestFrozen] = frozenVersions(pluginId);
+  return latestFrozen ? `${parseInt(latestFrozen, 10) + 1}.x` : '1.x';
+};
+
+const currentVersions = Object.fromEntries(docsPluginIds.map((id) => [id, currentVersionLabel(id)]));
+
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'auditor',
@@ -30,6 +45,10 @@ const config = {
     },
   },
 
+  customFields: {
+    currentVersions,
+  },
+
   i18n: {
     defaultLocale: 'en',
     locales: ['en'],
@@ -49,15 +68,14 @@ const config = {
         explicitSearchResultPath: true,
         searchResultLimits: 10,
         // Deux instances plugin-content-docs : auditor, auditor-bundle et auditor-doctrine-provider
-        docsRouteBasePath: ['auditor', 'auditor-bundle', 'auditor-doctrine-provider'],
+        docsRouteBasePath: docsPluginIds,
         docsDir: ['docs/auditor', 'docs/auditor-bundle', 'docs/auditor-doctrine-provider'],
         // Version préférée tirée du plugin auditor (pour le sélecteur de version)
         docsPluginIdForPreferredVersion: 'auditor',
-        // Exclure les anciennes versions de l'index
-        ignoreFiles: [
-          /auditor\/3\.x/,
-          /auditor-bundle\/6\.x/,
-        ],
+        // Exclure les anciennes versions (gelées) de l'index
+        ignoreFiles: docsPluginIds.flatMap((id) =>
+          frozenVersions(id).map((version) => new RegExp(`${id}/${version.replace('.', '\\.')}`)),
+        ),
       }),
     ],
   ],
@@ -95,7 +113,7 @@ const config = {
         lastVersion: 'current',
         versions: {
           current: {
-            label: '4.x',
+            label: currentVersions['auditor'],
             badge: true,
           },
           '3.x': {
@@ -118,7 +136,7 @@ const config = {
         lastVersion: 'current',
         versions: {
           current: {
-            label: '7.x',
+            label: currentVersions['auditor-bundle'],
             badge: true,
           },
           '6.x': {
@@ -139,7 +157,7 @@ const config = {
         lastVersion: 'current',
         versions: {
           current: {
-            label: '1.x',
+            label: currentVersions['auditor-doctrine-provider'],
             badge: true,
           },
         },
@@ -228,6 +246,18 @@ const config = {
             activeBaseRegex: '/auditor-bundle/',
           },
           {
+            type: 'docsVersionDropdown',
+            docsPluginId: 'auditor-doctrine-provider',
+            position: 'left',
+            dropdownActiveClassDisabled: true,
+          },
+          {
+            to: '/auditor-doctrine-provider/',
+            label: 'auditor-doctrine-provider',
+            position: 'left',
+            activeBaseRegex: '/auditor-doctrine-provider/',
+          },
+          {
             href: 'https://github.com/DamienHarper/auditor',
             label: 'GitHub',
             position: 'right',
@@ -240,21 +270,21 @@ const config = {
           {
             title: 'auditor',
             items: [
-              { label: 'Documentation (4.x)', to: '/auditor/' },
+              { label: `Documentation (${currentVersions['auditor']})`, to: '/auditor/' },
               { label: 'GitHub', href: 'https://github.com/DamienHarper/auditor' },
             ],
           },
           {
             title: 'auditor-bundle',
             items: [
-              { label: 'Documentation (7.x)', to: '/auditor-bundle/' },
+              { label: `Documentation (${currentVersions['auditor-bundle']})`, to: '/auditor-bundle/' },
               { label: 'GitHub', href: 'https://github.com/DamienHarper/auditor-bundle' },
             ],
           },
           {
             title: 'auditor-doctrine-provider',
             items: [
-              { label: 'Documentation (1.x)', to: '/auditor-doctrine-provider/' },
+              { label: `Documentation (${currentVersions['auditor-doctrine-provider']})`, to: '/auditor-doctrine-provider/' },
               { label: 'GitHub', href: 'https://github.com/DamienHarper/auditor-doctrine-provider' },
             ],
           },
