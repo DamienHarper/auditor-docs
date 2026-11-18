@@ -48,6 +48,7 @@ const sidebars = {
         'upgrade/index',
         'upgrade/v3',
         'upgrade/v4',
+        'upgrade/v5',
       ],
     },
   ],
