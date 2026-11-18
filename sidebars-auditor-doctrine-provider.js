@@ -41,6 +41,11 @@ const sidebars = {
       label: 'Multi-database',
     },
     {
+      type: 'doc',
+      id: 'providers/doctrine/performance',
+      label: 'Performance',
+    },
+    {
       type: 'category',
       label: 'Querying',
       items: [
@@ -51,6 +56,14 @@ const sidebars = {
     },
     'extra-data',
     'contributing',
+    {
+      type: 'category',
+      label: 'Upgrade Guide',
+      items: [
+        'upgrade/index',
+        'upgrade/v2',
+      ],
+    },
   ],
 };
 module.exports = sidebars;
