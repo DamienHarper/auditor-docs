@@ -19,7 +19,7 @@
 <link rel="icon" type="image/svg+xml" href="/auditor-docs/img/favicon.svg">
 <link rel="alternate icon" type="image/x-icon" href="/auditor-docs/img/favicon.ico">
 <link rel="apple-touch-icon" sizes="180x180" href="/auditor-docs/img/apple-touch-icon.png"><link rel="stylesheet" href="/auditor-docs/assets/css/styles.a6590af6.css">
-<script src="/auditor-docs/assets/js/runtime~main.ad5f0d69.js" defer="defer"></script>
+<script src="/auditor-docs/assets/js/runtime~main.683c8527.js" defer="defer"></script>
 <script src="/auditor-docs/assets/js/main.db303cd8.js" defer="defer"></script>
 </head>
 <body>
@@ -63,7 +63,7 @@
 </div>
 <ol>
 <li class=""><strong>DQL and raw SQL are not tracked</strong> — <code>UPDATE</code> or <code>DELETE</code> queries executed via DQL (<code>$em-&gt;createQuery(...)</code>) or raw DBAL bypass the ORM&#x27;s UnitOfWork and will not be audited. Always use <code>EntityManager::persist()</code> and <code>flush()</code>.</li>
-<li class=""><strong>Composite primary keys</strong> — Not supported for auditing; each entity should have a single primary key.</li>
+<li class=""><strong>Composite primary keys</strong> — Not supported for auditing; each entity should have a single primary key. An entity with a composite primary key can still be the target of an association of an audited entity: its identifier is then stored flattened, field names and values joined with <code>-</code> (e.g. <code>&quot;pkName&quot;: &quot;article-tag&quot;</code>, <code>&quot;article-tag&quot;: &quot;12-7&quot;</code>).</li>
 </ol>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="-sections">📚 Sections<a href="#-sections" class="hash-link" aria-label="Direct link to 📚 Sections" title="Direct link to 📚 Sections" translate="no">​</a></h2>
 <ul>
