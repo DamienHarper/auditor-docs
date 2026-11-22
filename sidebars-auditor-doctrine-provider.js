@@ -1,7 +1,10 @@
 // @ts-check
+const path = require('path');
+const {onlyExistingDocs} = require('./sidebars-utils');
+
 /** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
 const sidebars = {
-  auditorDoctrineProviderSidebar: [
+  auditorDoctrineProviderSidebar: onlyExistingDocs(path.join(__dirname, 'docs/auditor-doctrine-provider'), [
     {
       type: 'doc',
       id: 'index',
@@ -41,6 +44,11 @@ const sidebars = {
       label: 'Multi-database',
     },
     {
+      type: 'doc',
+      id: 'providers/doctrine/performance',
+      label: 'Performance',
+    },
+    {
       type: 'category',
       label: 'Querying',
       items: [
@@ -51,6 +59,14 @@ const sidebars = {
     },
     'extra-data',
     'contributing',
-  ],
+    {
+      type: 'category',
+      label: 'Upgrade Guide',
+      items: [
+        'upgrade/index',
+        'upgrade/v2',
+      ],
+    },
+  ]),
 };
 module.exports = sidebars;
