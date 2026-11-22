@@ -1,7 +1,10 @@
 // @ts-check
+const path = require('path');
+const {onlyExistingDocs} = require('./sidebars-utils');
+
 /** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
 const sidebars = {
-  auditorBundleSidebar: [
+  auditorBundleSidebar: onlyExistingDocs(path.join(__dirname, 'docs/auditor-bundle'), [
     {
       type: 'doc',
       id: 'index',
@@ -32,6 +35,9 @@ const sidebars = {
         'customization/security-provider',
         'customization/role-checker',
         'customization/extra-data',
+        'customization/blame-context',
+        'customization/diff-label-resolvers',
+        'customization/custom-provider',
       ],
     },
     'viewer/index',
@@ -45,6 +51,6 @@ const sidebars = {
         'upgrade/v8',
       ],
     },
-  ],
+  ]),
 };
 module.exports = sidebars;

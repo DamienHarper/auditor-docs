@@ -1,7 +1,10 @@
 // @ts-check
+const path = require('path');
+const {onlyExistingDocs} = require('./sidebars-utils');
+
 /** @type {import('@docusaurus/plugin-content-docs').SidebarsConfig} */
 const sidebars = {
-  auditorDoctrineProviderSidebar: [
+  auditorDoctrineProviderSidebar: onlyExistingDocs(path.join(__dirname, 'docs/auditor-doctrine-provider'), [
     {
       type: 'doc',
       id: 'index',
@@ -64,6 +67,6 @@ const sidebars = {
         'upgrade/v2',
       ],
     },
-  ],
+  ]),
 };
 module.exports = sidebars;
