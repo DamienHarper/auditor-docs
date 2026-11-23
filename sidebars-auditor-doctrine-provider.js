@@ -20,6 +20,11 @@ const sidebars = {
     },
     {
       type: 'doc',
+      id: 'providers/doctrine/index',
+      label: 'DoctrineProvider',
+    },
+    {
+      type: 'doc',
       id: 'providers/doctrine/configuration',
       label: 'Configuration',
     },
