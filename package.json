@@ -18,10 +18,13 @@
     "@mdx-js/react": "^3.0.0",
     "@mermaid-js/layout-elk": "^0.1.9",
     "clsx": "^2.0.0",
+    "github-slugger": "^1.5.0",
+    "mdast-util-to-string": "^4.0.0",
     "prism-react-renderer": "^2.3.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
-    "remark-github-blockquote-alert": "^2.0.1"
+    "remark-github-blockquote-alert": "^2.0.1",
+    "unist-util-visit": "^5.2.0"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "^3.7.0"

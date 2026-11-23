@@ -1,6 +1,7 @@
 // @ts-check
 import { themes } from 'prism-react-renderer';
 import remarkGithubBlockquoteAlert from 'remark-github-blockquote-alert';
+import headingIdsWithoutVariationSelector from './src/remark/heading-ids-without-variation-selector.mjs';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
@@ -109,7 +110,7 @@ const config = {
         sidebarPath: require.resolve('./sidebars-auditor.js'),
         // Exclure les changelogs
         exclude: ['**/changelogs/**'],
-        beforeDefaultRemarkPlugins: [remarkGithubBlockquoteAlert],
+        beforeDefaultRemarkPlugins: [remarkGithubBlockquoteAlert, headingIdsWithoutVariationSelector],
         lastVersion: 'current',
         versions: {
           current: {
@@ -132,7 +133,7 @@ const config = {
         sidebarPath: require.resolve('./sidebars-auditor-bundle.js'),
         // Exclure les changelogs
         exclude: ['**/changelogs/**'],
-        beforeDefaultRemarkPlugins: [remarkGithubBlockquoteAlert],
+        beforeDefaultRemarkPlugins: [remarkGithubBlockquoteAlert, headingIdsWithoutVariationSelector],
         lastVersion: 'current',
         versions: {
           current: {
@@ -153,7 +154,7 @@ const config = {
         path: 'docs/auditor-doctrine-provider',
         routeBasePath: 'auditor-doctrine-provider',
         sidebarPath: require.resolve('./sidebars-auditor-doctrine-provider.js'),
-        beforeDefaultRemarkPlugins: [remarkGithubBlockquoteAlert],
+        beforeDefaultRemarkPlugins: [remarkGithubBlockquoteAlert, headingIdsWithoutVariationSelector],
         lastVersion: 'current',
         versions: {
           current: {
