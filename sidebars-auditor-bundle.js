@@ -37,6 +37,7 @@ const sidebars = {
         'customization/extra-data',
         'customization/blame-context',
         'customization/diff-label-resolvers',
+        'customization/histories',
         'customization/custom-provider',
       ],
     },

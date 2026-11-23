@@ -44,6 +44,7 @@ const sidebars = {
     },
     'commands/index',
     'api/index',
+    'history',
     'extra-data',
     'contributing',
     {

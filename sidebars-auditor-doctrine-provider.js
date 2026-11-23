@@ -55,6 +55,7 @@ const sidebars = {
         'querying/index',
         'querying/entry',
         'querying/filters',
+        'querying/history',
       ],
     },
     'extra-data',
