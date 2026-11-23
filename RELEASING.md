@@ -93,6 +93,12 @@ Quand le tag poussé est de la forme `X.0.0` (nouveau major) :
 
 **Le sélecteur de version dans le site est automatiquement mis à jour.**
 
+> [!IMPORTANT]
+> **Taguer les versions de maintenance de la majeure précédente avant `X.0.0`.** Une fois `(X-1).x` gelée, un tag
+> `(X-1).y.z` n'est plus synchronisé (le workflow le saute pour ne pas écraser la doc de la nouvelle majeure) : sa
+> doc n'arrive sur le site qu'en éditant `*_versioned_docs/version-(X-1).x/` à la main. Exemple : provider `1.4.0`
+> puis bundle `7.3.0`, avant `auditor 5.0.0` → provider `2.0.0` → bundle `8.0.0`.
+
 ---
 
 ## Processus de release étape par étape
