@@ -164,6 +164,33 @@ const config = {
         },
       },
     ],
+    // llms.txt / llms-full.txt (https://llmstxt.org) for AI agents and LLMs.
+    // Current docs only: the frozen versions live in *_versioned_docs/ and stay out.
+    [
+      'docusaurus-plugin-llms',
+      {
+        title: 'auditor',
+        description:
+          'auditor is a family of PHP packages for audit logs: auditor (provider-agnostic core), ' +
+          'auditor-doctrine-provider (Doctrine ORM change tracking and audit tables) and ' +
+          'auditor-bundle (Symfony integration and audit viewer, formerly DoctrineAuditBundle).',
+        rootContent:
+          'Symfony applications install damienharper/auditor-bundle; Doctrine ORM applications without ' +
+          'Symfony install damienharper/auditor-doctrine-provider; damienharper/auditor alone is the core. ' +
+          'These docs describe the latest line of each package; older lines are listed on the site.',
+        docsDir: [
+          { path: 'docs/auditor', routeBasePath: 'auditor', label: 'auditor (core)' },
+          { path: 'docs/auditor-doctrine-provider', routeBasePath: 'auditor-doctrine-provider', label: 'auditor-doctrine-provider' },
+          { path: 'docs/auditor-bundle', routeBasePath: 'auditor-bundle', label: 'auditor-bundle' },
+        ],
+        ignoreFiles: ['**/changelogs/**', '**/contributing.md'],
+        // Introduction and getting started first in each package, the rest after.
+        includeOrder: ['docs/*/index.md', 'docs/*/getting-started/**'],
+        excludeImports: true,
+        removeDuplicateHeadings: true,
+        generateMarkdownFiles: true,
+      },
+    ],
     // Redirections depuis les anciennes URLs Couscous (format /docs/auditor/xxx.html)
     // Doit être en dernier pour que les pages cibles soient déjà générées
     [
