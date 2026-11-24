@@ -1,0 +1,56 @@
+# auditor
+
+> auditor is a family of PHP packages for audit logs: auditor (provider-agnostic core), auditor-doctrine-provider (Doctrine ORM change tracking and audit tables) and auditor-bundle (Symfony integration and audit viewer, formerly DoctrineAuditBundle).
+
+Symfony applications install damienharper/auditor-bundle; Doctrine ORM applications without Symfony install damienharper/auditor-doctrine-provider; damienharper/auditor alone is the core. These docs describe the latest line of each package; older lines are listed on the site.
+
+## auditor (core)
+
+- [Introduction](https://damienharper.github.io/auditor-docs/auditor.md): > **The missing audit log library for PHP**
+- [Installation](https://damienharper.github.io/auditor-docs/auditor/getting-started/installation.md): > **Install auditor using Composer**
+- [Quick Start Guide](https://damienharper.github.io/auditor-docs/auditor/getting-started/quick-start.md): > **Set up the auditor core and connect a provider**
+- [API Reference](https://damienharper.github.io/auditor-docs/auditor/api.md): > **Complete API documentation for all public classes and interfaces**
+- [Console Commands](https://damienharper.github.io/auditor-docs/auditor/commands.md): > **Manage audit data via the command line**
+- [Configuration Reference](https://damienharper.github.io/auditor-docs/auditor/configuration.md): > **All configuration options available in auditor**
+- [Role Checker Configuration](https://damienharper.github.io/auditor-docs/auditor/configuration/role-checker.md): > **Control access to audit logs with fine-grained permissions**
+- [Security Provider Configuration](https://damienharper.github.io/auditor-docs/auditor/configuration/security-provider.md): > **Capture contextual security information for each audit event**
+- [User Provider Configuration](https://damienharper.github.io/auditor-docs/auditor/configuration/user-provider.md): > **Identify who made changes to audited entities**
+- [Extra Data](https://damienharper.github.io/auditor-docs/auditor/extra-data.md): The `extra_data` column allows you to store arbitrary supplementary information alongside each audit entry. This is useful for capturing contextual...
+- [Building a Custom Provider](https://damienharper.github.io/auditor-docs/auditor/providers/custom-provider.md): This guide covers everything you need to create a provider for `auditor` — from the minimal contract to a distributable Composer package.
+- [DoctrineProvider](https://damienharper.github.io/auditor-docs/auditor/providers/doctrine.md): DoctrineProvider adds Doctrine ORM support to `auditor`. It automatically tracks insertions, updates, deletions and many-to-many association change...
+- [Querying Audits](https://damienharper.github.io/auditor-docs/auditor/querying.md): Querying audit entries is **provider-specific**: each provider implements its own reader and filter system adapted to its underlying storage techno...
+- [Upgrade Guide](https://damienharper.github.io/auditor-docs/auditor/upgrade.md): > **Navigate between major versions of auditor**
+- [Upgrading to 3.x from 2.x](https://damienharper.github.io/auditor-docs/auditor/upgrade/v3.md): > **Migrate from annotations to PHP 8 attributes**
+- [Upgrading to 4.x from 3.x](https://damienharper.github.io/auditor-docs/auditor/upgrade/v4.md): > **PHP 8.4+ modernization and new features**
+
+## auditor-doctrine-provider
+
+- [Introduction](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider.md): > **Doctrine ORM provider for the auditor audit-log library**
+- [Installation](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/getting-started/installation.md): > **Install auditor-doctrine-provider using Composer**
+- [Quick Start Guide](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/getting-started/quick-start.md): > **Set up auditing for your Doctrine entities in minutes**
+- [Extra Data](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/extra-data.md): > **Attach custom contextual information to audit entries**
+- [Attributes Reference](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/providers/doctrine/attributes.md): > **Configure entity auditing with PHP 8 attributes**
+- [DoctrineProvider Configuration](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/providers/doctrine/configuration.md): > **All configuration options for the DoctrineProvider**
+- [DoctrineProvider](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/providers/doctrine.md): > **The Doctrine ORM provider for the auditor library**
+- [Multi-Database Setup](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/providers/doctrine/multi-database.md): > **Store audit entries in a separate database**
+- [Schema Management](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/providers/doctrine/schema.md): > **Create and manage audit tables in your database**
+- [Services](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/providers/doctrine/services.md): > **AuditingService and StorageService — the building blocks of the DoctrineProvider**
+- [Entry Reference](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/querying/entry.md): > **The audit log entry model**
+- [Filters Reference](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/querying/filters.md): > **Fine-grained control over audit queries**
+- [Querying Audits](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/querying.md): > **Read and query audit entries with the Reader and Query APIs**
+
+## auditor-bundle
+
+- [Introduction](https://damienharper.github.io/auditor-docs/auditor-bundle.md): > **Symfony integration for the auditor library**
+- [Installation](https://damienharper.github.io/auditor-docs/auditor-bundle/getting-started/installation.md): > **Install auditor-bundle in your Symfony application**
+- [Entity Attributes](https://damienharper.github.io/auditor-docs/auditor-bundle/configuration/attributes.md): > **Configure auditing with PHP 8 attributes**
+- [Configuration Reference](https://damienharper.github.io/auditor-docs/auditor-bundle/configuration.md): > **All configuration options available in auditor-bundle**
+- [Storage Configuration](https://damienharper.github.io/auditor-docs/auditor-bundle/configuration/storage.md): > **Configure audit storage, including multi-database setups**
+- [Extra Data](https://damienharper.github.io/auditor-docs/auditor-bundle/customization/extra-data.md): > **Store additional contextual information in audit entries**
+- [Customization](https://damienharper.github.io/auditor-docs/auditor-bundle/customization.md): > **Customize the bundle's providers for your specific needs**
+- [Role Checker](https://damienharper.github.io/auditor-docs/auditor-bundle/customization/role-checker.md): > **Customize access control for the audit viewer**
+- [Security Provider](https://damienharper.github.io/auditor-docs/auditor-bundle/customization/security-provider.md): > **Customize IP address and context detection for audit entries**
+- [User Provider](https://damienharper.github.io/auditor-docs/auditor-bundle/customization/user-provider.md): > **Customize how the current user is identified in audit entries**
+- [Upgrade Guide](https://damienharper.github.io/auditor-docs/auditor-bundle/upgrade.md): > **Navigate between major versions of auditor-bundle**
+- [Upgrading to 7.0](https://damienharper.github.io/auditor-docs/auditor-bundle/upgrade/v7.md): > **Migrate from auditor-bundle 6.x to 7.0**
+- [Audit Viewer](https://damienharper.github.io/auditor-docs/auditor-bundle/viewer.md): > **Web interface for browsing audit logs**
