@@ -20,7 +20,7 @@
 <link rel="icon" type="image/svg+xml" href="/auditor-docs/img/favicon.svg">
 <link rel="alternate icon" type="image/x-icon" href="/auditor-docs/img/favicon.ico">
 <link rel="apple-touch-icon" sizes="180x180" href="/auditor-docs/img/apple-touch-icon.png"><link rel="stylesheet" href="/auditor-docs/assets/css/styles.a6590af6.css">
-<script src="/auditor-docs/assets/js/runtime~main.70c3ec0f.js" defer="defer"></script>
+<script src="/auditor-docs/assets/js/runtime~main.09f081f8.js" defer="defer"></script>
 <script src="/auditor-docs/assets/js/main.94f7d549.js" defer="defer"></script>
 </head>
 <body>
@@ -57,7 +57,7 @@
 <li class="">✅ Uses Symfony&#x27;s <code>AuthorizationChecker</code></li>
 <li class="">✅ Checks roles configured per entity</li>
 <li class="">✅ Grants access if no roles configured</li>
-<li class="">✅ Grants access if no user authenticated</li>
+<li class="">❌ Denies access when the entity has roles and no user is authenticated</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="-console-commands">🖥️ Console Commands<a href="#-console-commands" class="hash-link" aria-label="Direct link to 🖥️ Console Commands" title="Direct link to 🖥️ Console Commands" translate="no">​</a></h2>
 <p>The bundle automatically switches to <code>ConsoleUserProvider</code> during console commands:</p>
