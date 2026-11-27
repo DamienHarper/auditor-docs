@@ -1,3 +1,7 @@
+---
+description: "Control who can view the audit logs of each entity in the audit log viewer and export with roles.view, #[Security] or a custom RoleCheckerInterface service."
+---
+
 # Role Checker
 
 > **Customize access control for the audit viewer**
@@ -80,10 +84,11 @@ dh_auditor:
 ### Via Attributes
 
 ```php
-use DH\Auditor\Provider\Doctrine\Auditing\Attribute as Audit;
+use DH\Auditor\Attribute\Auditable;
+use DH\Auditor\Attribute\Security;
 
-#[Audit\Auditable]
-#[Audit\Security(view: ['ROLE_ADMIN', 'ROLE_AUDITOR'])]
+#[Auditable]
+#[Security(view: ['ROLE_ADMIN', 'ROLE_AUDITOR'])]
 class User
 {
     // ...

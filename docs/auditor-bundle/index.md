@@ -2,6 +2,7 @@
 id: index
 title: Introduction
 slug: /
+description: Overview of auditor-bundle, the Symfony bundle that records Doctrine ORM entity changes in audit tables, with its features and version compatibility.
 ---
 
 # auditor-bundle
@@ -20,7 +21,11 @@ slug: /
 
 - 🔌 **Automatic wiring** - Services are automatically configured via Symfony's DI
 - 🔒 **Security integration** - Uses Symfony's security for user tracking and access control
-- 🌐 **Built-in viewer** - Web interface to browse audit logs at `/audit`
+- 🌐 **Built-in viewer** - Web interface at `/audit` telling each action as a readable phrase, compare revisions, link to it from your pages
+- 📜 **Histories across entities** - The history of a business object and of the entities attached to it, in the viewer or in your own pages (`<twig:DhAuditor:History>`)
+- 📤 **Export** - Stream audit entries as NDJSON, JSON or CSV (`/audit/export`)
+- 🧭 **Blame contexts** - Record how a change was made (console command, Messenger message, import…)
+- 🗑️ **Scheduled retention** - Prune old audit entries with Symfony Scheduler
 - 🖥️ **Console support** - Tracks changes made via console commands
 - 🌍 **Internationalization** - Translations for 9 languages
 - ⚙️ **YAML configuration** - Simple configuration via `dh_auditor.yaml`
@@ -74,26 +79,13 @@ flowchart TB
 | ViewerController    | (internal)                     | Web UI for audit logs                 |
 | RoutingLoader       | (internal)                     | Loads viewer routes                   |
 
-## ⚠️ Deprecation Notice (auditor v4.x)
-
-Starting with this release, `auditor-bundle` requires [`damienharper/auditor-doctrine-provider`](https://github.com/DamienHarper/auditor-doctrine-provider) as a direct dependency.
-
-The `DoctrineProvider` and all related classes previously bundled within `damienharper/auditor` (under `DH\Auditor\Provider\Doctrine\`) are now **deprecated** and will be removed in `damienharper/auditor` v5.0.
-
-**For auditor-bundle users: no action required.** The bundle automatically pulls in `auditor-doctrine-provider` and everything works transparently.
-
-**For users using `DoctrineProvider` directly** (without the bundle), install the standalone package:
-```bash
-composer require damienharper/auditor-doctrine-provider
-```
-
 ## 📋 Version Compatibility
 
 | Version | Status                      | Requirements                                                         |
 |:--------|:----------------------------|:---------------------------------------------------------------------|
-| 7.x     | Bug and security fixes      | PHP >= 8.4, Symfony >= 8.1, Doctrine DBAL >= 4.0, Doctrine ORM >= 3.2|
+| 8.x     | Active development 🚀       | PHP >= 8.4, Symfony >= 8.1, Doctrine DBAL >= 4.6, Doctrine ORM >= 3.7|
+| 7.x     | Bug and security fixes      | PHP >= 8.4, Symfony >= 8.1, Doctrine DBAL >= 4.3, Doctrine ORM >= 3.2|
 | 6.x     | End of Life                 | PHP >= 8.2, Symfony >= 5.4                                           |
-| 5.x     | End of Life                 | PHP >= 7.4, Symfony >= 4.4                                           |
 
 ## 🚀 Quick Links
 
@@ -106,6 +98,7 @@ composer require damienharper/auditor-doctrine-provider
 ## 🔗 Related Projects
 
 - **[auditor](https://github.com/DamienHarper/auditor)** - The core audit library (required)
+- **[auditor-doctrine-provider](https://github.com/DamienHarper/auditor-doctrine-provider)** - The Doctrine ORM provider (required)
 
 ## 📜 License
 

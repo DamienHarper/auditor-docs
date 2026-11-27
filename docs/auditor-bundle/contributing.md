@@ -1,3 +1,7 @@
+---
+description: "Contribute to auditor-bundle: report bugs, set up the development environment, run the tests and QA tools locally or with Docker, open pull requests."
+---
+
 # Contributing
 
 > **Help improve auditor-bundle**
@@ -32,11 +36,38 @@ cd auditor-bundle
 composer install
 ```
 
+The `damienharper/*` packages are installed from source (`preferred-install` in `composer.json`): the test suite
+loads Doctrine fixtures from `vendor/damienharper/auditor-doctrine-provider/tests`, which the dist archive does not
+contain. Composer keeps the installation source of a package that is already installed, so a `vendor/` installed
+before that setting needs a one-off `composer reinstall "damienharper/*"`, and the Docker `vendor_php*` volumes
+need to be removed once (`docker volume ls`, `docker volume rm …`).
+
 4. Create a branch for your changes:
 
 ```bash
 git checkout -b feature/my-new-feature
 ```
+
+#### Working in a Git worktree (optional)
+
+To work on several branches in parallel, the `Makefile` creates [Git worktrees](https://git-scm.com/docs/git-worktree) in `.claude/worktrees/<name>/` (git-ignored). A new branch starts from the freshly fetched default branch. Each worktree gets its own `vendor/` and `tools/` dependencies, and the `wt-*` targets run the Composer scripts with your local PHP.
+
+```bash
+# Create a worktree for a new branch and install its dependencies
+make wt-create branch=feature/my-new-feature
+
+# QA and tests in that worktree (wt= can be omitted when make runs from inside it)
+make wt-qa wt=feature-my-new-feature
+make wt-test wt=feature-my-new-feature args='--filter=ViewerControllerTest'
+
+# The Docker targets also work from a worktree
+make -C .claude/worktrees/feature-my-new-feature tests
+
+# Remove the worktree once its branch is merged (refused while it has uncommitted changes)
+make wt-clean wt=feature-my-new-feature confirm=yes
+```
+
+Run `make help` for the other targets (`wt-init`, `wt-list`, `wt-exec`, `wt-phpstan`).
 
 ### ✅ Running Tests
 
@@ -69,6 +100,8 @@ The project includes a `Makefile` that allows you to test against different comb
 | `tests`   | Run the test suite using PHPUnit         |
 | `cs-fix`  | Run PHP-CS-Fixer to fix coding standards |
 | `phpstan` | Run PHPStan for static code analysis     |
+| `rector`  | Run Rector to apply automated refactorings |
+| `qa`      | Run Rector, PHP-CS-Fixer and PHPStan     |
 | `help`    | Display available commands and options   |
 
 **Options:**
@@ -137,6 +170,12 @@ composer rector      # Automated refactoring suggestions
 #### Using Make (Docker)
 
 ```bash
+# Run Rector, PHP-CS-Fixer and PHPStan, in this order
+make qa
+
+# Run Rector alone
+make rector
+
 # Run PHP-CS-Fixer
 make cs-fix
 
@@ -148,6 +187,19 @@ make phpstan php=8.4
 
 # With custom arguments
 make cs-fix args='fix --dry-run'
+```
+
+### 🎨 Assets
+
+The viewer styles are written with Tailwind CSS 4 (`src/Resources/assets/css/`: `viewer.css` for the tokens, the reset
+bounded to the viewer content, the controls and the bars, `app.css` and `preflight.css` as entry points), and the
+compiled `src/Resources/public/app.css` and `src/Resources/public/preflight.css` are **committed**. Every Tailwind class
+of the templates carries the `dh:` prefix (`dh:flex`, `dh:sm:inline`, `dh:hover:bg-dh-accent`…): a class without it is
+not compiled, and a test fails on it. After a template or CSS change that uses new classes, rebuild the assets and
+commit the result:
+
+```bash
+make build-assets
 ```
 
 ### 📝 Commit Messages
