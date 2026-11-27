@@ -1,3 +1,7 @@
+---
+description: Store Doctrine audit entries in a separate database with one or more StorageServices and a storage_mapper, and how rollbacks are handled across connections.
+---
+
 # Multi-Database Setup
 
 > **Store audit entries in a separate database**
@@ -39,7 +43,29 @@ Set up two EntityManagers: one for your application, one for the audit database.
 > (see the [Quick Start](../../getting-started/quick-start.md)): the audit entries are written when its transaction
 > is committed.
 
-### Step 2: Register Services
+### Step 2: Configure the Provider
+
+Since there is only one storage service, no storage mapper is needed — all audits go to `'audit'` automatically:
+
+```php
+<?php
+
+use DH\Auditor\Provider\Doctrine\Configuration;
+use DH\Auditor\Provider\Doctrine\DoctrineProvider;
+
+$configuration = new Configuration([
+    'table_suffix' => '_audit',
+    'entities'     => [
+        App\Entity\User::class => ['enabled' => true],
+        App\Entity\Post::class => ['enabled' => true],
+    ],
+    // No storage_mapper needed when there is only one StorageService
+]);
+
+$provider = new DoctrineProvider($configuration);
+```
+
+### Step 3: Register Services
 
 ```php
 <?php
@@ -54,25 +80,6 @@ $provider->registerAuditingService(
 $provider->registerStorageService(
     new StorageService('audit', $auditEntityManager)
 );
-```
-
-### Step 3: Configure the Provider
-
-Since there is only one storage service, no storage mapper is needed — all audits go to `'audit'` automatically:
-
-```php
-<?php
-
-use DH\Auditor\Provider\Doctrine\Configuration;
-
-$configuration = new Configuration([
-    'table_suffix' => '_audit',
-    'entities'     => [
-        App\Entity\User::class => ['enabled' => true],
-        App\Entity\Post::class => ['enabled' => true],
-    ],
-    // No storage_mapper needed when there is only one StorageService
-]);
 ```
 
 ### Step 4: Update Audit Schema
@@ -91,21 +98,10 @@ When you need different entities routed to different storage services:
 ```php
 <?php
 
+use DH\Auditor\Provider\Doctrine\Configuration;
+use DH\Auditor\Provider\Doctrine\DoctrineProvider;
 use DH\Auditor\Provider\Doctrine\Service\AuditingService;
 use DH\Auditor\Provider\Doctrine\Service\StorageService;
-
-// Register the auditing service (application EntityManager)
-$provider->registerAuditingService(
-    new AuditingService('app', $appEntityManager)
-);
-
-// Register multiple storage services
-$provider->registerStorageService(
-    new StorageService('audit_sensitive', $auditSensitiveEntityManager)
-);
-$provider->registerStorageService(
-    new StorageService('audit_general', $auditGeneralEntityManager)
-);
 
 $configuration = new Configuration([
     'entities' => [
@@ -123,6 +119,21 @@ $configuration = new Configuration([
         };
     },
 ]);
+
+$provider = new DoctrineProvider($configuration);
+
+// Register the auditing service (application EntityManager)
+$provider->registerAuditingService(
+    new AuditingService('app', $appEntityManager)
+);
+
+// Register multiple storage services, keyed by name in $storageServices
+$provider->registerStorageService(
+    new StorageService('audit_sensitive', $auditSensitiveEntityManager)
+);
+$provider->registerStorageService(
+    new StorageService('audit_general', $auditGeneralEntityManager)
+);
 ```
 
 > [!CAUTION]
@@ -150,7 +161,7 @@ $provider->getConfiguration()->setStorageMapper(
 When that transaction turns out to be rolled back (the audit fails, or the server reports a rollback when committing), the provider deletes the audit entries it has just written on the storage connection. This clean-up is best effort:
 
 - when the outcome of the COMMIT is unknown (e.g. the connection is lost), the audit entries are kept: an orphan entry is better than a missing one;
-- when the deletion itself fails, the entries are left behind and the failure is reported, without hiding the original error, to the PSR-3 logger of the provider, with the `transaction_hash` of the entries and the audit `table`:
+- when the deletion itself fails, the entries are left behind and the failure is reported, without hiding the original error, to the PSR-3 logger of the provider, with the `transaction_id` of the entries and the audit `table`:
 
 ```php
 $provider->setLogger($logger); // any Psr\Log\LoggerInterface

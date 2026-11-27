@@ -1,3 +1,7 @@
+---
+description: "Reference of the #[Auditable], #[Ignore], #[Mask], #[Security], #[DiffLabel] and #[AuditRoot] PHP attributes that configure the auditing of Doctrine ORM entities."
+---
+
 # Attributes Reference
 
 > **Configure entity auditing with PHP 8 attributes**
@@ -9,8 +13,11 @@ Auditor uses PHP 8 attributes to configure Doctrine entity auditing. These attri
 | Attribute       | Target   | Description                               |
 |-----------------|----------|-------------------------------------------|
 | `#[Auditable]`  | Class    | Marks an entity for auditing              |
-| `#[Ignore]`     | Property | Excludes a property from auditing         |
+| `#[Ignore]`     | Property or class | Excludes a property from auditing |
 | `#[Security]`   | Class    | Defines who can view entity audits        |
+| `#[DiffLabel]`  | Property or class | Attaches a human-readable label resolver to a field |
+| `#[Mask]`       | Property or class | Records the changes of a property without its values |
+| `#[AuditRoot]`  | Class (repeatable) | Indexes the entries under the history of another entity (see [Histories](../../querying/history.md)) |
 
 ## 📝 #[Auditable]
 
@@ -40,9 +47,11 @@ class Post
 
 ### Parameters
 
-| Parameter  | Type   | Default | Description                        |
-|------------|--------|---------|------------------------------------|
-| `enabled`  | `bool` | `true`  | Whether auditing is enabled        |
+| Parameter    | Type      | Default | Description                                                         |
+|--------------|-----------|---------|---------------------------------------------------------------------|
+| `enabled`    | `bool`    | `true`  | Whether auditing is enabled                                         |
+| `maxAge`     | `?string` | `null`  | Retention: entries older than this ISO 8601 duration are deleted by `audit:clean` |
+| `maxEntries` | `?int`    | `null`  | Retention: only the N most recent entries are kept by `audit:clean` |
 
 ### Examples
 
@@ -59,6 +68,29 @@ class Post {}
 #[Auditable(enabled: false)]
 class DraftPost {}
 ```
+
+An entity disabled by default still gets an audit table, so that auditing can be enabled for it at runtime. If you
+never do that (e.g. a linter requires `#[Auditable]` on every entity and some are never meant to be audited), the
+[`skip_disabled_entities`](configuration.md#-skipping-disabled-entities) option leaves them without an audit table.
+
+### Retention Policy
+
+```php
+// Keep 7 years of history, whatever the global audit:clean cutoff
+#[Auditable(maxAge: 'P7Y')]
+class Payment {}
+
+// Keep the 10,000 most recent entries (on top of the global audit:clean cutoff)
+#[Auditable(maxEntries: 10_000)]
+class Session {}
+```
+
+`maxAge` must be an ISO 8601 duration greater than zero and `maxEntries` a positive integer: invalid values fail when
+the entity metadata is loaded, with the entity name in the message. Both default to `null` (no policy). A policy given
+in the configuration (`max_age` / `max_entries` entity options) overrides the attribute value key by key.
+
+Attribute values are cached with the ORM metadata: clear the cache after changing them. See `audit:clean` in the
+auditor documentation for how policies are applied.
 
 ### Enabling/Disabling at Runtime
 
@@ -107,7 +139,36 @@ class User
 
 ### Parameters
 
-The `#[Ignore]` attribute has no parameters.
+| Parameter | Type      | Required          | Description                                         |
+|-----------|-----------|-------------------|-----------------------------------------------------|
+| `field`   | `?string` | On the class only | Name of the ignored field; leave it out on a property |
+
+### On the Class
+
+`#[Ignore]` can also be put on the class, once per field, with `field` naming the property. This is handy when the
+property is declared in a parent class or a trait you do not want to touch:
+
+```php
+#[ORM\Entity]
+#[Auditable]
+#[Ignore(field: 'password')]
+#[Ignore(field: 'resetToken')]
+class User
+{
+    // ...
+}
+```
+
+A class-level `#[Ignore]` without `field`, or a property-level one with `field`, throws an `InvalidArgumentException`
+when the attributes are loaded.
+
+### Combining with the Configuration
+
+- The entity `ignored_columns` of the configuration are added to the `#[Ignore]` properties.
+- `#[Ignore]` wins over the `audited_columns` allowlist: a property marked with `#[Ignore]` is never audited, even
+  when it is listed there.
+- To decide per object instead of per class, use the `ignored_columns_resolver` option
+  (see [Configuration](configuration.md#ignoring-properties-per-object)).
 
 ### Common Use Cases
 
@@ -204,6 +265,150 @@ $configuration->setRoleChecker(function (string $entity, string $scope) use ($pr
 });
 ```
 
+## 🏷️ #[DiffLabel]
+
+Without `#[DiffLabel]`, a change from category 1 to category 2 stores:
+
+```json
+{"categoryId": {"old": 1, "new": 2}}
+```
+
+With `#[DiffLabel]`, the same change stores:
+
+```json
+{"categoryId": {"old": {"value": 1, "label": "Books"}, "new": {"value": 2, "label": "Electronics"}}}
+```
+
+Labels are resolved at **write-time** and stored in the JSON — they remain accurate even if the referenced record is later renamed or deleted.
+
+### Namespace
+
+```php
+use DH\Auditor\Attribute\DiffLabel;
+```
+
+### Usage
+
+```php
+<?php
+
+use DH\Auditor\Attribute\Auditable;
+use DH\Auditor\Attribute\DiffLabel;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
+
+#[ORM\Entity]
+#[Auditable]
+class Product
+{
+    #[ORM\Column(type: Types::INTEGER)]
+    #[DiffLabel(resolver: CategoryResolver::class)]
+    private int $categoryId;
+}
+```
+
+The resolver must implement `DiffLabelResolverInterface`. Return `null` to fall back to storing the plain scalar:
+
+```php
+use DH\Auditor\Contract\DiffLabelResolverInterface;
+
+final class CategoryResolver implements DiffLabelResolverInterface
+{
+    private const array LABELS = [1 => 'Books', 2 => 'Electronics', 3 => 'Clothing'];
+
+    public function __invoke(mixed $value): ?string
+    {
+        return self::LABELS[$value] ?? null;
+    }
+}
+```
+
+### Parameters
+
+| Parameter  | Type     | Required | Description                          |
+|------------|----------|----------|--------------------------------------|
+| `resolver` | `string` | Yes      | FQCN of the `DiffLabelResolverInterface` implementation |
+| `field`    | `?string` | On the class only | Name of the field; leave it out on a property |
+
+As with `#[Ignore]`, the attribute can be put on the class, once per field:
+`#[DiffLabel(resolver: CategoryResolver::class, field: 'categoryId')]`. A property-level `#[DiffLabel]` wins over a
+class-level one for the same field.
+
+### Wiring resolvers (standalone)
+
+Resolvers are looked up at flush-time via a PSR-11 `ContainerInterface`. Inject it on the provider before flushing:
+
+```php
+use DH\Auditor\Provider\Doctrine\DoctrineProvider;
+use Symfony\Component\DependencyInjection\ServiceLocator;
+
+$provider = new DoctrineProvider($configuration);
+
+$provider->setDiffLabelResolverLocator(new ServiceLocator([
+    CategoryResolver::class => fn () => new CategoryResolver(),
+]));
+```
+
+`ServiceLocator` comes from `symfony/dependency-injection`, which is not a dependency of the provider; any PSR-11
+container keyed by the resolver FQCN works. When using the Symfony bundle, the locator is wired automatically — see the [Diff Label Resolvers guide](https://github.com/DamienHarper/auditor-bundle/blob/master/docs/customization/diff-label-resolvers.md).
+
+## 🎭 #[Mask]
+
+Records that a property changed without storing its values. Unlike `#[Ignore]`, the change still shows in the
+history.
+
+### Namespace
+
+```php
+use DH\Auditor\Attribute\Mask;
+use DH\Auditor\Masking\MaskStrategy;
+```
+
+### Usage
+
+```php
+#[ORM\Entity]
+#[Auditable]
+class User
+{
+    #[ORM\Column(type: 'string')]
+    #[Mask(strategy: MaskStrategy::KeyedHash)]  // HMAC-SHA256 of the email
+    private string $email = '';
+
+    #[ORM\Column(type: 'string', nullable: true)]
+    #[Mask]                                     // "***"
+    private ?string $pin = null;
+}
+```
+
+### Parameters
+
+| Parameter  | Type           | Default                | Description                                               |
+|------------|----------------|------------------------|-----------------------------------------------------------|
+| `strategy` | `MaskStrategy` | `MaskStrategy::Hidden` | `MaskStrategy::Hidden` or `MaskStrategy::KeyedHash`       |
+| `field`    | `?string`      | `null`                 | On the class only: name of the masked field (repeatable)  |
+
+### Strategies
+
+- `MaskStrategy::Hidden` stores `"***"` as `old` and `new`.
+- `MaskStrategy::KeyedHash` stores an HMAC-SHA256 of the value, keyed with the `mask_secret` option of the provider (at least
+  32 bytes, see [Configuration](configuration.md#-masked-values)). Equal values give equal hashes: the entries of one
+  value can be found by hashing it with the same secret, without storing it. A string is hashed as is, any other value
+  as its JSON encoding.
+
+In both cases a null value stays null, and the values are compared before being masked: a change from `"1234"` to
+`"5678"` is recorded as `"***"` → `"***"`. Masks apply to `insert`, `update` and, with `full_snapshot_on_remove`,
+`remove` entries, to columns and to-one associations (whose summary is masked). A masked field gets no `#[DiffLabel]`
+label, and a masked JSON field no deep diff.
+
+An identifier (written in clear in `object_id`) and a collection (recorded by `associate` / `dissociate` entries)
+cannot be masked: a `#[Mask]` on either fails when the attributes are loaded, as does a `MaskStrategy::KeyedHash`
+without `mask_secret`.
+
+> [!WARNING]
+> The label of an entity (its `__toString()` or the `entity_label_resolver`) is written in clear in the diffs:
+> keep masked values out of it.
+
 ## 📄 Complete Example
 
 ```php
@@ -247,10 +452,7 @@ class User
 ## 🔀 Combining with Programmatic Configuration
 
 > [!TIP]
-> Some attribute options can be overridden by programmatic configuration.
-
-For an entity marked `#[Auditable]`, only `enabled: false` and `roles` (which take precedence over `#[Security]`)
-are read from the configuration (`roles` scope by scope); the other options, such as `ignored_columns`, come from the attributes.
+> Attributes can be combined with or overridden by programmatic configuration.
 
 ```php
 use DH\Auditor\Provider\Doctrine\Configuration;
@@ -260,6 +462,11 @@ $configuration = new Configuration([
         // Override the Security attribute, scope by scope — more restrictive
         User::class => [
             'roles' => ['view' => ['ROLE_SUPER_ADMIN']],
+        ],
+
+        // Add additional ignored properties on top of attribute-defined ones
+        Post::class => [
+            'ignored_columns' => ['viewCount'],
         ],
 
         // Completely disable auditing despite #[Auditable]
@@ -287,3 +494,4 @@ $configuration = new Configuration([
 
 - ⚙️ [Configuration Reference](configuration.md)
 - 🔍 [Querying Audits](../../querying/index.md)
+- 🏷️ [Diff Label Resolvers](https://github.com/DamienHarper/auditor-bundle/blob/master/docs/customization/diff-label-resolvers.md) — Full wiring guide (Symfony bundle)

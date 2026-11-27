@@ -1,3 +1,7 @@
+---
+description: "Overview of the DoctrineProvider: what it tracks on flush, the audit table columns and action types, its architecture, and limitations such as DQL and raw SQL."
+---
+
 # DoctrineProvider
 
 > **The Doctrine ORM provider for the auditor library**
@@ -29,21 +33,19 @@ The provider hooks into Doctrine's `onFlush` event to automatically detect:
 
 For each audited entity, a corresponding audit table is created:
 
-| Column                | Type          | Description                                                     |
-|-----------------------|---------------|-----------------------------------------------------------------|
-| `id`                  | `bigint`      | Auto-increment primary key                                      |
-| `type`                | `string(10)`  | Action type (insert/update/remove/associate/dissociate)         |
-| `object_id`           | `string(255)` | ID of the audited entity                                        |
-| `discriminator`       | `string(255)` | Entity class (for inheritance hierarchies)                      |
-| `transaction_hash`    | `string(40)`  | Hash grouping related changes from the same flush               |
-| `diffs`               | `json`        | The actual changes (JSON)                                       |
-| `extra_data`          | `json`        | Custom extra data (populated via listener)                      |
-| `blame_id`            | `string(255)` | User identifier                                                 |
-| `blame_user`          | `string(255)` | Username                                                        |
-| `blame_user_fqdn`     | `string(255)` | User class name                                                 |
-| `blame_user_firewall` | `string(100)` | Context/firewall name                                           |
-| `ip`                  | `string(45)`  | Client IP address                                               |
-| `created_at`          | `datetime`    | When the audit was created                                      |
+| Column           | Type          | Description                                                       |
+|------------------|---------------|-------------------------------------------------------------------|
+| `id`             | `bigint`      | Auto-increment primary key                                        |
+| `schema_version` | `smallint`    | Diffs format version: `1` (legacy) or `2` (current)              |
+| `type`           | `string(11)`  | Action type (insert/update/remove/associate/dissociate)           |
+| `object_id`      | `string(255)` | ID of the audited entity                                          |
+| `discriminator`  | `string(255)` | Entity class (for inheritance hierarchies)                        |
+| `transaction_id` | `char(26)`    | ULID grouping related changes from the same flush                 |
+| `diffs`          | `json`        | The actual changes — see [schema reference](schema.md)            |
+| `extra_data`     | `json`        | Custom extra data (populated via listener)                        |
+| `blame_id`       | `string(255)` | User identifier                                                   |
+| `blame`          | `json`        | Blame context: `username`, `user_fqdn`, `user_firewall`, `ip`, plus `impersonator` and `via` when set |
+| `created_at`     | `datetime`    | When the audit was created                                        |
 
 ### Action Types
 
@@ -102,6 +104,7 @@ flowchart TB
 - [Services](services.md) — AuditingService and StorageService
 - [Schema Management](schema.md) — Audit table management
 - [Multi-Database](multi-database.md) — Store audits in a separate database
+- [Performance](performance.md) — Flush benchmarks and schema v2 migration duration
 
 ## 🚀 Basic Usage
 

@@ -1,3 +1,7 @@
+---
+description: Attach custom JSON to Doctrine audit entries in extra_data, with an extra_data_provider or a LifecycleEvent listener, then filter and index it with JsonFilter.
+---
+
 # Extra Data
 
 > **Attach custom contextual information to audit entries**
@@ -35,7 +39,9 @@ $configuration->setExtraDataProvider(function (): ?array {
 ```
 
 > [!NOTE]
-> The `extra_data_provider` is called for every audit entry. If it returns `null`, `extra_data` is stored as `null`.
+> The `extra_data_provider` is called once per flush (and once per batch of `audit:snapshot`): every audit entry of
+> that flush gets the same `extra_data`. If it returns `null`, `extra_data` is stored as `null`. For a value that depends
+> on the audited entity, use a `LifecycleEvent` listener (option 2).
 
 ## 🎧 Option 2: LifecycleEvent Listener (Per-Entry)
 
@@ -51,7 +57,7 @@ $eventDispatcher = new EventDispatcher();
 
 $eventDispatcher->addListener(LifecycleEvent::class, function (LifecycleEvent $event): void {
     $payload = $event->getPayload();
-    $entity  = $event->getEntity();  // The audited Doctrine entity object
+    $entity  = $event->entity;       // The audited Doctrine entity object (null when unknown)
 
     // Only enrich specific entities
     if (!$entity instanceof App\Entity\Order) {
@@ -106,7 +112,7 @@ $eventDispatcher->addListener(LifecycleEvent::class, function (LifecycleEvent $e
 ```php
 $eventDispatcher->addListener(LifecycleEvent::class, function (LifecycleEvent $event): void {
     $payload = $event->getPayload();
-    $entity  = $event->getEntity();
+    $entity  = $event->entity;
 
     if ('remove' !== $payload['type']) {
         return;
