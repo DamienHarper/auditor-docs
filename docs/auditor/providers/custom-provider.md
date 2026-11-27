@@ -1,6 +1,7 @@
 ---
 id: custom-provider
 title: Building a Custom Provider
+description: Write a custom auditor provider with ProviderInterface, AbstractProvider and auditing or storage services, read the LifecycleEvent payload, and package it.
 ---
 # Building a Custom Provider
 
@@ -136,6 +137,13 @@ final class MyStorageService extends AbstractService implements StorageServiceIn
 `persist()` is called by `AuditEventSubscriber` for every `LifecycleEvent` dispatched by
 auditor. This is where you write the audit entry to your backend.
 
+Throw an exception (any `\Exception`) when the entry cannot be written. `AuditEventSubscriber`
+still hands the entry to the other storage providers, and throws a
+`DH\Auditor\Exception\ProviderException` when none of them could persist it. Its message lists
+every failing provider with its error, and `getPrevious()` returns the first provider's exception.
+The exception reaches the code that dispatched the `LifecycleEvent`: with the Doctrine provider,
+the database transaction is rolled back.
+
 ### `LifecycleEvent` payload
 
 ```php
@@ -150,18 +158,16 @@ The `$payload` array always contains these keys:
 
 | Key | Type | Description |
 |-----|------|-------------|
+| `schema_version` | `int` | Row format version (`2` for current) |
 | `type` | `string` | Operation: `'insert'`, `'update'`, `'remove'`, `'associate'`, `'dissociate'` |
 | `object_id` | `string` | Stringified primary key of the entity |
 | `discriminator` | `?string` | Doctrine inheritance discriminator (or `null`) |
-| `transaction_hash` | `?string` | Groups all changes in a single flush |
-| `diffs` | `string` | JSON-encoded field-level changes |
+| `transaction_id` | `?string` | ULID grouping all changes in a single flush |
+| `diffs` | `string` | JSON-encoded field-level changes (`{source, changes}` envelope) |
 | `extra_data` | `?string` | Optional JSON metadata (enriched by event listeners) |
 | `blame_id` | `int\|string\|null` | Authenticated user identifier |
-| `blame_user` | `?string` | Authenticated username |
-| `blame_user_fqdn` | `?string` | User class FQCN |
-| `blame_user_firewall` | `?string` | Symfony firewall name |
-| `ip` | `?string` | Client IP address |
-| `created_at` | `DateTimeImmutable` | Timestamp of the change |
+| `blame` | `?string` | JSON-encoded blame: `{"username", "user_fqdn", "user_firewall", "ip"}`, plus `impersonator` (`{"id", "username", "fqdn"}`) when the user is impersonated and `via` (blame context) when set |
+| `created_at` | `string` | Timestamp of the change (`Y-m-d H:i:s.u`, in the auditor timezone) |
 
 Providers built on Doctrine ORM also add:
 
@@ -216,7 +222,8 @@ final class AcmeProvider extends AbstractProvider
             'operation'  => $payload['type'],
             'entity_id'  => $payload['object_id'],
             'changes'    => json_decode($payload['diffs'], true),
-            'created_at' => $payload['created_at']->format(\DateTimeInterface::ATOM),
+            'user'       => json_decode($payload['blame'] ?? 'null', true)['username'] ?? null,
+            'created_at' => $payload['created_at'],
         ]);
     }
 }
@@ -246,8 +253,11 @@ $elasticProvider = new ElasticProvider(new ElasticConfiguration($client));
 $auditor->registerProvider($elasticProvider);
 ```
 
-`auditor` requires **at least one provider** that supports auditing **and** at least one that
-supports storage. The two roles can be fulfilled by the same provider or by separate ones.
+`registerProvider()` only requires each provider to support **at least one** of the two roles
+(auditing or storage); it throws a `ProviderException` otherwise. Nothing is audited without a
+provider that supports auditing, and nothing is persisted without one that supports storage. The
+two roles can be fulfilled by the same provider or by separate ones. `disableAuditing()` and
+`disableStorage()` refuse to switch off the last enabled provider of their role.
 
 ---
 
@@ -304,10 +314,10 @@ acme/auditor-acme-provider/
     "license": "MIT",
     "require": {
         "php": ">=8.4",
-        "damienharper/auditor": "^4.0"
+        "damienharper/auditor": "^5.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^11.0"
+        "phpunit/phpunit": "^13.0"
     },
     "autoload": {
         "psr-4": {
@@ -351,7 +361,8 @@ container automatically.
 namespace Acme\AuditProvider\DependencyInjection;
 
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\HttpKernel\DependencyInjection\Extension;
+use Symfony\Component\DependencyInjection\Extension\Extension;
+use Symfony\Component\DependencyInjection\Reference;
 
 final class AcmeAuditExtension extends Extension
 {
@@ -392,18 +403,16 @@ final class AcmeProviderTest extends TestCase
         $provider = new AcmeProvider(new Configuration($backend));
 
         $event = new LifecycleEvent([
-            'type'                => TransactionType::INSERT,
-            'object_id'           => '42',
-            'discriminator'       => null,
-            'transaction_hash'    => 'abc123',
-            'diffs'               => '{}',
-            'extra_data'          => null,
-            'blame_id'            => null,
-            'blame_user'          => null,
-            'blame_user_fqdn'     => null,
-            'blame_user_firewall' => null,
-            'ip'                  => '127.0.0.1',
-            'created_at'          => new \DateTimeImmutable(),
+            'schema_version' => 2,
+            'type'           => TransactionType::INSERT,
+            'object_id'      => '42',
+            'discriminator'  => null,
+            'transaction_id' => '01JXXXXXXXXXXXXXXXXXXXXXXXXX',
+            'diffs'          => '{}',
+            'extra_data'     => null,
+            'blame_id'       => null,
+            'blame'          => null,
+            'created_at'     => new \DateTimeImmutable()->format('Y-m-d H:i:s.u'),
         ]);
 
         $provider->persist($event);

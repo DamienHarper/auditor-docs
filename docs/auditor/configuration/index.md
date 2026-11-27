@@ -1,3 +1,7 @@
+---
+description: Reference of the auditor Configuration options (enabled, timezone, user provider, security provider, role checker, extra data provider) and how to set them.
+---
+
 # Configuration Reference
 
 > **All configuration options available in auditor**
@@ -19,6 +23,7 @@ $configuration = new Configuration([
     'user_provider' => null,
     'security_provider' => null,
     'role_checker' => null,
+    'extra_data_provider' => null,
 ]);
 ```
 
@@ -31,6 +36,7 @@ $configuration = new Configuration([
 | `user_provider`     | `callable\|null`  | `null`  | Callback that returns the current user              |
 | `security_provider` | `callable\|null`  | `null`  | Callback that returns security context info         |
 | `role_checker`      | `callable\|null`  | `null`  | Callback that checks if user can view entity audits |
+| `extra_data_provider` | `callable\|null` | `null` | Callback that returns the `extra_data` of the entries of a flush (see [Extra Data](../extra-data.md)) |
 
 ## 🔧 Configuration Methods
 
@@ -44,7 +50,7 @@ $configuration->disable();
 $configuration->enable();
 
 // Check if auditing is enabled
-if ($configuration->isEnabled()) {
+if ($configuration->enabled) {
     // ...
 }
 ```
@@ -52,7 +58,7 @@ if ($configuration->isEnabled()) {
 ### Get Timezone
 
 ```php
-$timezone = $configuration->getTimezone();
+$timezone = $configuration->timezone;
 ```
 
 ## 👤 User Provider
@@ -72,7 +78,8 @@ $configuration->setUserProvider(function (): ?User {
     
     return new User(
         (string) $currentUser->getId(),  // User identifier
-        $currentUser->getUsername()       // Username for display
+        $currentUser->getUsername(),      // Username for display
+        $currentUser::class,              // Class of the user (user_fqdn)
     );
 });
 ```
@@ -84,23 +91,25 @@ namespace DH\Auditor\User;
 
 interface UserInterface
 {
-    public function getIdentifier(): ?string;
-    public function getUsername(): ?string;
+    public ?string $identifier { get; }
+    public ?string $username { get; }
+    public ?string $fqdn { get; }
+    public ?UserInterface $impersonator { get; }
 }
 ```
 
-See [User Provider Configuration](user-provider.md) for more details.
+See [User Provider Configuration](user-provider.md) for more details. To record *how* a change was made (an
+import, a command, a message…), see [Blame Context](blame-context.md).
 
 ## 🔐 Security Provider
 
-The security provider returns contextual security information to be stored with audit entries:
+The security provider returns the client IP address and the firewall name, as a list of two values:
 
 ```php
 $configuration->setSecurityProvider(function (): array {
     return [
-        'client_ip' => $_SERVER['REMOTE_ADDR'] ?? null,
-        'user_fqdn' => $this->security->getUser()?::class,
-        'user_firewall' => $this->getFirewallName(),
+        $_SERVER['REMOTE_ADDR'] ?? null, // client IP
+        $this->getFirewallName(),        // firewall name
     ];
 });
 ```
@@ -153,14 +162,12 @@ $configuration->setUserProvider(function (): ?User {
     if (null === $user) {
         return null;
     }
-    return new User((string) $user->getId(), $user->getUsername());
+    return new User((string) $user->getId(), $user->getUsername(), $user::class);
 });
 
 // Set security provider
 $configuration->setSecurityProvider(function (): array {
-    return [
-        'client_ip' => $_SERVER['REMOTE_ADDR'] ?? null,
-    ];
+    return [$_SERVER['REMOTE_ADDR'] ?? null, null];
 });
 
 // Set role checker
@@ -176,6 +183,7 @@ $auditor = new Auditor($configuration, new EventDispatcher());
 ## Next Steps
 
 - 👤 [User Provider Configuration](user-provider.md)
+- 🧭 [Blame Context](blame-context.md)
 - 🔐 [Security Provider Configuration](security-provider.md)
 - 🛡️ [Role Checker Configuration](role-checker.md)
 - 🗄️ [DoctrineProvider Configuration](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/providers/doctrine/configuration)

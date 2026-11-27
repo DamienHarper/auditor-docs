@@ -1,3 +1,7 @@
+---
+description: Record who made each change with a user provider callable returning a User or a custom UserInterface, and read the blamed user back from audit entries.
+---
+
 # User Provider Configuration
 
 > **Identify who made changes to audited entities**
@@ -9,7 +13,7 @@ The user provider is responsible for identifying who made changes to audited ent
 When an audit entry is created, auditor can record:
 
 - **blame_id** - The unique identifier of the user
-- **blame_user** - The username or display name
+- **username** - The username or display name (stored in the `blame` JSON column)
 
 This information comes from the user provider callback.
 
@@ -37,7 +41,8 @@ $configuration->setUserProvider(function (): ?User {
     
     return new User(
         (string) $currentUser->getId(),    // User ID (stored as blame_id)
-        $currentUser->getUsername()         // Username (stored as blame_user)
+        $currentUser->getUsername(),        // Username (stored in blame JSON column)
+        $currentUser::class,                // Class of the user (user_fqdn key of the blame JSON column)
     );
 });
 ```
@@ -48,7 +53,7 @@ $configuration->setUserProvider(function (): ?User {
 <?php
 
 use DH\Auditor\User\User;
-use Symfony\Component\Security\Core\Security;
+use Symfony\Bundle\SecurityBundle\Security;
 
 // In a service or controller
 $configuration->setUserProvider(function () use ($security): ?User {
@@ -60,7 +65,8 @@ $configuration->setUserProvider(function () use ($security): ?User {
     
     return new User(
         $user->getUserIdentifier(),
-        $user->getUserIdentifier()
+        $user->getUserIdentifier(),
+        $user::class,
     );
 });
 ```
@@ -72,6 +78,7 @@ If your user has a database ID:
 ```php
 <?php
 
+use App\Entity\User as AppUser;
 use DH\Auditor\User\User;
 
 $configuration->setUserProvider(function () use ($security, $entityManager): ?User {
@@ -83,7 +90,7 @@ $configuration->setUserProvider(function () use ($security, $entityManager): ?Us
     
     // Get the user ID from the database entity
     $userId = $entityManager
-        ->getRepository(User::class)
+        ->getRepository(AppUser::class)
         ->findOneBy(['email' => $user->getUserIdentifier()])
         ?->getId();
     
@@ -96,31 +103,71 @@ $configuration->setUserProvider(function () use ($security, $entityManager): ?Us
 
 ## 📦 The User Class
 
-The built-in `User` class is a simple value object:
+The built-in `User` class is a final value object. `UserInterface` declares four read-only properties (PHP 8.4
+property hooks), read by the providers:
 
 ```php
 <?php
 
 namespace DH\Auditor\User;
 
-class User implements UserInterface
+interface UserInterface
 {
+    public ?string $identifier { get; }   // stored as blame_id
+
+    public ?string $username { get; }     // stored in the blame JSON column
+
+    public ?string $fqdn { get; }         // class of the user, user_fqdn key of the blame JSON column
+
+    public ?UserInterface $impersonator { get; } // impersonator key of the blame JSON column
+}
+
+final class User implements UserInterface
+{
+    public ?string $identifier {
+        get => $this->id;
+    }
+
     public function __construct(
-        private ?string $identifier,
-        private ?string $username
+        private readonly ?string $id = null,
+        public readonly ?string $username = null,
+        public readonly ?string $fqdn = null,
+        public readonly ?UserInterface $impersonator = null,
     ) {}
-
-    public function getIdentifier(): ?string
-    {
-        return $this->identifier;
-    }
-
-    public function getUsername(): ?string
-    {
-        return $this->username;
-    }
 }
 ```
+
+`fqdn` is the class of the user in your application (such as `App\Entity\User`), recorded as `user_fqdn`: it tells
+users of different classes apart when they share an id. It is null when the user provider does not supply it.
+
+## 🎭 Impersonation
+
+When a user impersonates another one (switch user), return the impersonated user and pass the impersonator: the
+changes are blamed on the impersonated user, and the impersonator is recorded in the `impersonator` key of the
+blame JSON column.
+
+```php
+<?php
+
+return new User(
+    (string) $impersonated->getId(),
+    $impersonated->getUserIdentifier(),
+    $impersonated::class,
+    new User((string) $impersonator->getId(), $impersonator->getUserIdentifier(), $impersonator::class),
+);
+```
+
+```json
+{
+  "username": "alice",
+  "user_fqdn": "App\\Entity\\Customer",
+  "user_firewall": "main",
+  "ip": "10.0.0.1",
+  "impersonator": {"id": "1", "username": "admin", "fqdn": "App\\Entity\\Admin"}
+}
+```
+
+The key is written only when an impersonator is set; `$entry->impersonator` returns it (null otherwise).
 
 ## 🧩 Custom User Implementation
 
@@ -133,50 +180,39 @@ namespace App\Audit;
 
 use DH\Auditor\User\UserInterface;
 
-class CustomUser implements UserInterface
+final readonly class CustomUser implements UserInterface
 {
-    public function __construct(
-        private string $id,
-        private string $username,
-        private string $email,
-        private array $roles
-    ) {}
+    public ?string $identifier;
+    public ?string $username;
+    public ?string $fqdn;
+    public ?UserInterface $impersonator;
 
-    public function getIdentifier(): ?string
+    public function __construct(string $id, string $name, public string $email)
     {
-        return $this->id;
-    }
-
-    public function getUsername(): ?string
-    {
-        return sprintf('%s (%s)', $this->username, $this->email);
-    }
-    
-    // Additional methods for your needs
-    public function getEmail(): string
-    {
-        return $this->email;
-    }
-    
-    public function getRoles(): array
-    {
-        return $this->roles;
+        $this->identifier = $id;
+        $this->username = sprintf('%s (%s)', $name, $email);
+        $this->fqdn = \App\Entity\User::class;
+        $this->impersonator = null;
     }
 }
 ```
 
+A readonly property satisfies a `{ get; }` property of an interface.
+
 ## 🌐 API/CLI Context
 
 > [!TIP]
-> For API requests or CLI commands, consider identifying the context (API token, CLI user) rather than leaving it empty.
+> For API requests, consider identifying the API client rather than leaving the user empty. For CLI commands,
+> return `null` (no fake user) and record how the change was made with a [blame context](blame-context.md),
+> such as `new BlameContext('console', 'app:import-products')`.
 
 ```php
 <?php
 
 $configuration->setUserProvider(function (): ?User {
-    // Check for CLI context
+    // CLI context: no user to blame, the command is recorded by a blame context
     if (PHP_SAPI === 'cli') {
-        return new User('CLI', 'System (CLI)');
+        return null;
     }
     
     // Check for API token
@@ -216,9 +252,10 @@ $query = $reader->createQuery(Post::class, ['object_id' => 123]);
 $audits = $query->execute();
 
 foreach ($audits as $entry) {
-    echo "User ID: " . $entry->getUserId();       // blame_id
-    echo "Username: " . $entry->getUsername();    // blame_user
-    echo "User FQDN: " . $entry->getUserFqdn();   // blame_user_fqdn
+    echo "User ID: " . $entry->userId;    // blame_id column
+    echo "Username: " . $entry->username; // blame JSON → username key
+    echo "User FQDN: " . $entry->userFqdn; // blame JSON → user_fqdn key
+    echo "Impersonator: " . ($entry->impersonator['username'] ?? '-'); // blame JSON → impersonator key
 }
 ```
 
@@ -236,5 +273,6 @@ foreach ($audits as $entry) {
 
 ## Related
 
+- 🧭 [Blame Context](blame-context.md): record how a change was made, or blame another user for a unit of work
 - 🔐 [Security Provider Configuration](security-provider.md)
 - 🛡️ [Role Checker Configuration](role-checker.md)

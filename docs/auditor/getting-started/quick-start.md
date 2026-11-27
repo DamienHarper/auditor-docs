@@ -1,3 +1,7 @@
+---
+description: "Set up the auditor core in plain PHP: create the Configuration and the Auditor, register a provider and mark entities with #[Auditable] and related attributes."
+---
+
 # Quick Start Guide
 
 > **Set up the auditor core and connect a provider**
@@ -53,12 +57,14 @@ $auditor->registerProvider($provider);
 
 | Provider | Package | Storage |
 |----------|---------|---------|
-| DoctrineProvider | [auditor-doctrine-provider](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/) | Doctrine ORM / DBAL |
+| DoctrineProvider | [auditor-doctrine-provider](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider) | Doctrine ORM / DBAL |
 
 ## 3️⃣ Mark Entities as Auditable
 
 Use the `#[Auditable]` attribute on any class you want tracked. `#[Ignore]` excludes
-individual fields; `#[Security]` restricts who can view the audit entries.
+individual fields; `#[Security]` restricts who can view the audit entries; `#[DiffLabel]`
+attaches a human-readable label to a property's raw value in the diff; `#[Mask]` records that a field
+changed without storing its values.
 
 ```php
 <?php
@@ -66,17 +72,24 @@ individual fields; `#[Security]` restricts who can view the audit entries.
 namespace App\Entity;
 
 use DH\Auditor\Attribute\Auditable;
+use DH\Auditor\Attribute\DiffLabel;
 use DH\Auditor\Attribute\Ignore;
+use DH\Auditor\Attribute\Mask;
 use DH\Auditor\Attribute\Security;
+use DH\Auditor\Masking\MaskStrategy;
 
 #[Auditable]
 #[Security(view: ['ROLE_ADMIN'])]
 class User
 {
-    private string $email;
+    #[Mask(strategy: MaskStrategy::KeyedHash)]
+    private string $email;     // changes recorded as HMACs, never in clear
 
     #[Ignore]
     private string $password;  // this field will never appear in audit diffs
+
+    #[DiffLabel(resolver: StatusLabelResolver::class)]
+    private int $status;      // raw value stored alongside a human-readable label
 }
 ```
 
@@ -96,6 +109,6 @@ Refer to your provider's quick start for schema setup and reading audit entries 
 ## What's Next?
 
 - ⚙️ [Configuration Reference](../configuration/index.md) — Global options (user provider, security, role checker)
-- 🏷️ [Attributes Reference](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/providers/doctrine/attributes) — `#[Auditable]`, `#[Ignore]`, `#[Security]`
+- 🏷️ [Attributes Reference](../api/index.md#-attributes) — `#[Auditable]`, `#[Ignore]`, `#[Security]`, `#[DiffLabel]`
 - 🔌 [Providers](../providers/doctrine/index.md) — Available providers
 - 🔍 [Querying Audits](../querying/index.md) — Reading audit entries
