@@ -312,7 +312,11 @@ This library is released under the [MIT License](https://opensource.org/licenses
 
 - 🔌 **Automatic wiring** - Services are automatically configured via Symfony's DI
 - 🔒 **Security integration** - Uses Symfony's security for user tracking and access control
-- 🌐 **Built-in viewer** - Web interface to browse audit logs at `/audit`
+- 🌐 **Built-in viewer** - Web interface at `/audit` telling each action as a readable phrase, compare revisions, link to it from your pages
+- 📜 **Histories across entities** - The history of a business object and of the entities attached to it, in the viewer or in your own pages (`<twig:DhAuditor:History>`)
+- 📤 **Export** - Stream audit entries as NDJSON, JSON or CSV (`/audit/export`)
+- 🧭 **Blame contexts** - Record how a change was made (console command, Messenger message, import…)
+- 🗑️ **Scheduled retention** - Prune old audit entries with Symfony Scheduler
 - 🖥️ **Console support** - Tracks changes made via console commands
 - 🌍 **Internationalization** - Translations for 9 languages
 - ⚙️ **YAML configuration** - Simple configuration via `dh_auditor.yaml`
@@ -366,26 +370,13 @@ flowchart TB
 | ViewerController    | (internal)                     | Web UI for audit logs                 |
 | RoutingLoader       | (internal)                     | Loads viewer routes                   |
 
-### ⚠️ Deprecation Notice (auditor v4.x)
-
-Starting with this release, `auditor-bundle` requires [`damienharper/auditor-doctrine-provider`](https://github.com/DamienHarper/auditor-doctrine-provider) as a direct dependency.
-
-The `DoctrineProvider` and all related classes previously bundled within `damienharper/auditor` (under `DH\Auditor\Provider\Doctrine\`) are now **deprecated** and will be removed in `damienharper/auditor` v5.0.
-
-**For auditor-bundle users: no action required.** The bundle automatically pulls in `auditor-doctrine-provider` and everything works transparently.
-
-**For users using `DoctrineProvider` directly** (without the bundle), install the standalone package:
-```bash
-composer require damienharper/auditor-doctrine-provider
-```
-
 ### 📋 Version Compatibility
 
 | Version | Status                      | Requirements                                                         |
 |:--------|:----------------------------|:---------------------------------------------------------------------|
-| 7.x     | Bug and security fixes      | PHP >= 8.4, Symfony >= 8.1, Doctrine DBAL >= 4.0, Doctrine ORM >= 3.2|
+| 8.x     | Active development 🚀       | PHP >= 8.4, Symfony >= 8.1, Doctrine DBAL >= 4.6, Doctrine ORM >= 3.7|
+| 7.x     | Bug and security fixes      | PHP >= 8.4, Symfony >= 8.1, Doctrine DBAL >= 4.3, Doctrine ORM >= 3.2|
 | 6.x     | End of Life                 | PHP >= 8.2, Symfony >= 5.4                                           |
-| 5.x     | End of Life                 | PHP >= 7.4, Symfony >= 4.4                                           |
 
 ### 🚀 Quick Links
 
@@ -398,6 +389,7 @@ composer require damienharper/auditor-doctrine-provider
 ### 🔗 Related Projects
 
 - **[auditor](https://github.com/DamienHarper/auditor)** - The core audit library (required)
+- **[auditor-doctrine-provider](https://github.com/DamienHarper/auditor-doctrine-provider)** - The Doctrine ORM provider (required)
 
 ### 📜 License
 
@@ -1091,24 +1083,27 @@ This guide covers the installation of auditor-bundle in a Symfony application.
 
 ### 📋 Requirements
 
-#### Version 7.x (Current)
+#### Version 8.x (Current)
 
-| Requirement   | Version |
-|---------------|---------|
-| PHP           | >= 8.4  |
-| Symfony       | >= 8.1  |
-| Doctrine DBAL | >= 4.0  |
-| Doctrine ORM  | >= 3.2  |
-| auditor       | >= 4.4  |
+| Requirement               | Version |
+|---------------------------|---------|
+| PHP                       | >= 8.4  |
+| Symfony                   | >= 8.1  |
+| Doctrine DBAL             | >= 4.6  |
+| Doctrine ORM              | >= 3.7  |
+| auditor                   | >= 5.0  |
+| auditor-doctrine-provider | >= 2.0  |
+| `ext-intl`                | *       |
 
 Tested with PHP 8.4, 8.5 and 8.6, and Symfony 8.1 and 8.2.
 
 #### Previous Versions
 
-| Version | PHP    | Symfony | auditor |
-|---------|--------|---------|---------|
-| 6.x     | >= 8.2 | >= 5.4  | >= 3.0  |
-| 5.x     | >= 7.4 | >= 4.4  | >= 2.0  |
+| Version | PHP    | Symfony                   | auditor |
+|---------|--------|---------------------------|---------|
+| 7.x     | >= 8.4 | >= 8.0 (>= 8.1 since 7.3) | >= 4.0  |
+| 6.x     | >= 8.2 | >= 5.4                    | >= 3.0  |
+| 5.x     | >= 7.4 | >= 4.4                    | >= 2.0  |
 
 ### 📦 Install via Composer
 
@@ -1116,7 +1111,7 @@ Tested with PHP 8.4, 8.5 and 8.6, and Symfony 8.1 and 8.2.
 composer require damienharper/auditor-bundle
 ```
 
-This installs both the bundle and the auditor library.
+This installs the bundle, the auditor library and the Doctrine provider (`damienharper/auditor-doctrine-provider`).
 
 ### 🔌 Bundle Registration
 
@@ -9963,17 +9958,22 @@ manager no longer write each audit entry twice. Also in 1.4. See [Services](../p
 PHP attributes provide an alternative to YAML configuration for declaring auditable entities.
 
 > [!NOTE]
-> Attributes take precedence over YAML configuration.
+> Attributes and YAML configuration are combined: see [Precedence Rules](#-precedence-rules).
 
 ### 📋 Available Attributes
 
-| Attribute      | Target   | Description                           |
-|----------------|----------|---------------------------------------|
-| `#[Auditable]` | Class    | Marks an entity as auditable          |
-| `#[Ignore]`    | Property | Excludes a property from auditing     |
-| `#[Security]`  | Class    | Defines roles required to view audits |    
+| Attribute        | Target   | Description                                      |
+|------------------|----------|--------------------------------------------------|
+| `#[Auditable]`   | Class    | Marks an entity as auditable                     |
+| `#[Ignore]`      | Property, or class with `field:` | Excludes a property from auditing |
+| `#[Security]`    | Class    | Defines roles required to view audits            |
+| `#[DiffLabel]`   | Property, or class with `field:` | Attaches a human-readable label resolver to a field |
+| `#[Mask]`        | Property, or class with `field:` | Records the changes of a property without its values |
+| `#[AuditRoot]`   | Class (repeatable) | Attaches the entries to the history of another entity (see [Histories](../customization/histories.md)) |
 
-All attributes are in the `DH\Auditor\Provider\Doctrine\Auditing\Attribute` namespace.
+`#[Auditable]` also takes a retention policy: `#[Auditable(maxAge: 'P1Y', maxEntries: 10_000)]`.
+
+All attributes are in the `DH\Auditor\Attribute` namespace (auditor core).
 
 ### 🏷️ #[Auditable]
 
@@ -9986,11 +9986,11 @@ Marks an entity class for auditing.
 
 namespace App\Entity;
 
-use DH\Auditor\Provider\Doctrine\Auditing\Attribute as Audit;
+use DH\Auditor\Attribute\Auditable;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
-#[Audit\Auditable]
+#[Auditable]
 class User
 {
     #[ORM\Id]
@@ -10011,7 +10011,7 @@ Create an audit table but don't log until enabled at runtime:
 
 ```php
 #[ORM\Entity]
-#[Audit\Auditable(enabled: false)]
+#[Auditable(enabled: false)]
 class User
 {
     // Auditing is OFF by default
@@ -10028,22 +10028,23 @@ Excludes a property from being audited.
 
 namespace App\Entity;
 
-use DH\Auditor\Provider\Doctrine\Auditing\Attribute as Audit;
+use DH\Auditor\Attribute\Auditable;
+use DH\Auditor\Attribute\Ignore;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
-#[Audit\Auditable]
+#[Auditable]
 class User
 {
     #[ORM\Column]
     private ?string $email = null;
 
     #[ORM\Column]
-    #[Audit\Ignore]
+    #[Ignore]
     private ?string $password = null;  // Not audited
 
     #[ORM\Column]
-    #[Audit\Ignore]
+    #[Ignore]
     private ?\DateTimeImmutable $lastLoginAt = null;  // Not audited
 }
 ```
@@ -10060,12 +10061,13 @@ Restricts access to view audit logs based on user roles.
 
 namespace App\Entity;
 
-use DH\Auditor\Provider\Doctrine\Auditing\Attribute as Audit;
+use DH\Auditor\Attribute\Auditable;
+use DH\Auditor\Attribute\Security;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
-#[Audit\Auditable]
-#[Audit\Security(view: ['ROLE_ADMIN'])]
+#[Auditable]
+#[Security(view: ['ROLE_ADMIN'])]
 class User
 {
     // Only users with ROLE_ADMIN can view User audits
@@ -10075,7 +10077,7 @@ class User
 #### Multiple Roles (OR Logic)
 
 ```php
-#[Audit\Security(view: ['ROLE_ADMIN', 'ROLE_AUDITOR'])]
+#[Security(view: ['ROLE_ADMIN', 'ROLE_AUDITOR'])]
 class User
 {
     // Users with ROLE_ADMIN OR ROLE_AUDITOR can view
@@ -10089,12 +10091,14 @@ class User
 
 namespace App\Entity;
 
-use DH\Auditor\Provider\Doctrine\Auditing\Attribute as Audit;
+use DH\Auditor\Attribute\Auditable;
+use DH\Auditor\Attribute\Ignore;
+use DH\Auditor\Attribute\Security;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
-#[Audit\Auditable]
-#[Audit\Security(view: ['ROLE_ADMIN', 'ROLE_AUDITOR'])]
+#[Auditable]
+#[Security(view: ['ROLE_ADMIN', 'ROLE_AUDITOR'])]
 class User
 {
     #[ORM\Id]
@@ -10106,7 +10110,7 @@ class User
     private ?string $email = null;
 
     #[ORM\Column]
-    #[Audit\Ignore]
+    #[Ignore]
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
@@ -10116,7 +10120,7 @@ class User
     private ?string $lastName = null;
 
     #[ORM\Column]
-    #[Audit\Ignore]
+    #[Ignore]
     private ?\DateTimeImmutable $lastLoginAt = null;
 
     // Getters and setters...
@@ -10143,11 +10147,11 @@ dh_auditor:
 ```php
 // Entity uses attributes for fine-grained control
 #[ORM\Entity]
-#[Audit\Auditable]
-#[Audit\Security(view: ['ROLE_ADMIN'])]
+#[Auditable]
+#[Security(view: ['ROLE_ADMIN'])]
 class User
 {
-    #[Audit\Ignore]
+    #[Ignore]
     private ?string $password = null;
     
     // createdAt and updatedAt are automatically ignored via YAML
@@ -10159,51 +10163,122 @@ class User
 ```mermaid
 flowchart TD
     B["YAML entities.*.enabled: false"] -->|disables| A["Attribute #[Auditable]"]
-    C["Attribute #[Ignore]"] -->|replaces| D["YAML entities.*.ignored_columns"]
+    C["Attribute #[Ignore]"] -->|adds to| D["YAML ignored_columns"]
+    D -->|wins over| G["YAML entities.*.audited_columns"]
     F["YAML entities.*.roles"] -->|overrides, scope by scope| E["Attribute #[Security]"]
 ```
 
 | Attribute       | Behavior                                    |
 |-----------------|---------------------------------------------|
 | `#[Auditable]`  | YAML `enabled: false` disables the entity; YAML `enabled: true` does not re-enable `#[Auditable(enabled: false)]` |
-| `#[Ignore]`     | Replaces the entity `ignored_columns` of the YAML (the global `ignored_columns` still apply) |
+| `#[Ignore]`     | Adds to `ignored_columns` (YAML + attribute)|
+| `#[Ignore]`     | Wins over `entities.*.audited_columns`: an ignored property is never audited |
 | `#[Security]`   | YAML `roles` win, scope by scope: an empty `roles` or a missing `view` key keeps the attribute roles |
+| `#[AuditRoot]`  | Adds to `entities.*.roots` (YAML + attribute) |
+| `#[Auditable(maxAge, maxEntries)]` | YAML `retention` wins, key by key   |
 
 > [!NOTE]
-> These rules need auditor-doctrine-provider 1.4. For an `#[Auditable]` entity, the other entity options of the
-> YAML (such as `ignored_columns`) are not read: use `#[Ignore]`.
+> `enabled: true` is the default of every entity listed in YAML: it cannot tell an explicit value from the default,
+> so it never re-enables an `#[Auditable(enabled: false)]` entity.
 
-### ⚠️ Entity Not in YAML
+### ✅ Entity Not in YAML
 
-> [!CAUTION]
-> If an entity has `#[Auditable]` but isn't in YAML `entities`, it will **not** be audited.
-
-```yaml
-# User is NOT listed here
-dh_auditor:
-    providers:
-        doctrine:
-            entities:
-                App\Entity\Post: ~
-```
-
-```php
-// This entity will NOT be audited (not in YAML)
-#[Audit\Auditable]
-class User {}
-```
-
-Either:
-- ✅ Add to YAML: `App\Entity\User: ~`
-- ✅ Or use YAML-only configuration
+An entity with `#[Auditable]` is audited even when it is not listed under `entities`: the attribute alone is enough.
+List it in YAML only to add `audited_columns` or `ignored_columns`, set `roles`, disable it (`enabled: false`),
+override the retention, or add roots to the `#[AuditRoot]` ones.
 
 ---
+
+### 🏷️ #[DiffLabel]
+
+Attaches a **human-readable label resolver** to a scalar property so that audit diffs store `{"value": 1, "label": "Electronics"}` instead of just `1`.
+
+```php
+<?php
+
+namespace App\Entity;
+
+use App\Audit\Resolver\CategoryResolver;
+use DH\Auditor\Attribute\Auditable;
+use DH\Auditor\Attribute\DiffLabel;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
+
+#[ORM\Entity]
+#[Auditable]
+class Product
+{
+    #[ORM\Column(type: Types::INTEGER)]
+    #[DiffLabel(resolver: CategoryResolver::class)]
+    private int $categoryId;
+}
+```
+
+The `resolver` argument must be the fully-qualified class name of a class implementing `DiffLabelResolverInterface`:
+
+```php
+use DH\Auditor\Contract\DiffLabelResolverInterface;
+
+final class CategoryResolver implements DiffLabelResolverInterface
+{
+    public function __invoke(mixed $value): ?string
+    {
+        // return a label string, or null to store the plain value
+        return match($value) {
+            1 => 'Books',
+            2 => 'Electronics',
+            default => null,
+        };
+    }
+}
+```
+
+> [!TIP]
+> See the [Diff Label Resolvers guide](../customization/diff-label-resolvers.md) for the full reference, including constraints on resolver behaviour and viewer integration.
+
+---
+
+### 🎭 #[Mask]
+
+Records that a property changed without storing its values: unlike `#[Ignore]`, the change still shows in the
+viewer, as `***` or as a hash.
+
+```php
+use DH\Auditor\Attribute\Mask;
+use DH\Auditor\Masking\MaskStrategy;
+
+#[ORM\Entity]
+#[Auditable]
+class User
+{
+    #[ORM\Column]
+    #[Mask(strategy: MaskStrategy::KeyedHash)]  // HMAC-SHA256 keyed with "mask_secret"
+    private string $email = '';
+
+    #[ORM\Column(nullable: true)]
+    #[Mask]                                     // "***"
+    private ?string $pin = null;
+}
+```
+
+`MaskStrategy::KeyedHash` needs the `mask_secret` option of the doctrine provider (see
+[Configuration](index.md#mask_secret)): equal values give equal hashes, so the entries of one value can be found
+without storing it. A masked field gets no `#[DiffLabel]` label. An identifier or a collection cannot be masked.
+
+> [!WARNING]
+> Only the values of the field in the diffs are masked: the label of the entity (its `__toString()` or the
+> `entity_label_resolver`), shown in the viewer, is not. Do not build it from a masked field.
+
+See the
+[provider documentation](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/providers/doctrine/attributes#-mask)
+for the details.
 
 ### 🚀 Next Steps
 
 - ⚙️ [Configuration Reference](index.md) - All YAML options
 - 🗄️ [Storage Configuration](storage.md) - Multi-database setup
 - 🛡️ [Role Checker](../customization/role-checker.md) - Custom access control
+- 🏷️ [Diff Label Resolvers](../customization/diff-label-resolvers.md) - Human-readable labels in diffs
 
 ---
 
@@ -10226,18 +10301,31 @@ dh_auditor:
     user_provider: 'dh_auditor.user_provider'
     security_provider: 'dh_auditor.security_provider'
     role_checker: 'dh_auditor.role_checker'
+    extra_data_provider: ~                  # Service adding extra data to audit entries (opt-in)
 
     providers:
         doctrine:
             table_prefix: ''
             table_suffix: '_audit'
             ignored_columns: []
+            ignored_columns_resolver: ~     # Service returning the properties to ignore for an object
+            root_resolver: ~                # Service returning extra audit roots of an object
+            entity_label_resolver: ~        # Service building the label of an entity written in the diffs
+            read_scope: ~                   # Service restricting every query the reader creates
             entities: []
             storage_services: ['@doctrine.orm.default_entity_manager']
             auditing_services: ['@doctrine.orm.default_entity_manager']
             storage_mapper: ~
             utf8_convert: false             # Re-enable legacy UTF-8 conversion (opt-in)
+            full_snapshot_on_remove: false  # Record every audited field of removed entities (opt-in)
+            batch_size: 0                   # Multi-row INSERTs for audit entries (0: one INSERT per entry)
+            compression: false              # Compress diffs/extra_data columns (MariaDB only)
+            mask_secret: ~                  # Secret of the #[Mask(strategy: MaskStrategy::KeyedHash)] fields (32 bytes min.)
+            skip_disabled_entities: false   # No audit table for entities disabled by their configuration
             viewer: false
+            retention:
+                schedule: ~                 # Cron expression for scheduled pruning (opt-in)
+                default_max_age: ~          # Max age for entities without a policy (scheduled pruning only)
 ```
 
 ### ⚙️ Global Options
@@ -10345,6 +10433,50 @@ dh_auditor:
                 - password
 ```
 
+#### ignored_columns_resolver
+
+| Type      | Default | Description                                                           |
+|-----------|---------|-----------------------------------------------------------------------|
+| `?string` | `~`     | Service ID of a callable returning the properties to ignore for a given entity object |
+
+`ignored_columns` and the entity options apply to every object of an entity class. To decide per object, implement
+`IgnoredColumnsResolverInterface` (or any invokable service) and reference the service:
+
+```php
+namespace App\Audit;
+
+use App\Entity\Document;
+use DH\Auditor\Provider\Doctrine\Auditing\IgnoredColumnsResolverInterface;
+
+final class DocumentIgnoredColumnsResolver implements IgnoredColumnsResolverInterface
+{
+    public function __invoke(object $entity): array
+    {
+        return $entity instanceof Document && $entity->isDraft() ? ['content'] : [];
+    }
+}
+```
+
+```yaml
+dh_auditor:
+    providers:
+        doctrine:
+            ignored_columns_resolver: App\Audit\DocumentIgnoredColumnsResolver
+```
+
+The resolver is called for every audited entity object on each flush, so keep it cheap. It can only ignore more
+properties: it never audits a property ignored by the configuration or left out of `audited_columns`.
+
+#### root_resolver, entity_label_resolver, read_scope
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `root_resolver` | `?string` | `~` | Service ID of a callable returning extra audit roots of an entity object |
+| `entity_label_resolver` | `?string` | `~` | Service ID of an `EntityLabelResolverInterface`: label of an entity in the diffs |
+| `read_scope` | `?string` | `~` | Service ID of a callable `(Query, string $entity): void` applied to every query of the reader |
+
+See [Histories](../customization/histories.md).
+
 #### entities
 
 | Type    | Default | Description                   |
@@ -10367,15 +10499,53 @@ dh_auditor:
                     roles:
                         view:
                             - ROLE_ADMIN
+
+                # Only audit a few properties (allowlist)
+                App\Entity\Order:
+                    audited_columns: [status, total, customer]
+
+                # Entries belonging to the history of another entity
+                App\Entity\PropertyFeature:
+                    roots: [property]
+
+                # With a retention policy
+                App\Entity\Payment:
+                    retention:
+                        max_age: 'P7Y'      # ISO 8601 duration
+                        max_entries: ~      # keep the N most recent entries
 ```
 
 **Entity options:**
 
-| Option            | Type    | Default | Description                          |
-|-------------------|---------|---------|--------------------------------------|
-| `enabled`         | `bool`  | `true`  | Enable/disable auditing for entity   |
-| `ignored_columns` | `array` | `[]`    | Properties to ignore for this entity |
-| `roles.view`      | `array` | `[]`    | Roles required to view audits        |
+| Option                  | Type      | Default | Description                                            |
+|-------------------------|-----------|---------|--------------------------------------------------------|
+| `enabled`               | `bool`    | `true`  | Enable/disable auditing for entity                     |
+| `ignored_columns`       | `array`   | `[]`    | Properties to ignore for this entity                   |
+| `audited_columns`       | `?array`  | `~`     | Allowlist: only these properties are audited (`~`: all) |
+| `roles.view`            | `array`   | `[]`    | Roles required to view audits                          |
+| `retention.max_age`     | `?string` | `~`     | Entries older than this ISO 8601 duration are pruned   |
+| `retention.max_entries` | `?int`    | `~`     | Only the N most recent entries are kept                |
+| `roots`                 | `array`   | `[]`    | Audit root paths, merged with `#[AuditRoot]` (see [Histories](../customization/histories.md)) |
+
+**Audited properties.** A property is audited when it is not in the global `ignored_columns`, not in the entity
+`ignored_columns` nor marked with `#[Ignore]`, listed in `audited_columns` (when set) and not returned by the
+`ignored_columns_resolver` for that object. Ignoring always wins over the allowlist.
+
+- With `audited_columns`, an update that only changes other properties writes no audit entry; inserts and removals
+  are still audited. `audited_columns: []` only records inserts and removals.
+- These options apply to fields and to-one associations (the diffs), not to to-many associations
+  (`associate` / `dissociate` entries).
+- `ignored_columns` and `audited_columns` must be lists of property names (checked when the container is built).
+
+**Retention policies** are applied by `audit:clean` (and by scheduled pruning when enabled):
+
+- `max_age` replaces the global `audit:clean` cutoff for this entity; `max_entries` applies on top of the age rule.
+- Values are validated when the container is built: `max_age` must be an ISO 8601 duration greater than zero
+  (`P30D`, `P1Y`…), `max_entries` a positive integer, and only these two keys are allowed.
+- They override the `#[Auditable(maxAge: ..., maxEntries: ...)]` values key by key: setting only `max_age` keeps the
+  attribute `maxEntries`, and `max_age: ~` explicitly disables the attribute `maxAge` (e.g. per environment).
+- Without any `retention` option nor attribute value, nothing changes: the entity follows the global `audit:clean`
+  cutoff, as before.
 
 #### storage_services
 
@@ -10414,7 +10584,7 @@ dh_auditor:
 
 | Type            | Default | Description                              |
 |-----------------|---------|------------------------------------------|
-| `string\|null`  | `null`  | Service ID for routing audits to storage |
+| `string\|null`  | `null`  | Class name of an invokable class (constructor without arguments) routing audits to storage services; it is not a service ID |
 
 Required when using multiple storage services.
 
@@ -10455,6 +10625,142 @@ dh_auditor:
 > [!NOTE]
 > Enabling this option has a small performance cost as every stored value is passed through `mb_convert_encoding()`. Leave it disabled unless you know your data sources may produce non-UTF-8 strings.
 
+#### full_snapshot_on_remove
+
+| Type   | Default | Description                                                    |
+|--------|---------|----------------------------------------------------------------|
+| `bool` | `false` | Record the last value of every audited field of a removed entity |
+
+By default, a `remove` entry only identifies the deleted entity (`getDiffSource()`), with empty changes. With this
+option, it also records every audited field as `old`, with `new` set to `null`: the viewer then shows the last state
+of the deleted object. Remove entries get larger.
+
+```yaml
+dh_auditor:
+    providers:
+        doctrine:
+            full_snapshot_on_remove: true
+```
+
+#### batch_size
+
+| Type          | Default | Description                                                      |
+|---------------|---------|------------------------------------------------------------------|
+| `int` (≥ 0)   | `0`     | Write the audit entries of a transaction with multi-row `INSERT`s |
+
+With `0`, each audit entry is written with its own `INSERT`. A positive value buffers the audit entries of the
+database transaction being committed and writes them with multi-row `INSERT`s, right before the `COMMIT` or as soon as
+`batch_size` entries are buffered: flushes of many entities are faster. Values between `100` and `1000` are a good
+start; the `LifecycleEvent` payload of a buffered entry has no `id`. See the provider's [Batch INSERT](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/providers/doctrine/configuration#-batch-insert)
+documentation for the trade-offs.
+
+```yaml
+dh_auditor:
+    providers:
+        doctrine:
+            batch_size: 500
+```
+
+> [!TIP]
+> The default stays `0` only because a buffered entry has no `id` in its `LifecycleEvent` payload. If no listener of
+> your application reads `$payload['id']`, `batch_size: 500` makes flushes of hundreds of entities 10 to 18 % faster
+> on SQLite, 19 to 51 % on MySQL and 44 to 67 % on PostgreSQL (see the provider's
+> [Performance](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/providers/doctrine/performance)
+> page).
+
+#### compression
+
+| Type   | Default | Description                                                         |
+|--------|---------|---------------------------------------------------------------------|
+| `bool` | `false` | Store the `diffs` and `extra_data` columns compressed (MariaDB only) |
+
+```yaml
+dh_auditor:
+    providers:
+        doctrine:
+            compression: true
+```
+
+On MySQL and MariaDB, audit tables can become the largest tables of a database, almost entirely because of the
+`diffs` column. On **MariaDB**, this option declares `diffs` and `extra_data` as compressed columns
+(`JSON COMPRESSED`): MariaDB compresses and decompresses them transparently, so the viewer, the `Reader`, `JsonFilter`
+and JSON functions in SQL keep working unchanged.
+
+Compression trades CPU for disk space and I/O: reading a large history that is already in memory gets slower (every
+value is decompressed, about twice as slow for an entity with ~500 changes), while reads hitting the disk and writes
+get faster since there is much less data to move.
+
+The option has no effect on other platforms:
+
+- **PostgreSQL** already compresses large `JSONB` values automatically (TOAST);
+- **MySQL** has no column compression. If disk space matters more than speed, InnoDB page compression can be enabled
+  manually on audit tables (`ALTER TABLE ... COMPRESSION='zlib'` followed by `OPTIMIZE TABLE`);
+- **SQLite** has no compression.
+
+New audit tables are created compressed. **Existing audit tables must be converted** by running:
+
+```bash
+# Preview, then apply
+bin/console audit:schema:update --dump-sql
+bin/console audit:schema:update --force
+```
+
+If you manage your schema with Doctrine Migrations, copy the SQL shown by `audit:schema:update --dump-sql` into a
+migration: `doctrine:migrations:diff` does not detect the compression of existing columns (and never reports a
+difference for compressed columns either). Converting rewrites the audit tables and compresses existing entries, which
+can take a while on large tables. Before MariaDB 11.2, writes to the audit tables are locked during the rewrite, so
+audited flushes wait for it; since MariaDB 11.2, the rewrite runs online by default (`ALGORITHM=COPY, LOCK=NONE`). Setting the option back to `false` and running `audit:schema:update` again restores
+uncompressed columns without losing data.
+
+> [!NOTE]
+> See the [DoctrineProvider configuration](https://github.com/DamienHarper/auditor-doctrine-provider/blob/main/docs/providers/doctrine/configuration.md)
+> for details.
+
+#### mask_secret
+
+| Type             | Default | Description                                                              |
+|------------------|---------|--------------------------------------------------------------------------|
+| `string \| null` | `null`  | Secret of the `#[Mask(strategy: MaskStrategy::KeyedHash)]` fields, at least 32 bytes |
+
+Keys the HMAC-SHA256 stored instead of the value of a field marked with `#[Mask(strategy: MaskStrategy::KeyedHash)]` (see
+[Attributes](attributes.md#-mask)). A flush that writes a keyed hash without it throws.
+
+```yaml
+dh_auditor:
+    providers:
+        doctrine:
+            mask_secret: '%env(AUDIT_MASK_SECRET)%'
+```
+
+Changing the secret changes the hashes recorded from then on: the entries recorded before can no longer be matched
+with the new ones.
+
+#### skip_disabled_entities
+
+| Type   | Default | Description                                                                  |
+|--------|---------|------------------------------------------------------------------------------|
+| `bool` | `false` | No audit table for entities disabled by their configuration (`enabled: false`) |
+
+```yaml
+dh_auditor:
+    providers:
+        doctrine:
+            skip_disabled_entities: true
+```
+
+An entity disabled by its configuration (`#[Auditable(enabled: false)]` or `enabled: false` under `entities`) is not
+audited, but it still gets an audit table by default, so that auditing can be enabled for it at runtime with
+`enableAuditFor()`. If you never do that (e.g. a linter requires `#[Auditable]` on every entity and some are never
+meant to be audited), this option leaves such entities without an audit table:
+
+- `audit:schema:update`, `doctrine:schema:update` and `doctrine:migrations:diff` all skip them;
+- `enableAuditFor()` throws a `LogicException` for them, instead of a flush failing later on a missing table;
+- the viewer and the `Reader` leave them out.
+
+Existing audit tables of these entities are not dropped. See the
+[DoctrineProvider configuration](https://github.com/DamienHarper/auditor-doctrine-provider/blob/main/docs/providers/doctrine/configuration.md)
+for details.
+
 #### viewer
 
 | Type           | Default | Description                   |
@@ -10482,7 +10788,79 @@ dh_auditor:
 | Option      | Type   | Default | Description         |
 |-------------|--------|---------|---------------------|
 | `enabled`   | `bool` | `false` | Enable the viewer   |
-| `page_size` | `int`  | `50`    | Results per page    |
+| `page_size` | `int`  | `50`    | Actions per page of the lists of actions; revisions per page of the revisions of an object; default entries per page of the `<twig:DhAuditor:History>` component |
+| `activity_graph` | `array` | | Activity graph of the overview (`enabled`, `days`, `layout`, `cache`), see [Activity Graph](../viewer/index.md#-activity-graph) |
+
+#### retention
+
+Scheduled pruning of audit entries with [Symfony Scheduler](https://symfony.com/doc/current/scheduler.html).
+**Disabled by default**: nothing is ever deleted automatically unless `schedule` is set.
+
+| Option            | Type      | Default | Description                                                             |
+|-------------------|-----------|---------|-------------------------------------------------------------------------|
+| `schedule`        | `?string` | `~`     | Cron expression (e.g. `'0 3 * * *'`, `'@daily'`) enabling scheduled pruning |
+| `default_max_age` | `?string` | `~`     | ISO 8601 duration applied to entities without a `max_age` policy        |
+
+```yaml
+dh_auditor:
+    providers:
+        doctrine:
+            entities:
+                App\Entity\Payment:
+                    retention:
+                        max_age: 'P7Y'
+                App\Entity\Session:
+                    retention:
+                        max_entries: 10000
+            retention:
+                schedule: '0 3 * * *'   # every day at 3 AM
+```
+
+A scheduled run applies the same rules as `audit:clean`, with one difference: **there is no implicit global
+retention period**. Only explicit policies are applied (entity `retention` options or `#[Auditable]` values); an entity
+without a policy is left untouched, unless `default_max_age` is set.
+
+Requirements:
+
+```bash
+composer require symfony/scheduler symfony/messenger dragonmantank/cron-expression
+```
+
+Then run the schedule's worker (e.g. with a process manager):
+
+```bash
+php bin/console messenger:consume scheduler_dh_auditor_retention
+```
+
+Notes:
+
+- Every policy is validated before anything is deleted; an invalid one makes the run fail without deleting anything.
+- A scheduled run shares the `audit:clean` lock: if the command is running on the same host, the run is skipped.
+- The configuration is validated when the container is built (cron expression, durations, allowed keys).
+
+#### Logging
+
+No option is needed: the bundle injects the application's `logger` service into the Doctrine provider. The provider
+logs, at the `error` level, the failures it cannot throw without hiding the original error, e.g. audit entries stored
+on another connection that could not be deleted after their transaction was rolled back (the log context gives the
+`transaction_id` and the audit table, to clean them up by hand).
+
+With [MonologBundle](https://symfony.com/doc/current/logging.html), these messages go to the dedicated **`auditor`
+channel**, as do the `info` messages of the [scheduled pruning](#retention) (one per pruned entity, or when a run is
+skipped), so they can be routed to their own handler:
+
+```yaml
+# config/packages/monolog.yaml
+monolog:
+    handlers:
+        auditor:
+            type: stream
+            path: '%kernel.logs_dir%/auditor.log'
+            level: error
+            channels: ['auditor']
+```
+
+Without a `logger` service, nothing is logged.
 
 ### 📝 Complete Example
 
@@ -10809,6 +11187,543 @@ flowchart LR
 - ⚙️ [Configuration Reference](index.md) - All options
 - ⬆️ [Upgrade Guide](../upgrade/index.md) - Managing audit tables
 - 🔧 [Customization](../customization/index.md) - Custom providers
+
+---
+
+## Blame Context (Customization)
+
+> **Record how a change was made: an import, a console command, a Messenger message…**
+
+A blame context is written in the `via` key of the `blame` JSON of every audit entry, next to the user, and the
+viewer shows it as a badge after the author (`via import · Import batch #42`). See the core
+[Blame Context](https://damienharper.github.io/auditor-docs/auditor/configuration/blame-context) page for the model.
+
+### 🧭 Pushing a context
+
+The bundle exposes the stack of the auditor configuration as an autowirable service
+(`DH\Auditor\Blame\BlameContextStack`, alias `dh_auditor.blame_context_stack`):
+
+```php
+use DH\Auditor\Blame\BlameContext;
+use DH\Auditor\Blame\BlameContextStack;
+
+final readonly class ProductImporter
+{
+    public function __construct(
+        private BlameContextStack $blameContextStack,
+        private EntityManagerInterface $entityManager,
+    ) {}
+
+    public function import(Batch $batch): void
+    {
+        $this->blameContextStack->run(
+            new BlameContext('import', 'Import batch #'.$batch->id, ['file' => $batch->file]),
+            function () use ($batch): void {
+                // ... create or update products ...
+                $this->entityManager->flush();
+            },
+        );
+    }
+}
+```
+
+The service is tagged `kernel.reset`: the stack is emptied between two messages of a Messenger worker and
+between two requests of a FrankenPHP or RoadRunner worker, so a context left behind does not leak.
+
+### 🖥️ Console commands
+
+Every command runs in a `console` context labelled with the command name: its audit entries get
+`"via": {"type": "console", "label": "app:import-users"}`. The [console user provider](user-provider.md#-console-commands)
+is unchanged: the command name is still the blamed user.
+
+### 📨 Messenger
+
+The `dh_auditor.messenger.blame_context_middleware` middleware blames the changes made by a worker on the user who
+dispatched the message. It is opt-in: add it to your buses.
+
+```yaml
+# config/packages/messenger.yaml
+framework:
+    messenger:
+        buses:
+            messenger.bus.default:
+                middleware:
+                    - dh_auditor.messenger.blame_context_middleware
+```
+
+- On dispatch, it adds a `DH\AuditorBundle\Messenger\BlameStamp` with the current user (the user of the current
+  blame context, or else the one returned by the user provider): its identifier, name and class, and its impersonator,
+  if any.
+- When a worker handles the message, the handlers run in a `messenger` context labelled with the message class
+  (`"via": {"type": "messenger", "label": "App\\Message\\ImportProducts", "data": {"transport": "async"}}`) and the
+  stamped user is blamed instead of the worker command.
+
+Messages handled synchronously are not affected: they keep the context and the user of the code that dispatched them.
+
+### 📖 Reading it back
+
+```php
+$entry->via; // ['type' => 'import', 'label' => 'Import batch #42', 'data' => ['file' => 'products.csv']]
+```
+
+Exports (`/audit/export`, `audit:export`) carry it in the `blame_via` field.
+
+---
+
+## Custom Audit Provider
+
+> **Register a custom provider with the bundle using a single service tag**
+
+`auditor-bundle` ships with first-class support for custom providers. Any service tagged with
+`dh_auditor.provider` is automatically registered with the `Auditor` service at compile time —
+no manual wiring, no `services.yaml` boilerplate beyond the tag.
+
+---
+
+### 🔌 How it works
+
+A **compiler pass** (`RegisterProvidersCompilerPass`) reads all services tagged with
+`dh_auditor.provider` and adds them as providers to the `Auditor` service. This happens at
+container compile time, before the application boots.
+
+```
+Container compilation
+  └─ RegisterProvidersCompilerPass
+       └─ finds all services tagged with dh_auditor.provider
+            └─ calls Auditor::registerProvider($provider) for each one
+```
+
+This means you can ship a standalone provider package and integrate it with the bundle by
+adding a single tag — without forking the bundle or patching `services.yaml`.
+
+---
+
+### 🚀 Quick start
+
+#### 1. Implement your provider
+
+Extend `AbstractProvider` from the core library and implement the three required methods:
+
+```php
+namespace App\Audit;
+
+use DH\Auditor\Event\LifecycleEvent;
+use DH\Auditor\Provider\AbstractProvider;
+use Symfony\Contracts\Service\ResetInterface;
+
+final class ElasticsearchProvider extends AbstractProvider implements ResetInterface
+{
+    public function __construct(private readonly ElasticClient $client)
+    {
+        $this->configuration = new ElasticsearchConfiguration($client);
+        $this->registerStorageService(new ElasticsearchStorageService('default', $client));
+    }
+
+    public function supportsStorage(): bool
+    {
+        return true;
+    }
+
+    public function supportsAuditing(): bool
+    {
+        // This provider only writes audit entries; DoctrineProvider handles change detection.
+        return false;
+    }
+
+    public function persist(LifecycleEvent $event): void
+    {
+        $payload = $event->getPayload();
+
+        $this->client->index([
+            'index' => 'audit',
+            'body'  => [
+                'type'       => $payload['type'],
+                'entity'     => $payload['entity'],   // FQCN — always present when DoctrineProvider is the auditing source
+                'object_id'  => $payload['object_id'],
+                'diffs'      => json_decode($payload['diffs'], true),
+                'blame_user' => json_decode($payload['blame'] ?? 'null', true)['username'] ?? null, // blame is a JSON string
+                'created_at' => $payload['created_at'],   // string, 'Y-m-d H:i:s.u' in the auditor timezone
+            ],
+        ]);
+    }
+
+    public function reset(): void
+    {
+        // Clear any request-scoped state for long-running processes (Messenger workers, etc.)
+        $this->client->reset();
+    }
+}
+```
+
+> [!TIP]
+> Implementing `Symfony\Contracts\Service\ResetInterface` is recommended for providers used
+> in long-running processes (Symfony Messenger workers). The bundle registers `DoctrineProvider`
+> with `kernel.reset` for this reason. Do the same for your provider if it holds state between
+> requests.
+
+#### 2. Register the service with the tag
+
+```yaml
+# config/services.yaml
+App\Audit\ElasticsearchProvider:
+    tags: [dh_auditor.provider]
+```
+
+That's it. The bundle's compiler pass handles the rest.
+
+> [!NOTE]
+> If your provider is distributed as a Symfony bundle, you can register the tag
+> programmatically in your bundle's extension or compiler pass — users do not need
+> to touch their `services.yaml`.
+
+---
+
+### 🔀 Mixing providers (auditing + custom storage)
+
+A common pattern is to keep **DoctrineProvider for change detection** (it listens to Doctrine
+events) and add a **custom provider for storage** (e.g. writing to Elasticsearch or a remote
+API):
+
+```yaml
+# config/packages/dh_auditor.yaml
+dh_auditor:
+    providers:
+        doctrine:
+            storage_services:
+                - '@doctrine.orm.default_entity_manager'
+            auditing_services:
+                - '@doctrine.orm.default_entity_manager'
+            entities:
+                App\Entity\Order: ~
+                App\Entity\Payment: ~
+
+# config/services.yaml
+App\Audit\ElasticsearchProvider:
+    tags: [dh_auditor.provider]
+```
+
+`auditor` will dispatch every `LifecycleEvent` to **all registered providers** that support
+storage. Both `DoctrineProvider` and `ElasticsearchProvider` will receive the event and persist
+the audit entry to their respective backends.
+
+---
+
+### 📦 Providing a bundle (distributable package)
+
+If you ship a standalone package, wire the tag automatically in your extension:
+
+```php
+namespace Acme\AuditElasticBundle\DependencyInjection;
+
+use Acme\AuditElasticBundle\Provider\ElasticsearchProvider;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\DependencyInjection\Extension\Extension;
+use Symfony\Component\DependencyInjection\Reference;
+
+final class AcmeAuditElasticExtension extends Extension
+{
+    public function load(array $configs, ContainerBuilder $container): void
+    {
+        $container
+            ->register(ElasticsearchProvider::class)
+            ->addArgument(new Reference('elastic_client'))
+            ->addTag('dh_auditor.provider')
+        ;
+    }
+}
+```
+
+Users of your bundle only need to install the package and enable the bundle — no additional
+configuration required in their `services.yaml`.
+
+---
+
+### ⚙️ Container parameters exposed by the bundle
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `dh_auditor.viewer_enabled` | `bool` | `true` when the Doctrine provider's built-in viewer is enabled |
+
+> [!NOTE]
+> `dh_auditor.viewer_enabled` is set to `true` only when the `doctrine` provider is configured
+> with `viewer: true` (or an array with `enabled: true`). Custom providers do not affect this
+> parameter — the viewer is currently a Doctrine-specific feature.
+
+---
+
+### 📚 Further reading
+
+- [Building a custom provider (core library)](https://github.com/DamienHarper/auditor/blob/master/docs/providers/custom-provider.md) — full provider API, `LifecycleEvent` payload reference, packaging guide
+- [Configuration reference](../configuration/) — `dh_auditor` YAML options
+
+---
+
+## Diff Label Resolvers
+
+> **Display human-readable labels instead of raw IDs in audit diffs**
+
+By default, audit diffs store raw field values. For integer foreign keys this means an entry like:
+
+```json
+{"categoryId": {"old": 1, "new": 2}}
+```
+
+With `#[DiffLabel]` resolvers, the same diff becomes:
+
+```json
+{
+  "categoryId": {
+    "old": {"value": 1, "label": "Books"},
+    "new": {"value": 2, "label": "Electronics"}
+  }
+}
+```
+
+Labels are resolved at **write-time** (during flush) and stored in the JSON — they remain accurate even if the referenced record is later renamed or deleted.
+
+---
+
+### 📋 Overview
+
+| Component | Description |
+|-----------|-------------|
+| `#[DiffLabel(resolver: MyResolver::class)]` | Property attribute: declares which resolver handles this field |
+| `DiffLabelResolverInterface` | Interface to implement: `__invoke(mixed $value): ?string` |
+| Auto-tagging | Implementing classes are auto-tagged — no `services.yaml` needed |
+
+---
+
+### 🚀 Quick Start
+
+#### Step 1 — Implement a resolver
+
+```php
+<?php
+
+namespace App\Audit\Resolver;
+
+use DH\Auditor\Contract\DiffLabelResolverInterface;
+
+final class CategoryResolver implements DiffLabelResolverInterface
+{
+    public function __construct(
+        private readonly CategoryRepository $repository,
+    ) {}
+
+    public function __invoke(mixed $value): ?string
+    {
+        $category = $this->repository->find($value);
+
+        return $category?->getName();
+    }
+}
+```
+
+Symfony's **autoconfiguration** automatically detects classes that implement `DiffLabelResolverInterface` and tags them with `dh_auditor.diff_label_resolver`. No `services.yaml` entry is required beyond standard autowiring.
+
+#### Step 2 — Annotate the entity property
+
+```php
+<?php
+
+namespace App\Entity;
+
+use App\Audit\Resolver\CategoryResolver;
+use DH\Auditor\Attribute\Auditable;
+use DH\Auditor\Attribute\DiffLabel;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
+
+#[ORM\Entity]
+#[Auditable]
+class Product
+{
+    #[ORM\Column(type: Types::INTEGER)]
+    #[DiffLabel(resolver: CategoryResolver::class)]
+    private int $categoryId;
+
+    // ...
+}
+```
+
+#### Step 3 — Done
+
+After the next flush, any change to `categoryId` will include the resolved label in the stored diff.
+
+---
+
+### 🔄 How It Works
+
+Labels are resolved while the audit rows are built, by the DBAL middleware, **just before the COMMIT** of the
+database transaction of the flush, in that transaction. The label is stored as a `{"value": x, "label": "y"}` pair
+in the JSON diff.
+
+```
+flush() → COMMIT requested → audit flusher (same transaction):
+    diff() detects #[DiffLabel] on 'categoryId'
+    → calls CategoryResolver(1) → "Books"
+    → stores {"old": {"value": 1, "label": "Books"}, "new": {"value": 2, "label": "Electronics"}}
+    → audit row inserted
+→ COMMIT
+```
+
+**The raw value is always preserved.** The label is stored alongside `value`, never replacing it. Your application code that reads `$entry->getDiffs()` and accesses `$diffs['categoryId']['new']` will receive `['label' => 'Electronics', 'value' => 2]` instead of `2`.
+
+---
+
+### 📋 Resolver Interface
+
+```php
+namespace DH\Auditor\Contract;
+
+interface DiffLabelResolverInterface
+{
+    public function __invoke(mixed $value): ?string;
+}
+```
+
+| Return value | Effect |
+|---|---|
+| `"Some Label"` | Stored as `{"value": x, "label": "Some Label"}` |
+| `null` | Raw scalar stored as-is (no label wrapper) |
+
+Returning `null` is the correct way to signal "I cannot resolve a label for this value" — for example, when the referenced record does not exist. The audit diff will store the plain integer without a label.
+
+---
+
+### ⚠️ Resolver Constraints
+
+Resolvers run **inside the audit flusher, before the COMMIT, in the transaction being committed**, which means:
+
+- ✅ **Safe**: Pure in-memory lookups (arrays, cache)
+- ✅ **Safe**: Read-only queries on a separate connection or read-only EM
+- ✅ **Safe**: External API calls (but beware latency — this blocks the request)
+- ❌ **Unsafe**: Flushing or persisting on the **same EntityManager** that is being flushed
+- ❌ **Unsafe**: Operations that start a new Doctrine transaction on the same connection
+
+The safest pattern for DB lookups is to use a dedicated read-only EntityManager or a raw DBAL connection:
+
+```php
+final class CategoryResolver implements DiffLabelResolverInterface
+{
+    public function __construct(
+        private readonly Connection $connection,  // raw DBAL connection
+    ) {}
+
+    public function __invoke(mixed $value): ?string
+    {
+        $name = $this->connection->fetchOne(
+            'SELECT name FROM category WHERE id = ?',
+            [$value],
+        );
+
+        return $name !== false ? $name : null;
+    }
+}
+```
+
+---
+
+### 🖥️ Viewer Integration
+
+The audit viewer automatically displays labels when they are present in the diff. No template changes are needed — the `helper.dump()` macro already detects the `{"value": x, "label": "y"}` shape and renders the label instead of the raw value.
+
+---
+
+### 📌 Manual Tag (Optional)
+
+Autoconfiguration handles tagging automatically. If you need to disable autoconfiguration for a specific service, add the tag manually:
+
+```yaml
+# config/services.yaml
+App\Audit\Resolver\CategoryResolver:
+    tags:
+        - { name: dh_auditor.diff_label_resolver }
+```
+
+> [!IMPORTANT]
+> The service ID **must equal the resolver's fully-qualified class name**. This is always the case with autowiring and is what the `::class` constant in `#[DiffLabel(resolver: CategoryResolver::class)]` references.
+
+---
+
+### 📝 Complete Example
+
+```php
+<?php
+// src/Audit/Resolver/ProductCategoryResolver.php
+
+namespace App\Audit\Resolver;
+
+use App\Repository\CategoryRepository;
+use DH\Auditor\Contract\DiffLabelResolverInterface;
+
+final class ProductCategoryResolver implements DiffLabelResolverInterface
+{
+    public function __construct(
+        private readonly CategoryRepository $repository,
+    ) {}
+
+    public function __invoke(mixed $value): ?string
+    {
+        return $this->repository->find($value)?->getName();
+    }
+}
+```
+
+```php
+<?php
+// src/Entity/Product.php
+
+namespace App\Entity;
+
+use App\Audit\Resolver\ProductCategoryResolver;
+use DH\Auditor\Attribute\Auditable;
+use DH\Auditor\Attribute\DiffLabel;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
+
+#[ORM\Entity]
+#[Auditable]
+class Product
+{
+    #[ORM\Column(type: Types::INTEGER)]
+    #[DiffLabel(resolver: ProductCategoryResolver::class)]
+    private int $categoryId;
+
+    #[ORM\Column(type: Types::INTEGER)]
+    #[DiffLabel(resolver: SupplierResolver::class)]
+    private int $supplierId;
+
+    // ...
+}
+```
+
+The resulting audit diff for an update to both fields:
+
+```json
+{
+  "source": {"id": "12", "class": "App\\Entity\\Product", "label": "App\\Entity\\Product#12", "table": "product"},
+  "changes": {
+    "categoryId": {
+      "old": {"value": 1, "label": "Books"},
+      "new": {"value": 3, "label": "Software"}
+    },
+    "supplierId": {
+      "old": {"value": 42, "label": "Acme Corp"},
+      "new": {"value": 67, "label": "Globex Inc"}
+    }
+  }
+}
+```
+
+`$entry->getDiffs()` returns the `changes` part.
+
+---
+
+### 🚀 Next Steps
+
+- 🏷️ [Entity Attributes](../configuration/attributes.md) — Full attribute reference
+- 📦 [Extra Data](extra-data.md) — Attach request-level context to audit entries
 
 ---
 
@@ -11146,6 +12061,479 @@ For complete documentation including database-specific indexing strategies, perf
 
 ---
 
+## Histories (Customization)
+
+> **Show users the history of a business object and who changed each field**
+
+auditor 5.0 and its Doctrine provider can gather the audit entries of an object and of the entities attached to it
+(a property listing with its features, publications and visits), group them into actions, and tell who changed a
+field last. This page covers what the bundle wires; the concepts are in the
+[auditor](https://damienharper.github.io/auditor-docs/auditor/history) and
+[provider](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/querying/history) documentation.
+
+### 🌳 Declaring roots
+
+With `#[AuditRoot('path')]` on the entity, or with the `roots` entity option:
+
+```yaml
+dh_auditor:
+    providers:
+        doctrine:
+            entities:
+                App\Entity\Property: ~
+                App\Entity\PropertyFeature:
+                    roots: [property]
+                App\Entity\VisitReport:
+                    roots: [visit.property]
+```
+
+The syntax of the paths is checked when the container is built; a path that does not follow single-valued
+associations fails at the first flush. After declaring a root on an entity that already has audit entries, update the schema (it adds the `audit_root` table) and index the existing entries:
+
+```bash
+php bin/console audit:schema:update --force
+php bin/console audit:roots:rebuild
+```
+
+For roots that a path cannot express, `root_resolver` takes the ID of an invokable service returning extra roots
+keyed by a name of your choice:
+
+```php
+final class AttachmentRootResolver
+{
+    /** @return array<string, ?object> */
+    public function __invoke(object $entity): array
+    {
+        return $entity instanceof Attachment ? ['subject' => $entity->getSubject()] : [];
+    }
+}
+```
+
+```yaml
+dh_auditor:
+    providers:
+        doctrine:
+            root_resolver: App\Audit\AttachmentRootResolver
+```
+
+### 📜 Reading the history of a root
+
+The `Reader` service is autowirable:
+
+```php
+use DH\Auditor\History\ChangeExtractor;
+use DH\Auditor\History\HistoryGrouper;
+use DH\Auditor\Provider\Doctrine\Persistence\Reader\Reader;
+
+public function history(Reader $reader, Property $property, ?string $after): Response
+{
+    $page = $reader->createRootQuery(Property::class, $property->getId())->fetch(20, $after);
+    $grouper = new HistoryGrouper(extractor: new ChangeExtractor([Property::class => ['status', 'price']]));
+
+    return $this->render('property/history.html.twig', [
+        'items' => $page->group($grouper),   // list<HistoryItem>: one action per transaction
+        'next' => $page->hasMore ? $page->lastCursor : null,
+    ]);
+}
+```
+
+Only the `view` role of the root is checked. Use `read_scope` (an invokable service receiving each query and the
+entity it reads) to restrict what can be read, for instance to the current tenant.
+
+### 🏷️ Labels
+
+Field labels come from the `dh_auditor_fields` translation domain, keyed by `FQCN.field`; a field without
+translation is humanized (`surfaceArea` gives "Surface area"):
+
+```yaml
+# translations/dh_auditor_fields.fr.yaml
+App\Entity\Property.price: Prix
+App\Entity\Property.surfaceArea: Surface habitable
+```
+
+The resolver is the `DH\Auditor\Contract\FieldLabelResolverInterface` service: alias it to your own implementation
+to label fields another way.
+
+`entity_label_resolver` takes the ID of a service implementing `EntityLabelResolverInterface`: it builds the label
+of an entity written in the diffs ("12 rue des Lilas" rather than `App\Entity\Property#42`), at write time.
+
+### 🔎 In templates
+
+```twig
+{% set change = dh_auditor_last_change(property, 'price') %}
+{% if change %}
+    {{ dh_auditor_field_label(property, 'price') }}: {{ change.value('price') }}, changed
+    by {{ change.entry.username ?? 'system' }} {{ change.entry.createdAt|time_ago }}
+{% endif %}
+
+{% for field, change in dh_auditor_last_changes(property, ['price', 'status']) %}
+    {{ dh_auditor_field_label(property, field) }}: {{ change ? change.entry.username : '-' }}
+{% endfor %}
+```
+
+| Function | Returns |
+|---|---|
+| `dh_auditor_last_change(entity, field)` | the last `Change` of the field (its creation when never changed), or null |
+| `dh_auditor_last_changes(entity, fields)` | `field => ?Change` |
+| `dh_auditor_field_label(entity_or_class, field)` | the label of the field |
+
+The `last_change` functions return null when the entity is not audited, has no identifier yet, or when the current
+user cannot view its audits, or when its identifier cannot be turned into a string. For a field never
+changed, the change is the creation of the entity, which holds the requested fields: read the value with
+`change.value(field)` (`Change::getValue()`) and its label with `change.label(field)`. For a JSON field changed since,
+`change.value(field)` is the deep diff tree (`change.kind` is `Json`): do not print it as is.
+
+### 💬 Phrases
+
+The bundle tells an action (a `HistoryItem`) as a phrase a reader understands, such as *alice changed Status:
+Draft → Published and added to Tags: symfony and audit*:
+
+```twig
+{% for item in items %}
+    {{ item|dh_auditor_author }} {{ item|dh_auditor_phrase }}
+{% endfor %}
+```
+
+`|dh_auditor_phrase` renders the phrase as HTML: its text escaped, its values in `<strong>`, and the objects it names
+(the post that was created, the tag that was added, the author that was set) linked to their history in the viewer
+when the reader may view the audits of their class. `|dh_auditor_phrase_text` gives the phrase without markup, for a
+`title` attribute or an export. Both filters take a `HistoryItem` or a `Phrase`.
+
+In PHP, the `DH\AuditorBundle\History\HistoryPhraser` service gives the `Phrase` (`phrase()`) and the author
+(`author()`). A phrase is made of fragments, one per change or group of changes (`fragments`, each with its `parts`, its `icon` and the
+`changes` it tells), and `getParts()` lists the parts of the whole phrase: `TextPart`, `ValuePart` and
+`ObjectReference` (`class`, `id`, `label`), each with a `kind` (`text`, `value`, `object`). No part holds HTML.
+
+The icon of a phrase (`icon`) is the one of its main change (the first creation, snapshot or deletion, otherwise the
+first change of the action):
+`created`, `snapshot`, `deleted`, `edited`, `status` (an enum), `toggle` (a boolean), `text` (a long text), `added`,
+`removed` or `json`. A describer may give another name, which your templates then need to know.
+
+The markup comes from `@DHAuditor/History/phrase.html.twig` and, for an object, from
+`@DHAuditor/History/object_reference.html.twig`: override them under `templates/bundles/DHAuditorBundle/History/` to
+change it (Turbo attributes on the links, for instance).
+
+Each change, or group of changes, gives one fragment: the changes of the root first, then those of the attached entities; the fields of an
+entry in the order of their Doctrine mapping. Elements added to (or removed from) the same collection make one
+fragment, and the same change made to more than 5 objects of an entity is summed up (*deleted 38 Post*). Up to 5
+objects, the summary names them when they are created or deleted, or when each one would be told the same way
+(*deleted 2 Comment: spam and ads*, *changed Bio on 3 Author: Alice, Bob and Carol*); otherwise each one is told. In an
+action that changes the fields of several objects, a field change names its object (*changed Colour of Tag “php”:
+blue → red*), unless its phrase names it already or it is the object whose history is shown. Lists read
+"a, b and c" ("a, b, c and 4 others" beyond 5), and values longer than 80 characters are cut. An action whose entries
+hold no change the bundle can read is told as *changed Post “Why audit?”*.
+
+#### Without configuration
+
+| Change | Phrase |
+|---|---|
+| created, snapshot, deleted | created Post “Why audit?” |
+| set | set Published at: Nov 22, 2026, 6:41 PM |
+| changed | changed Status: Draft → Published |
+| changed (long text) | edited Body |
+| cleared | cleared Deadline (Nov 30, 2026) |
+| added, removed | added to Tags: symfony and audit |
+| JSON field | edited Metadata (seo.description) |
+
+Values are read through the Doctrine mapping of the field: an enum gives its label when it implements
+`TranslatableInterface` (its value otherwise), a date, time or datetime the format of the locale (medium date, short
+time), a boolean "yes" or "no", no value "empty"; a value that cannot be read as its type is shown as stored. A value
+written with a label (`#[DiffLabel]`, the label of an associated entity) shows that label.
+
+The bundle ships these phrases in the languages of the viewer (de, en, es, et, fr, it, nl, ru, uk). For another locale, translate the keys of
+`vendor/damienharper/auditor-bundle/src/translations/dh_auditor_history+intl-icu.en.yaml`, or keep `en` among the
+translator fallbacks (`framework.translator.fallbacks`): without them, the keys show as they are.
+
+#### With translations
+
+Field labels come from the `dh_auditor_fields` domain (see Labels above); so do entity names, keyed by FQCN
+(the short class name otherwise). Phrases come from the `dh_auditor_history` domain in the ICU format, keyed by
+`FQCN.kind` for a creation, a snapshot or a deletion and `FQCN.field.kind` for a field change, where kind is
+`created`, `snapshot`, `deleted`, `set`, `changed`, `cleared`, `added`, `removed` or `json`; add `.bulk` for the
+summary of several objects (followed by their names, `named` key, up to 5 objects). The `field_of` key gives the
+`{field}` of a field change that names its object (*Colour of Tag “php”*). Use the `+intl-icu` suffix in the file names (a catalogue without it only gets its `{label}`, `{old}`, `{new}`,
+`{names}`, `{field}` and `{entity}` placeholders replaced; write the count as `%count%`, also used for its plurals):
+
+```yaml
+# translations/dh_auditor_fields+intl-icu.fr.yaml
+App\Entity\Post: '{count, plural, one {article} other {articles}}'
+App\Entity\Post.status: Statut
+
+# translations/dh_auditor_history+intl-icu.fr.yaml
+App\Entity\Post.created: "a créé l'article « {label} »"
+App\Entity\Post.status.changed: 'a passé le statut de {old} à {new}'
+App\Entity\Post.tags.added: '{count, plural, one {a ajouté le tag {names}} other {a ajouté les tags {names}}}'
+App\Entity\Post.deleted.bulk: 'a supprimé {count} {entity}'
+```
+
+| Parameter | Value |
+|---|---|
+| `{label}` | label of the object (or `#id`) |
+| `{old}`, `{new}` | formatted values of a field change |
+| `{names}` | added or removed elements, changed paths of a JSON field, as "a, b and c" |
+| `{count}` | number of elements, or of objects of a summary |
+| `{field}` | label of the field |
+| `{entity}` | name of the entity, translated with the number of objects of a summary (1 otherwise) |
+
+Only `{count}` is a number an ICU `plural` or `select` can test: the other parameters are inserted after the
+translation, as parts of the phrase (the object of `{label}`, the values of `{old}` and `{new}`…).
+
+#### With PHP
+
+A change that needs the rest of the action to be told (*deleted initiative Q4 roadmap, which held the ticket*, rather
+than *cleared Initiative* followed by *deleted Initiative “Q4 roadmap”*) takes a describer. It returns the fragments
+of the change, built from text, values and object references, or null (or an empty phrase) to hand the change on: to
+the describer of the entity for a field describer, then to the translated or default phrase:
+
+```php
+use DH\Auditor\History\Change;
+use DH\Auditor\History\ChangeKind;
+use DH\Auditor\History\HistoryItem;
+use DH\AuditorBundle\Attribute\AsChangeDescriber;
+use DH\AuditorBundle\History\ChangeDescriberInterface;
+use DH\AuditorBundle\History\Fragment;
+use DH\AuditorBundle\History\Part\ObjectReference;
+use DH\AuditorBundle\History\Phrase;
+
+#[AsChangeDescriber(entity: Ticket::class, field: 'initiative')]
+final class InitiativeDescriber implements ChangeDescriberInterface
+{
+    public function describe(Change $change, HistoryItem $item): ?Phrase
+    {
+        // the summary of the initiative the ticket was in, as the diff holds it
+        $old = $change->old;
+        if (ChangeKind::Cleared !== $change->kind || !\is_array($old)) {
+            return null;
+        }
+
+        $id = (string) ($old[$old['pkName'] ?? 'id'] ?? '');
+
+        // the same action deleted that initiative?
+        $deletion = array_find($item->getChanges(), static fn (Change $other): bool => ChangeKind::Deleted === $other->kind
+            && Initiative::class === $other->entity
+            && $id === $other->objectId);
+        if (null === $deletion) {
+            return null;
+        }
+
+        $initiative = new ObjectReference(Initiative::class, $id, $change->oldLabel ?? '#'.$id);
+
+        // both changes are listed: the deletion is not told again
+        return Phrase::of(Fragment::of(['deleted initiative ', $initiative, ', which held the ticket'], [$change, $deletion], 'deleted'));
+    }
+}
+```
+
+Without `field`, the describer receives every change of the entity that no field describer tells (a field describer
+returning null hands the change to it), the creation and the deletion included. The object references a describer
+gives are linked like the others. `#[AsChangeDescriber]` works on autoconfigured services; otherwise, tag the service
+`dh_auditor.change_describer` with the `entity` and `field` attributes.
+
+A fragment tells the changes it lists (the described change when it lists none): a describer that tells several
+changes at once lists them all, and they are not told again by other fragments. When the phrases of two describers
+list the same change, the one telling the most changes is kept, and the changes only the other one told get their
+default phrase. Describers run while the history is
+displayed: they must cope with old entries (labels or values missing).
+
+#### Links
+
+The objects of a phrase lead to the URL that the `DH\AuditorBundle\History\ObjectUrlResolverInterface` service
+gives: by default, their history in the viewer, followed only by readers granted the `view` role of their class (by
+every reader when no role checker is configured; no link when the viewer is disabled or the class is not audited). Decorate it to send some classes to pages of your
+application:
+
+```php
+use DH\AuditorBundle\History\ObjectUrl;
+use DH\AuditorBundle\History\ObjectUrlResolverInterface;
+use DH\AuditorBundle\History\Part\ObjectReference;
+use Symfony\Bundle\SecurityBundle\Security;
+use Symfony\Component\DependencyInjection\Attribute\AsDecorator;
+use Symfony\Component\DependencyInjection\Attribute\AutowireDecorated;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+
+#[AsDecorator(ObjectUrlResolverInterface::class)]
+final readonly class TicketUrlResolver implements ObjectUrlResolverInterface
+{
+    public function __construct(
+        #[AutowireDecorated] private ObjectUrlResolverInterface $inner,
+        private UrlGeneratorInterface $urls,
+        private Security $security,
+    ) {}
+
+    public function resolve(ObjectReference $reference): ?ObjectUrl
+    {
+        if (Ticket::class !== $reference->class) {
+            return $this->inner->resolve($reference);
+        }
+
+        return new ObjectUrl(
+            $this->urls->generate('ticket_show', ['id' => $reference->id]),
+            $this->security->isGranted('TICKET_VIEW', $reference->id),
+        );
+    }
+}
+```
+
+`ObjectUrl::$visible` tells whether the reader may follow the link; null keeps the object as plain text.
+
+#### Authors
+
+The author is the name recorded with the change ("User 42" when only the user id was recorded); without user,
+"Command line" (a console command), "Anonymous user" (a web request behind a firewall) or "System" (anything else,
+message handlers included).
+
+To show the current name of a user, implement `DH\AuditorBundle\History\AuthorNameResolverInterface` and alias the
+interface to your service: it returns the name, or null for a user that no longer exists ("Deleted user"). It is
+called once per action: cache what it looks up.
+
+```yaml
+# config/services.yaml
+DH\AuditorBundle\History\AuthorNameResolverInterface: '@App\Audit\AuthorNameResolver'
+```
+
+#### Twig reference
+
+The templates of the bundle, and the partials of `History/` you may override, rely on these functions and filters:
+
+| Function or filter | Returns |
+|---|---|
+| `item\|dh_auditor_phrase` | the phrase of a `HistoryItem` (or `Phrase`, `Fragment`) as HTML, objects linked to their history |
+| `item\|dh_auditor_phrase_text` | the same phrase as plain text |
+| `item\|dh_auditor_shorten(n)` | the first `n` fragments of a phrase, followed by "and 4 other changes" |
+| `item\|dh_auditor_author` | the author of an action |
+| `dh_auditor_context(item, rootClass = null, rootId = null)` | what an action was done on ("on Post “Why audit?”") when it changes the fields of one object only, or null |
+| `dh_auditor_entity_name(class, count = 1)` | the name of an entity (`dh_auditor_fields` domain, key FQCN), or its short class name |
+| `dh_auditor_object_url(reference)` | where an object reference leads (`ObjectUrl`), or null |
+| `dh_auditor_is_deleted(reference)` | whether the object of a reference no longer exists, as far as the page checked it |
+| `dh_auditor_history_item(entry)` | the action of a single `Entry` |
+| `dh_auditor_word_diff(old, new)` | a word by word comparison of two texts, as runs of `[kind, text]` (`equal`, `delete`, `insert`), or null |
+| `dh_auditor_value_text(value)` | a value as the action details show it: a text as it is, between quotes only when it would be misread without them (`dh_auditor_is_ambiguous_text()`), any other value as JSON |
+
+### 🧩 In the pages of your application
+
+The `<twig:DhAuditor:History>` component shows the history of an object in your own pages, next to its form for
+instance: the actions on the object and on the entities attached to it, told as phrases, most recent first. It needs
+`symfony/ux-twig-component`; the bundle only registers it when the package is installed.
+
+```bash
+composer require symfony/ux-twig-component
+```
+
+```twig
+<twig:DhAuditor:History :subject="post" />
+```
+
+| Option | Default | |
+|---|---|---|
+| `subject` | (required) | The audited entity |
+| `with` | `[]` | Elements of your application mixed with the actions (see below) |
+| `grouper` | one action per transaction | A `DH\Auditor\History\HistoryGrouper` with a key of your own |
+| `limit` | the page size of the viewer (`page_size`) | Actions per page, as in the viewer; with a `grouper` that has a key of its own (an action may then span several transactions), entries per page, more when needed to keep the last action whole |
+| `attached` | `true` | Whether the actions on the attached entities are included |
+| `details` | `false` | Technical details of the actions: `true`, or a role (`details="ROLE_ADMIN"`) |
+| `after` | from the query string | Cursor of the page to show (an invalid one is an error, unlike in the query string) |
+| `cursorParameter` | `dh_auditor_after` | Query string parameter of the cursor |
+
+Without access to the audits of its class (`roles.view`), with an object that is not audited or not persisted yet,
+the component shows no action.
+
+#### Elements of your application
+
+Comments, notes or emails that are not audited can be mixed with the actions. They implement
+`DH\AuditorBundle\History\HistoryElementInterface`, whose sort key compares with the one of the audit entries
+(`Entry::getSortKey()`): build it with `SortKey::of()`.
+
+```php
+use DH\AuditorBundle\History\HistoryElementInterface;
+use DH\AuditorBundle\History\SortKey;
+
+final class Comment implements HistoryElementInterface
+{
+    // ...
+
+    public function getSortKey(): string
+    {
+        return SortKey::of($this->createdAt, 'comment-'.$this->id);
+    }
+}
+```
+
+```twig
+<twig:DhAuditor:History :subject="post" :with="post.comments">
+    <twig:block name="element">
+        <strong>{{ element.author }}</strong> · {{ element.createdAt|date }}
+        <p>{{ element.body }}</p>
+    </twig:block>
+</twig:DhAuditor:History>
+```
+
+The `element` block renders one element (`{{ element }}` by default, which needs a `__toString()` method); the `title`
+and `empty` blocks replace the
+heading and the text shown without any line.
+
+#### Pages
+
+The component shows one page of actions. Its "Older" link reloads the current page with the cursor of the next one in
+the query string (`?dh_auditor_after=…`, the other parameters kept; the page the reader sees, also when the component is rendered by `render(controller())`); give two components on the same page their own
+`cursorParameter`. An element of your application is shown once, on the page whose actions surround it. In an
+application that uses Turbo, wrap the component in a `<turbo-frame>` to load the older actions in place.
+
+On the first page, the `data-dh-auditor-first-cursor` attribute of the component (`firstCursor` in PHP) holds the
+position of its most recent entry: read the actions recorded since with `RootQuery::fetch(since: $cursor)`, to push
+them with a Turbo Stream for instance. The attribute is absent while the history is empty.
+
+"Open in the viewer" leads to the history of the object in the viewer, when it is enabled.
+
+#### Styling
+
+The component renders the rows of the viewer, styled with Tailwind CSS classes that carry the `dh:` prefix
+(`dh:hidden`, `dh:sm:inline`…): they never meet the classes of your application. Load the precompiled stylesheet of
+the bundle on the pages that render it, before or after yours:
+
+```twig
+<link rel="stylesheet" href="{{ asset('bundles/dhauditor/app.css') }}">
+```
+
+It does not reset your page: its reset, the one of Tailwind (Preflight) cut down to what the rows need, only reaches the
+elements of the component (under its `data-dh-auditor-history` root), which looks the same with or without a reset of
+your own, in the font of your page. What you render in the `element` block is left out of it: it keeps the margins,
+lists, links and controls of your page, and inherits the colors and the line height (1.5) of the component. The `title`
+and `empty` blocks sit inside a heading and a paragraph of the component, under its reset. A `class` given to the
+component (`<twig:DhAuditor:History class="mt-4" …>`) joins the ones of its root element and is styled by your own
+stylesheet.
+
+To compile the viewer with your own Tailwind 4 instead, give it a stylesheet of its own, apart from your main one: a
+Tailwind build has one prefix only. With symfonycasts/tailwind-bundle, add it to `input_css`, and load its built file
+instead of `bundles/dhauditor/app.css` (the path below is relative to `assets/styles/auditor.css`):
+
+```css
+/* assets/styles/auditor.css */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme) prefix(dh);
+@import "tailwindcss/utilities.css" layer(utilities);
+@import "../../vendor/damienharper/auditor-bundle/src/Resources/assets/css/viewer.css";
+```
+
+`viewer.css` brings the bundle templates as sources, the `dh-*` design tokens of `theme.css` (see
+[Theme](../viewer/index.md#-theme)), the form controls and the bars of the activity graph. The dark values of the
+tokens apply under a `dark` class on an ancestor. A page that follows `prefers-color-scheme` without such a class
+copies the `.dark` block of `theme.css` into a `@media (prefers-color-scheme: dark) { :root { … } }` rule. To blend
+the component into a shadcn/ui theme, map the tokens onto yours, in either way:
+
+```css
+:root {
+    --dh-card: var(--card);
+    --dh-foreground: var(--foreground);
+    --dh-muted-foreground: var(--muted-foreground);
+    --dh-border: var(--border);
+}
+```
+
+Otherwise, override `@DHAuditor/Component/History.html.twig` and the templates of `@DHAuditor/History/` it renders
+(`_row`, `_macros`, `_details`, `phrase`, `object_reference`) under `templates/bundles/DHAuditorBundle/`.
+
+---
+
 ## Customization
 
 > **Customize the bundle's providers for your specific needs**
@@ -11161,6 +12549,9 @@ The bundle uses three providers that can be customized:
 | User Provider     | Returns current user information     | `dh_auditor.user_provider`       |
 | Security Provider | Returns IP address and firewall name | `dh_auditor.security_provider`   |
 | Role Checker      | Checks if user can view entity audits | `dh_auditor.role_checker`       |         
+
+To record *how* a change was made (an import, a console command, a Messenger message…), see
+[Blame Context](blame-context.md).
 
 ```mermaid
 flowchart LR
@@ -11185,7 +12576,7 @@ The default `UserProvider`:
 - ✅ Gets the current user from Symfony's `TokenStorage`
 - ✅ Extracts user ID via `getId()` method (if exists)
 - ✅ Extracts username via `getUserIdentifier()`
-- ✅ Tracks impersonation (switch user)
+- ✅ Tracks impersonation (switch user) in the `impersonator` key of the blame
 
 #### SecurityProvider
 
@@ -11243,6 +12634,9 @@ This is handled by `ConsoleEventSubscriber` and requires no configuration.
 - 🔒 [Security Provider](security-provider.md) - Custom IP/context detection
 - 🛡️ [Role Checker](role-checker.md) - Custom access control
 - 📦 [Extra Data](extra-data.md) - Attach additional data to audit entries
+- 🏷️ [Diff Label Resolvers](diff-label-resolvers.md) - Human-readable labels in audit diffs
+- 🌳 [Histories](histories.md) - History of an object across entities, last change of a field, field labels, the `<twig:DhAuditor:History>` component
+- 🔌 [Custom Provider](custom-provider.md) - Register a custom audit backend via tag
 
 ---
 
@@ -11328,10 +12722,11 @@ dh_auditor:
 #### Via Attributes
 
 ```php
-use DH\Auditor\Provider\Doctrine\Auditing\Attribute as Audit;
+use DH\Auditor\Attribute\Auditable;
+use DH\Auditor\Attribute\Security;
 
-#[Audit\Auditable]
-#[Audit\Security(view: ['ROLE_ADMIN', 'ROLE_AUDITOR'])]
+#[Auditable]
+#[Security(view: ['ROLE_ADMIN', 'ROLE_AUDITOR'])]
 class User
 {
     // ...
@@ -11858,42 +13253,45 @@ namespace DH\Auditor\User;
 
 interface UserInterface
 {
-    public function getIdentifier(): ?string;
-    public function getUsername(): ?string;
+    public ?string $identifier { get; }
+
+    public ?string $username { get; }
+
+    public ?string $fqdn { get; }                 // class of the user, written as user_fqdn
+
+    public ?UserInterface $impersonator { get; }  // user who impersonates this one (switch user)
 }
 ```
+
+The interface declares read-only property hooks, not getter methods: read `$user->identifier`, `$user->username`,
+`$user->fqdn` and `$user->impersonator`.
+The built-in `DH\Auditor\User\User` implements it and is what the examples below return.
 
 ### 📦 Built-in Provider
 
 The default `DH\AuditorBundle\User\UserProvider`:
 
-```php
-public function __invoke(): ?UserInterface
+- blames the user of the security token: its `getId()` (an empty identifier without that method), its
+  `getUserIdentifier()` and its class (Doctrine proxies resolved), written as `user_fqdn`;
+- when that user is impersonated (switch user, `SwitchUserToken`), the user of the original token is its
+  impersonator, written apart in the `impersonator` key of the `blame` JSON:
+
+```json
 {
-    $tokenUser = $this->getTokenUser();
-    $impersonatorUser = $this->getImpersonatorUser();
-
-    // Get identifier if getId() method exists
-    $identifier = null;
-    if ($tokenUser instanceof SymfonyUserInterface) {
-        if (method_exists($tokenUser, 'getId')) {
-            $identifier = $tokenUser->getId();
-        }
-        $username = $tokenUser->getUserIdentifier();
-    }
-
-    // Track impersonation
-    if ($impersonatorUser instanceof SymfonyUserInterface) {
-        $username .= '[impersonator '.$impersonatorUser->getUserIdentifier().']';
-    }
-
-    if (null === $identifier && null === $username) {
-        return null;
-    }
-
-    return new User((string) $identifier, $username);
+  "username": "alice",
+  "user_fqdn": "App\\Entity\\User",
+  "user_firewall": "main",
+  "ip": "10.0.0.1",
+  "impersonator": {"id": "1", "username": "admin", "fqdn": "App\\Entity\\User"}
 }
 ```
+
+The viewer shows an "impersonated by" badge next to the origin of the action. To find the actions made by
+impersonating someone, use the `ImpersonatorFilter` of auditor-doctrine-provider, or `$entry->impersonator`.
+
+> [!NOTE]
+> Before 8.0, the built-in provider appended the impersonator to the username (`alice[impersonator admin]`) and
+> `user_fqdn` held `DH\Auditor\User\User`. Those entries are not rewritten; the viewer does not show that class.
 
 ### 🖥️ Console Commands
 
@@ -11937,6 +13335,7 @@ restored when the command ends.
 
 namespace App\Audit;
 
+use DH\Auditor\Provider\Doctrine\Persistence\Helper\DoctrineHelper;
 use DH\Auditor\User\User;
 use DH\Auditor\User\UserInterface;
 use DH\Auditor\User\UserProviderInterface;
@@ -11957,7 +13356,8 @@ class CustomUserProvider implements UserProviderInterface
 
         return new User(
             (string) $user->getId(),
-            $user->getEmail()
+            $user->getEmail(),
+            DoctrineHelper::getRealClassName($user), // written as user_fqdn, Doctrine proxies resolved
         );
     }
 }
@@ -12106,6 +13506,7 @@ class CompositeUserProvider implements UserProviderInterface
 
 ### 🚀 Next Steps
 
+- 🧭 [Blame Context](blame-context.md) - Record how a change was made (import, command, Messenger message…)
 - 🔒 [Security Provider](security-provider.md) - Customize IP/context detection
 - 🛡️ [Role Checker](role-checker.md) - Customize access control
 
@@ -12119,15 +13520,16 @@ This section contains upgrade guides for major versions.
 
 ### 📚 Upgrade Guides
 
+- ⬆️ [Upgrading to 8.0](v8.md) - From 7.x to 8.0
 - ⬆️ [Upgrading to 7.0](v7.md) - From 6.x to 7.0
 
 ### 📋 Version Support
 
 | Version | Status                 | Support Until |
 |:--------|:-----------------------|:--------------|
-| 7.x     | Active development 🚀  | Current       |
-| 6.x     | Active support         | TBD           |
-| 5.x     | End of Life            | -             |             
+| 8.x     | Active development 🚀  | Current       |
+| 7.x     | Bug and security fixes | Until next major |
+| 6.x     | End of Life            | -             |
 
 ### ✅ General Upgrade Process
 
@@ -12154,13 +13556,30 @@ bin/phpunit
 
 ### 🗄️ Schema Updates
 
-After upgrading, check if audit tables need updates:
+After upgrading, always check if audit tables need updating.
+
+**For fresh installations or existing v2 tables:**
 
 ```bash
 # Preview changes
 bin/console audit:schema:update --dump-sql
 
 # Apply changes
+bin/console audit:schema:update --force
+```
+
+**When upgrading from auditor-bundle 7.x or earlier (existing audit data):**
+
+> [!CAUTION]
+> `audit:schema:update` refuses to run if any audit table still has the legacy v1 schema. Run `audit:schema:migrate` first to preserve your data, then run `audit:schema:update`.
+> The migration drops the legacy columns and cannot be undone: back up the audit tables, stop writing audits
+> while it runs, and follow the [8.0 upgrade steps](v8.md#-upgrade-steps) in their order.
+
+```bash
+# Migrate legacy audit tables to v2 (converts the existing entries, then drops the legacy columns)
+bin/console audit:schema:migrate --force --convert-all
+
+# Then apply any remaining schema changes
 bin/console audit:schema:update --force
 ```
 
@@ -12185,6 +13604,8 @@ This guide covers upgrading from auditor-bundle 6.x to 7.0.
 | 6.x    | 7.0    |
 |--------|--------|
 | >= 5.4 | >= 8.0 |
+
+7.3 raised the minimum to Symfony 8.1.
 
 > [!CAUTION]
 > Symfony 5.4, 6.x, and 7.x are **no longer supported**.
@@ -12543,6 +13964,391 @@ bin/console audit:schema:update --force
 
 ---
 
+## Upgrading to 8.0
+
+> **Migrate from auditor-bundle 7.x to 8.0**
+
+This guide covers upgrading from auditor-bundle 7.x to 8.0.
+
+### ⚠️ DoctrineProvider extraction completed in auditor 5.0
+
+`auditor-bundle` 8.0 targets `damienharper/auditor` 5.x, in which the embedded
+`DH\Auditor\Provider\Doctrine` namespace has been **fully removed** from the core library.
+
+All Doctrine ORM functionality now lives exclusively in
+[`damienharper/auditor-doctrine-provider`](https://github.com/DamienHarper/auditor-doctrine-provider),
+which auditor-bundle already requires as a direct dependency.
+
+> [!IMPORTANT]
+> The class namespace **has not changed**. Classes are still under `DH\Auditor\Provider\Doctrine\*`
+> — they simply come from the `auditor-doctrine-provider` package instead of the `auditor` core.
+> Only two imports change: the deprecated attribute aliases (see [Attributes](#attributes)) and
+> [`NeedsConversionToAuditableType`](#needsconversiontoauditabletype-if-applicable).
+
+#### Attributes
+
+The deprecated 4.x aliases `DH\Auditor\Provider\Doctrine\Auditing\Attribute\Auditable`, `Ignore` and `Security`
+have been removed (only `AttributeLoader` remains in that namespace). Import the attributes from `DH\Auditor\Attribute`:
+
+```php
+// Before (deprecated aliases, auditor 4.x)
+use DH\Auditor\Provider\Doctrine\Auditing\Attribute\Auditable;
+use DH\Auditor\Provider\Doctrine\Auditing\Attribute\Ignore;
+use DH\Auditor\Provider\Doctrine\Auditing\Attribute\Security;
+
+// After
+use DH\Auditor\Attribute\Auditable;
+use DH\Auditor\Attribute\Ignore;
+use DH\Auditor\Attribute\Security;
+```
+
+#### For auditor-bundle users
+
+No action required for the extraction. The bundle automatically requires `damienharper/auditor-doctrine-provider`
+and wires everything transparently. Your `dh_auditor.yaml` configuration continues to work
+without any changes. Your existing audit tables, however, must be migrated: see
+[Audit Table Schema Reform](#-audit-table-schema-reform-schema-version-2) below.
+
+#### For users using DoctrineProvider directly (without the bundle)
+
+If you use `DoctrineProvider` directly in a non-bundle project, install the standalone package
+explicitly:
+
+```bash
+composer require damienharper/auditor-doctrine-provider:^2.0
+```
+
+The provider imports remain identical:
+
+```php
+// Works in both 4.x (from auditor core) and 5.x (from auditor-doctrine-provider)
+use DH\Auditor\Provider\Doctrine\DoctrineProvider;
+use DH\Auditor\Provider\Doctrine\Configuration;
+use DH\Auditor\Provider\Doctrine\Persistence\Reader\Reader;
+// ...
+```
+
+#### `NeedsConversionToAuditableType` (if applicable)
+
+If you implemented the `NeedsConversionToAuditableType` interface on a custom Doctrine type,
+update the import:
+
+```php
+// Before (auditor 4.x)
+use DH\Auditor\Transaction\NeedsConversionToAuditableType;
+
+// After (auditor 5.x / auditor-doctrine-provider 2.x)
+use DH\Auditor\Provider\Doctrine\Transaction\NeedsConversionToAuditableType;
+```
+
+### ⚠️ Audit Table Schema Reform (schema version 2)
+
+auditor-bundle 8.0 also ships `damienharper/auditor-doctrine-provider` 2.x, which introduces a
+**revised audit table schema**. The new schema:
+
+- Replaces four separate `blame_*` columns with a single `blame JSON` column
+- Replaces the SHA-1 `transaction_hash VARCHAR(40)` with a ULID `transaction_id CHAR(26)`
+- Adds a `schema_version` column to distinguish legacy and current diffs formats
+- Adds a `transaction_id` index and two composite indexes, `(object_id, type)` and `(blame_id, created_at)`,
+  and drops the 7.x `(blame_user, blame_id)` index
+- Unifies the `diffs` JSON format across all operation types
+
+Existing audit tables are **not modified automatically**: they must be migrated with `audit:schema:migrate`,
+which converts the existing entries, then drops the legacy columns. **There is no rollback**: back up the audit
+tables first. Count 3 to 5 minutes per million audit rows, during which the application must not write audits.
+
+### 🚀 Upgrade Steps
+
+The complete procedure, with the backup, the rehearsal and the estimate of the duration, the options of
+`audit:schema:migrate` and troubleshooting, is in the
+[auditor-doctrine-provider 2.0 upgrade guide](https://github.com/DamienHarper/auditor-doctrine-provider/blob/main/docs/upgrade/v2.md#-upgrade-steps).
+In short, and in this order:
+
+#### 1️⃣ Back up the audit tables and rehearse
+
+Back up every audit table, then run the whole procedure on a copy of your production data: it tells you how
+long the maintenance window must be.
+
+#### 2️⃣ Stop writing audits
+
+Put the application in maintenance mode, and stop the Messenger workers and scheduled tasks (including the audit
+retention): neither 7.x nor 8.0 can write audits into a table during its migration.
+
+#### 3️⃣ Update auditor-bundle
+
+```bash
+composer require damienharper/auditor-bundle:^8.0
+bin/console cache:clear
+```
+
+This will automatically pull in `damienharper/auditor:^5.0` and
+`damienharper/auditor-doctrine-provider:^2.0`.
+
+> [!CAUTION]
+> Do not run `doctrine:schema:update`, nor a Doctrine migration that changes the audit tables, before step 4:
+> on v1 tables, they drop the legacy columns without converting their data. If your audit tables are created by
+> Doctrine migrations (test and CI databases, new environments, a deployment that migrates when it starts), see
+> [Audit tables managed by Doctrine Migrations](https://github.com/DamienHarper/auditor-doctrine-provider/blob/main/docs/upgrade/v2.md#audit-tables-managed-by-doctrine-migrations):
+> a replayable migration and a deployment order.
+
+#### 4️⃣ Migrate the audit tables
+
+```bash
+# Preview the DDL
+bin/console audit:schema:migrate --dump-sql --convert-all
+
+# Run the full migration in one pass (new columns, transaction hash and diffs conversions, legacy columns dropped)
+bin/console audit:schema:migrate --force --convert-all
+```
+
+> [!WARNING]
+> Always pass `--convert-all`: `--force` alone adds the new columns, moves the blame into `blame` and drops the legacy
+> `blame_*` and `ip` columns, but `transaction_hash` and the legacy diffs stay, and the tables stay on the legacy
+> schema (`audit:schema:update` keeps refusing them) until the conversions have run.
+> `--drop-transaction-hash` drops `transaction_hash` without converting it: the migrated entries lose their
+> transaction grouping for good.
+
+#### 5️⃣ Apply the rest of the schema
+
+`audit:schema:update` refuses to run while an audit table still has the legacy v1 schema: run it only now.
+
+```bash
+bin/console audit:schema:update --dump-sql
+bin/console audit:schema:update --force
+```
+
+#### 6️⃣ Check, then reopen
+
+`audit:schema:migrate` must report that all audit tables are at schema version 2, and
+`audit:schema:update --dump-sql` that there is nothing to update. Open a few entries in the viewer, then restart
+the workers and scheduled tasks, and leave maintenance mode.
+
+### 🔄 Breaking Changes (schema v2)
+
+**`$entry->transactionHash` removed — use `$entry->transactionId`**
+
+```php
+// Before (7.x)
+$entry->transactionHash;    // SHA-1 VARCHAR(40)
+
+// After (8.0)
+$entry->transactionId;      // ULID CHAR(26)
+```
+
+The old property has been **removed** (no deprecated alias). Update any code that accesses
+`transactionHash` directly. For un-migrated v1 rows, `Entry::fromArray()` automatically
+falls back to the legacy `transaction_hash` column so `$entry->transactionId` is still
+populated before your tables are migrated.
+
+**Blame properties now read from `blame` JSON column**
+
+`$username`, `$userFqdn`, `$userFirewall`, and `$ip` still work — they now read from the unified
+`blame` JSON column. No code changes required.
+
+**User provider and impersonation**
+
+- The built-in `UserProvider` no longer appends `[impersonator <name>]` to the username: the impersonated user is
+  blamed, and the user who impersonates them is written in the `impersonator` key of the `blame` JSON
+  (`$entry->impersonator`, `ImpersonatorFilter`, an "impersonated by" badge in the viewer). Exports get the
+  `blame_impersonator_id`, `blame_impersonator` and `blame_impersonator_fqdn` fields.
+- `user_fqdn` is the class of the user of the security token (it was `DH\Auditor\User\User`). Custom user
+  providers pass it as the third argument of `User`: `new User($id, $name, DoctrineHelper::getRealClassName($user))`
+  (`DH\Auditor\Provider\Doctrine\Persistence\Helper\DoctrineHelper` resolves Doctrine proxies).
+- Existing entries are not rewritten. To find the ones written with the former suffix:
+
+```sql
+-- MySQL, MariaDB, SQLite
+SELECT * FROM post_audit WHERE JSON_EXTRACT(blame, '$.username') LIKE '%[impersonator %';
+-- PostgreSQL
+SELECT * FROM post_audit WHERE CAST(blame AS jsonb) ->> 'username' LIKE '%[impersonator %';
+```
+
+**Remove entries can include a full entity snapshot**
+
+For schema version 2 entries, `getDiffs()` on a `remove` entry is empty by default: `getDiffSource()` identifies the
+deleted entity. With the provider option `full_snapshot_on_remove: true` (under `providers.doctrine`), it returns the
+full entity state before deletion, with `old` populated and `new` set to `null` for every field.
+
+**`getDiffSource()` available on all entry types**
+
+Use `getDiffSource()` to access the entity metadata (`id`, `class`, `label`, `table`) that is
+now present on all operation types in schema version 2.
+
+### ✨ New Features
+
+None of these features exists in 7.x. They are all optional: a 7.x configuration keeps working unchanged.
+
+#### Viewer
+
+- **Actions told as phrases** (*alice changed Status: Draft → Published*), with their technical details one click
+  away, on new screens: an overview with the recent activity, the history of an object and of the entities attached
+  to it, an action page, and the actions of a user. See [Pages](../viewer/index.md#-pages).
+- **Compare two revisions** of an object, field by field, from its history. See
+  [Compare Revisions](../viewer/index.md#compare-revisions-auditentityidcompare).
+- **New filters**: who, what, field, origin and period on the history of an object; changed field (needs native JSON
+  and a migrated table) and date range on the stream of an entity. The entity list can be sorted by name, number of
+  actions or latest activity.
+- **Schema v2 diffs**: removals can show the full state of the deleted object (`full_snapshot_on_remove`), JSON deep
+  diffs get a dedicated rendering, and [diff label resolvers](../customization/diff-label-resolvers.md)
+  (`#[DiffLabel]`) show readable values, wired by their FQCN as service ID.
+- **URL generator**: `DH\AuditorBundle\Viewer\AuditViewerUrlGenerator` and its Twig functions link an entity, an object, a
+  transaction or a user to its page in the viewer. See [Generating URLs](../viewer/index.md#-generating-urls).
+- The user filter is computed from the `blame_id` index, which keeps the stream fast on large audit tables.
+- **Strict Content Security Policy**: no inline script nor `style` attribute any more. See
+  [Content Security Policy](../viewer/index.md#-content-security-policy).
+
+#### Export
+
+`/audit/export` streams audit entries as NDJSON, JSON or CSV, filtered by entity, object, period or user, optionally
+anonymized, and restricted to the entities the user can view. See [Export](../viewer/index.md#-export).
+
+#### Initial snapshot: `audit:snapshot`
+
+When auditing is enabled on a database that already holds data, run `audit:snapshot` once: it writes an
+`insert` entry flagged as a snapshot for every existing entity (in batches, skipping the entities that already
+have an audit history), so their history starts with their state at that time.
+
+```bash
+php bin/console audit:snapshot --all --dry-run   # count what would be written
+php bin/console audit:snapshot --all
+```
+
+The command is registered by the bundle. The viewer tells these entries as snapshots (a `SNAPSHOT` badge on the compare page), and
+`Entry::isSnapshot()` tells them from real insertions in your own code.
+
+#### `audited_columns` and `ignored_columns_resolver`
+
+`entities.*.audited_columns` audits only the listed properties (allowlist), and `ignored_columns_resolver` takes the
+ID of a service returning the properties to ignore for a given entity object. Ignoring always wins over the
+allowlist. See [Configuration](../configuration/index.md#ignored_columns_resolver).
+
+#### Histories across entities
+
+`#[AuditRoot]` and the `roots` entity option attach the audit entries of an entity to the history of another one
+(the `audit_root` table, `audit:roots:rebuild`); `Reader::createRootQuery()` reads that history with cursor
+pagination. `root_resolver`, `entity_label_resolver` and `read_scope` take service IDs, field labels come from the
+`dh_auditor_fields` translation domain, and the `dh_auditor_last_change()`, `dh_auditor_last_changes()` and
+`dh_auditor_field_label()` Twig functions tell who changed a field. See [Histories](../customization/histories.md).
+The `|dh_auditor_phrase`, `|dh_auditor_phrase_text` and `|dh_auditor_author` Twig filters tell an action as a
+readable phrase whose objects link to their history, customizable through the `dh_auditor_history` translation
+domain, `#[AsChangeDescriber]` services and the `ObjectUrlResolverInterface` service. See
+[Phrases](../customization/histories.md#-phrases).
+
+#### Blame contexts
+
+Audit entries can record *how* a change was made in the `via` key of the `blame` JSON (no schema change):
+
+- every console command runs in a `console` context labelled with the command name;
+- the opt-in `dh_auditor.messenger.blame_context_middleware` blames the changes made by a worker on the user who
+  dispatched the message;
+- your code can push its own contexts through the autowirable `DH\Auditor\Blame\BlameContextStack` service;
+- the viewer shows the context next to the author, and exports carry it as `blame_via` (see [Export](#export)).
+
+See [Blame Context](../customization/blame-context.md).
+
+#### Scheduled retention
+
+Audit entries can be pruned on a schedule with Symfony Scheduler, per entity (`retention.max_age` /
+`retention.max_entries`, or `#[Auditable(maxAge: …, maxEntries: …)]`), with an optional default. Disabled by default;
+it needs `symfony/scheduler`, `symfony/messenger` and `dragonmantank/cron-expression`. See
+[retention](../configuration/index.md#retention).
+
+#### Doctrine provider options
+
+The `providers.doctrine` options of auditor-doctrine-provider 2.0 are available:
+
+- [`batch_size`](../configuration/index.md#batch_size): writes the audit entries of a transaction with multi-row
+  `INSERT` statements (10 to 67 % faster flushes with many entities);
+- [`compression`](../configuration/index.md#compression): compressed `diffs` and `extra_data` columns on MariaDB;
+- [`skip_disabled_entities`](../configuration/index.md#skip_disabled_entities): no audit table for entities that
+  are disabled by default;
+- [`full_snapshot_on_remove`](../configuration/index.md#full_snapshot_on_remove): `remove` entries record the last
+  value of every audited field.
+
+#### Extensibility
+
+- [Custom providers](../customization/custom-provider.md) are registered with the `dh_auditor.provider` tag.
+- The console user provider can be decorated: decorate the `DH\AuditorBundle\User\ConsoleUserProvider` service
+  with your own `DH\AuditorBundle\User\ConsoleUserProviderInterface` implementation.
+- Failures that cannot be thrown (e.g. audit rows left behind after a rollback) are logged, on the `auditor` channel
+  with MonologBundle.
+
+### 🔄 Other Changes
+
+**Entity `ignored_columns` of `#[Auditable]` entities are applied**
+
+In 7.x, the attributes of an `#[Auditable]` entity replaced its whole YAML entity options (except retention): the
+entity `ignored_columns` set in YAML were silently dropped. They are now added to the `#[Ignore]` properties, as
+documented. Check that the properties listed there are really meant to be ignored.
+
+**Viewer templates rewritten**
+
+The templates of the viewer were rewritten around actions (see [Override Templates](../viewer/index.md#override-templates)):
+a template overridden from 7.x under `templates/bundles/DHAuditorBundle/Audit/` no longer receives the same
+variables and must be rewritten from the new one. In particular:
+
+- `audits.html.twig` (now the overview) receives `activity` and counts actions instead of entries, in its activity
+  graph too (`activityGraphRaw`; the `audit.audit_details.events_count` translation is removed);
+- `entity_stream.html.twig` only renders the stream of a whole entity: the history of an object is
+  `object_history.html.twig`, whose period filter is `when` (last days) instead of `date_from` / `date_to`;
+- `transaction_stream.html.twig` renders one action (`row`, `entries`), no longer paginated;
+- `user_stream.html.twig` receives `rows` (actions) instead of `entries`;
+- `entry.html.twig` is removed: `compare.html.twig` renders its changes like the action details, with the
+  `text_change()` and `related()` macros of `History/_macros.html.twig`.
+
+The templates are styled with design tokens (see [Theme](../viewer/index.md#-theme)) instead of the Tailwind
+palette, and every Tailwind class carries the `dh:` prefix (`dh:bg-dh-card`, `dh:text-dh-muted-foreground`,
+`dh:hidden dh:sm:inline`…): the viewer never meets the classes of an application that uses Tailwind too, whatever the
+order of the stylesheets. The precompiled `app.css` only holds the prefixed classes of the bundle templates, so an
+overridden template that keeps 7.x classes (`slate-*`, `indigo-*`, `emerald-*`…) or unprefixed ones loses their
+styles: rewrite it with prefixed classes and the tokens.
+
+`app.css` no longer resets the whole page: its reset only reaches the content of the viewer pages, under the
+`<div data-dh-auditor-viewer>` element in which each page of `Audit/` now wraps the content of its `dh_auditor_content`
+block (keep it in an overridden page), and the `<twig:DhAuditor:History>` component. The layout of the bundle loads
+`bundles/dhauditor/preflight.css` too; a [custom layout](../viewer/index.md#custom-layout) that extends the one of the
+application only loads `app.css`, before or after its own stylesheets, and the rest of its page keeps their reset and
+font. The wrapping element makes the content of each page one child of the element that renders the `dh_auditor_content`
+block, which a flex or grid layout around it may need to know. An application that compiles the viewer or the
+`<twig:DhAuditor:History>` component with its own Tailwind does it in a stylesheet of its own that imports `viewer.css`
+with the `dh` prefix (see [Styling](../customization/histories.md#styling)).
+
+The route names and their path parameters are unchanged, but the history of an object (`/audit/{entity}/{id}`) reads
+other query parameters: `type` became `what`, `user` became `who`, `date_from` / `date_to` became `when` (last 7, 30
+or 90 days), `page` became the `after` cursor, and `origin` and `attached` are new. Links built with the
+`AuditViewerUrlGenerator` (or `dh_auditor_entity_url()`) get `type` and `user` translated; links written by hand with
+the 7.x filters lose them.
+
+**Overridden `layout.html.twig`: load `viewer.js`**
+
+The theme toggle, the sort of the entity list and the filters submitted on change moved from inline scripts to
+`bundles/dhauditor/viewer.js`. A layout that does not extend the bundle's one must load it (see
+[Custom Layout](../viewer/index.md#custom-layout)); templates overridden from 7.x keep their inline scripts and work
+as before, outside a strict CSP.
+
+**Flushes made before the provider is built are audited** (also in 7.3)
+
+The auditing listeners are declared as lazy Doctrine listeners of the connections of the auditing entity managers,
+instead of being attached when the `DoctrineProvider` service is built. Before this fix, with a warm metadata cache
+(the usual production setup), nothing built the provider before `kernel.controller`: the flushes made earlier in a web
+request (a `form_login` / `json_login` listener updating the user, a `kernel.request` listener) were not audited.
+
+This needs every auditing entity manager to be a DoctrineBundle one, using the event manager of its connection.
+Otherwise the provider keeps attaching the listeners when it is built, as before, and the container compilation log
+(`var/cache/<env>/*Compiler.log`) says which entity manager prevents it.
+
+When the listeners are declared this way, workarounds that built the `Auditor` service before the first flush, so
+that writes made before any controller (a firewall listener, a `kernel.request` listener) were audited, are no longer
+needed: a Doctrine `preFlush` listener that only injects `Auditor`, for example, can be removed. Check first that the
+container compilation log does not report an entity manager that prevents it.
+
+### ❓ Need Help?
+
+- Check [GitHub Issues](https://github.com/DamienHarper/auditor-bundle/issues)
+- Open a new issue with details about your error
+
+---
+
 ## Audit Viewer
 
 > **Web interface for browsing audit logs**
@@ -12572,13 +14378,17 @@ dh_auditor:
 
 ### 🛤️ Routes
 
-The viewer registers three routes:
+The viewer registers these routes:
 
-| Route                              | URL                         | Description               |
-|------------------------------------|-----------------------------|---------------------------|
-| `dh_auditor_list_audits`           | `/audit`                    | List all audited entities |
-| `dh_auditor_show_entity_stream`    | `/audit/{entity}/{id?}`     | Entity audit stream       |
-| `dh_auditor_show_transaction_stream` | `/audit/transaction/{hash}` | Transaction details     |        
+| Route                                | URL                                | Description                         |
+|--------------------------------------|------------------------------------|-------------------------------------|
+| `dh_auditor_export`                  | `/audit/export`                    | Export of audit entries (streamed)  |
+| `dh_auditor_list_audits`             | `/audit`                           | List all audited entities           |
+| `dh_auditor_show_entity_stream`      | `/audit/{entity}/{id?}`            | Entity audit stream                 |
+| `dh_auditor_show_transaction_stream` | `/audit/transaction/{hash}`        | Transaction details                 |
+| `dh_auditor_show_user_stream`        | `/audit/user/{id}`                 | Activity timeline of one user       |
+| `dh_auditor_select_revisions`        | `/audit/{entity}/{id}/revisions`   | Pick two revisions of an object     |
+| `dh_auditor_compare_revisions`       | `/audit/{entity}/{id}/compare`     | Compare two revisions of an object  |
 
 #### Route Configuration
 
@@ -12606,61 +14416,128 @@ dh_auditor:
 
 ### 📄 Pages
 
-#### Entity List (`/audit`)
+The viewer tells each action (a database transaction) as a phrase, such as *alice changed Status: Draft → Published
+and added to Tags: symfony and audit*, with its technical details one click away. The phrases come from the
+[history phrases](../customization/histories.md#-phrases): translate or describe them to speak the words of your
+application. The objects they name link to their history, and are marked *(deleted)* when they no longer exist (when
+their identifier is an integer or a string; an object hidden by a Doctrine SQL filter, such as a soft delete, is
+marked as well).
 
-Displays all audited entities with:
-- 📋 Entity class name
-- 🗄️ Audit table name
-- 🔢 Number of audit entries
-- 🔗 Link to view history
+#### Overview (`/audit`)
+
+- **Recent activity**: the last 10 actions across the audited entities the reader may view, with what they were done
+  on (*alice on Post “Why audit?”: …*). An action touching many objects is summed up by type (*deleted 38 Post*); it
+  is read whole, whatever the number of its entries (a page reads 1,000 entries at most: past that, the largest
+  actions tell only their most recent entries).
+- **What is audited**: the audited entities (their name from the `dh_auditor_fields` domain, key FQCN), their number of
+  actions (as their stream counts them, cached with the activity graph when its cache is on and no `read_scope` is
+  set), their latest activity and, when enabled, their [activity graph](#-activity-graph). The list can be sorted by
+  name, number of actions or latest activity (`?sort=name_asc`, `name_desc`, `count_desc`, `count_asc`,
+  `activity_desc`, `activity_asc`).
+
+#### Object History (`/audit/{entity}/{id}`)
+
+The history of one object and of the entities attached to it (`#[AuditRoot]`, `roots` entity option, see
+[Histories](../customization/histories.md)), newest first, grouped by day:
+
+- one row per action: icon, author (linked to their actions), phrase, time, origin (Web, Command line, Messenger,
+  System), blame context and, when the author was impersonated (switch user), who impersonated them; the whole row
+  leads to the action page, the objects it names to their own history; its details list every change with its raw field and values (long texts compared word by word; a text shows between
+  quotes only when it would be misread without them: empty, with spaces at its ends, or looking like a number, a
+  boolean or null), the transaction and the blame, and link to the action page;
+- **filters**: who, what (`insert`, `update`, `remove`, `associate`, `dissociate`), field (needs native JSON
+  search), origin (`http`, `console`, `messenger`, `system`), when (last 7, 30 or 90 days), and, when entities can
+  be attached, with or without them;
+- **Show older actions** reads the next `page_size` actions through a cursor (`?after=`): a link, which `viewer.js`
+  loads in place; the header counts the actions of the history;
+- **Who changed what last**: the 8 fields changed most recently, with who changed them and when (or *at creation*);
+- **Technical side**: class, identifier, audit tables read, number of entries.
+
+```
+/audit/App-Entity-Post/42?who=12&what=update&field=status
+/audit/App-Entity-Post/42?origin=console&when=30&attached=0
+```
+
+Only the `view` role of the object's class is checked: its history shows the entries of the attached entities even
+to a reader who cannot view their class (their links to their own history are hidden).
 
 #### Entity Stream (`/audit/{entity}`)
 
-Shows audit entries for an entity:
-- 📅 Chronological list (newest first)
-- 🏷️ Operation type (insert/update/remove/associate/dissociate)
-- 👤 User and timestamp
-- 📝 Changed properties (diff)
+Every action on an entity, with the filters of the stream: type, user (`__anonymous__` for the entries without
+user), changed field, and period.
 
-Filter by specific entity ID:
-```
-/audit/App-Entity-User/42
-```
+> [!NOTE]
+> The changed field filter requires native JSON support (MySQL 5.7+, MariaDB 10.2.3+, PostgreSQL 9.4+, SQLite 3.38+) and an audit table migrated to the schema v2 structure (`audit:schema:migrate`). It is hidden otherwise. On large audit tables, combine it with a period: the database has to read the diffs of every entry left by the other filters.
 
-##### 🔍 Filters
-
-The entity stream page includes filters to narrow down audit entries:
-
-**Action Type Filter**
-Filter by operation type:
-- `insert` - Record created
-- `update` - Record updated
-- `remove` - Record deleted
-- `associate` - Relation added
-- `dissociate` - Relation removed
-
-**User Filter**
-Filter by the user who performed the action:
-- All registered users who have made changes
-- Anonymous (for actions without user attribution)
-- CLI commands (each command is tracked by its name, e.g., `app:import-users`)
-
-> [!TIP]
-> Filters can be combined and are preserved during pagination.
-
-**URL parameters:**
 ```
 /audit/App-Entity-User?type=update&user=42
 /audit/App-Entity-User?type=insert&user=__anonymous__
+/audit/App-Entity-User?field=email
+/audit/App-Entity-User?date_from=2026-01-01&date_to=2026-03-31
 ```
 
-#### Transaction View (`/audit/transaction/{hash}`)
+The dates are days, inclusive, in the `dh_auditor.timezone` time zone. Filters are kept by the pager.
 
-Groups all changes from a single database transaction across all entities.
+Pages hold `page_size` actions (transactions), whatever their number of entries: every page but the last holds as
+many actions, each one whole. A page reads 1,000 entries at most: past that, the small actions stay whole and the
+largest ones share the rest, each telling only its most recent entries. The header counts the actions the filters keep,
+and a page beyond the last one shows the last one. The actions of a page are found by grouping the entries the filters
+keep by transaction in the database: on a large audit table, a filter (type, user, period) keeps that cheap.
+
+#### Action (`/audit/transaction/{hash}`)
+
+One action: its phrase, the list of what it did, then every entry it wrote (up to 200), with its table and id, raw
+fields and values, the transaction (and the date of its ULID), the blame and the raw diffs, which can be copied as
+JSON. Opened from the history of an object (`?root=App\Entity\Post:42`), it links to the previous and next
+actions of that history.
+
+#### Actions of a User (`/audit/user/{id}`)
+
+Everything a user did, across the audited entities the reader may view, newest first, each action with what it was
+done on (*On Post “Why audit?”: …*), with filters on the entity (`on`), the type (`what`) and the period (`when`). The user is identified by the
+`blame_id` recorded with each entry (up to 255 characters).
+
+- Anonymous entries (no `blame_id`) have no page. Neither do entries recorded with an empty `blame_id`, which is what
+  happens when the Symfony user class has no `getId()` method.
+- Pages hold `page_size` actions, as in the entity stream: an action that wrote in several audit tables is one
+  action, shown and counted once (the audit tables of one connection are read in one statement).
+
+#### Compare Revisions (`/audit/{entity}/{id}/compare`)
+
+From the history of an object, **Compare two states** lists its revisions: pick two of them to see the state of the
+object before and after the changes made between them, field by field. The page links to the previous and next
+revisions, so that the comparison can be moved along the history.
+
+### 📤 Export
+
+`/audit/export` streams audit entries, so that large exports do not load everything in memory:
+
+| Parameter   | Description                                                                  |
+|-------------|------------------------------------------------------------------------------|
+| `format`    | `ndjson` (default, recommended for large exports), `json` or `csv`           |
+| `entity`    | Entity to export (`App-Entity-User`); all the entities the user can view when omitted |
+| `id`        | Object ID                                                                    |
+| `from`, `to`| Creation date range (ISO 8601, e.g. `2026-01-01`)                            |
+| `blame_id`  | User ID                                                                      |
+| `anonymize` | `1` to remove the user (ID, name, class, firewall, impersonator) and the IP address |
+
+```
+/audit/export?entity=App-Entity-User&format=csv&from=2026-01-01
+```
+
+Each entry carries the blame as flat fields: `blame_id`, `blame_user`, `blame_user_fqdn`, `blame_user_firewall`,
+`blame_impersonator_id`, `blame_impersonator` and `blame_impersonator_fqdn` (the user who impersonated the author, if
+any), `ip` and `blame_via`.
+
+The export follows the same access rules as the viewer (see [Access Control](#-access-control)): an entity the user
+cannot view is refused, or left out when no entity is given. From the command line, the provider's `audit:export`
+command offers the same filters.
 
 ### 📊 Activity Graph
 
-Each entity card displays a visual sparkline graph showing audit activity over time.
+Each entity card displays a visual sparkline graph showing audit activity over time: one bar per day, the number of
+actions (database transactions) of that day, as the stream of the entity counts them on that day. A bar leads to that
+stream.
 
 #### Configuration
 
@@ -12685,11 +14562,17 @@ dh_auditor:
 | Layout   | Description                                                       |
 |----------|-------------------------------------------------------------------|
 | `bottom` | Sparkline displayed below the entity info, full width (default)  |
-| `inline` | Compact sparkline displayed in the header row, next to event count |
+| `inline` | Compact sparkline displayed in the header row, next to the number of actions |
 
 #### Caching
 
-The activity graph uses caching to improve performance on large audit tables.
+The activity graph uses caching to improve performance on large audit tables. The number of actions shown for each
+entity on the audit index page is counted as the entity stream counts them, and cached with the graph (same lifetime
+and tag): a count may lag behind by up to the cache lifetime, as the graph does. Without the activity graph, or with
+its cache disabled, the actions are counted on every page load.
+
+With a `read_scope`, the graph and the number of actions count only the actions the scope lets the reader see, and are
+never cached: the scope depends on the reader (a tenant, for instance), so they are computed on every page load.
 
 > [!NOTE]
 > Caching requires `symfony/cache`:
@@ -12725,9 +14608,48 @@ php bin/console audit:cache:clear --entity="App\Entity\User"
 | Graph enabled, no data           | Placeholder with "No recent activity" message    |
 | Graph enabled, with data         | Bars are normalized (tallest bar = 100%)         |
 
+### 🎨 Theme
+
+The viewer follows the conventions of [shadcn/ui](https://ui.shadcn.com) without depending on it: every color of its
+templates is a CSS variable, exposed to Tailwind as a `dh-*` color (`dh:bg-dh-card`, `dh:text-dh-muted-foreground`,
+`dh:border-dh-input`…). The palette is neutral and the primary button near black; the teal of the auditor logo marks the activity
+bars, the selected revision and the focus ring (`dh-brand`), and, darkened to read as text, the links, the time of an
+action and the current page (`dh-link`). The icon of an action tells its meaning: green for a creation, red for a
+deletion, blue for any other change. Controls share one size (`dh:h-8`, `dh:rounded-lg`), badges are pills (`dh:h-5`).
+
+Every Tailwind class of the templates carries the `dh:` prefix (`dh:hidden`, `dh:sm:inline`, `dh:hover:bg-dh-accent`…),
+and the theme variables of Tailwind in `bundles/dhauditor/app.css` are `--dh-*` ones (`--dh-spacing`, `--dh-text-sm`…):
+none of them meets a class or a variable of an application that uses Tailwind too, whatever the order of the
+stylesheets on the page.
+
+The tokens live in `src/Resources/assets/css/theme.css`, already compiled into `bundles/dhauditor/app.css`:
+
+| Token                                         | Role                                             |
+|-----------------------------------------------|--------------------------------------------------|
+| `--dh-background`, `--dh-foreground`          | Page                                             |
+| `--dh-card`, `--dh-card-foreground`           | Cards, tables                                    |
+| `--dh-primary`, `--dh-primary-foreground`     | Primary button (Apply), checkboxes               |
+| `--dh-muted`, `--dh-muted-foreground`         | Table headers, icons, secondary text             |
+| `--dh-accent`, `--dh-accent-foreground`       | Hovered and selected rows                        |
+| `--dh-border`, `--dh-input`, `--dh-ring`      | Borders, control borders, focus ring             |
+| `--dh-brand`, `--dh-brand-from`, `--dh-brand-to` | Teal of the logo (bars, selection), its gradient |
+| `--dh-deleted`, `--dh-inserted` (+ `-foreground`) | Removed and added text in the diffs          |
+| `--dh-warning` (+ `-foreground`, `-border`)   | Notices of the comparison page                   |
+| `--dh-link`, `--dh-link-foreground`           | Links, the clickable time of an action, current page |
+| `--dh-create`, `--dh-update`, `--dh-delete` (+ `-foreground`) | Icon of an action by its meaning     |
+
+Redefine any of them to restyle the viewer, after the bundle stylesheet (for instance in a stylesheet block of an
+overridden `layout.html.twig`):
+
+```css
+:root { --dh-primary: #4f46e5; --dh-brand: #4f46e5; }
+.dark { --dh-primary: #a5b4fc; --dh-brand: #a5b4fc; }
+```
+
 ### 🌙 Dark Mode
 
-The viewer includes a dark/light mode toggle button in the header.
+The viewer includes a dark/light mode toggle button in the header. The dark values of the tokens apply under a `dark`
+class on an ancestor, set on `<html>` by `viewer.js`.
 
 #### Behavior
 
@@ -12736,6 +14658,15 @@ The viewer includes a dark/light mode toggle button in the header.
 - **Persistence**: User preference is saved in `localStorage`
 
 The toggle works without page reload and persists across sessions.
+
+### 🔐 Content Security Policy
+
+The viewer carries no inline script, event handler attribute nor `style` attribute: its behaviours (theme, sort of
+the entity list, filters submitted on change, technical mode, copy of the raw diffs, older actions loaded in place)
+live in `bundles/dhauditor/viewer.js`, loaded by `layout.html.twig`, and
+its styles in `bundles/dhauditor/app.css` and `bundles/dhauditor/preflight.css`. It therefore works under a strict policy such as
+`script-src 'self'; style-src 'self'`, as long as the bundle assets are served from your origin
+(`bin/console assets:install`).
 
 ### 🔒 Access Control
 
@@ -12775,6 +14706,12 @@ The rule must match the path the viewer is imported at: with `prefix: /admin`, w
 > When neither the entity nor its scope requires roles, the default role checker grants the viewer to every visitor.
 > Protect the imported path with an `access_control` rule (or a firewall) unless the audits are meant to be public.
 
+> [!NOTE]
+> In association diffs (`associate` / `dissociate`), the related entity links to its audit stream
+> only when the current user can open it: the entity must be audited and its `view` roles granted.
+> Otherwise it is displayed as plain text. Templates can apply the same rule with the
+> `dh_auditor_is_viewable(entity)` Twig function (an entity object or class name).
+
 ### 🔗 URL Format
 
 Entity namespaces use dashes instead of backslashes:
@@ -12799,35 +14736,67 @@ $namespace = UrlHelper::paramToNamespace('App-Entity-User');
 
 ### 🔧 Generating URLs
 
+Link your own pages to the viewer with the `AuditViewerUrlGenerator` service (autowirable) or its
+Twig functions. They hide the route names and parameters of the viewer, and the encoding of the
+entity class in its URLs.
+
+#### Twig
+
+```twig
+{# Audit stream of an entity: an object, or a class name with an optional id #}
+<a href="{{ dh_auditor_entity_url(post) }}">History</a>
+<a href="{{ dh_auditor_entity_url('App\\Entity\\Post') }}">All posts</a>
+<a href="{{ dh_auditor_entity_url('App\\Entity\\Post', 42, {what: 'update'}) }}">Updates of post #42</a>
+
+{# Transaction and user timeline #}
+<a href="{{ dh_auditor_transaction_url(entry.transactionId) }}">Transaction</a>
+{# ... opened from the history of post #42: the action page offers its previous and next actions #}
+<a href="{{ dh_auditor_transaction_url(entry.transactionId, root: 'App\\Entity\\Post:42') }}">Transaction</a>
+<a href="{{ dh_auditor_user_url(entry.userId) }}">User activity</a>
+
+{# Absolute URL, e.g. in an email #}
+{{ dh_auditor_entity_url(post, absolute: true) }}
+```
+
+Each function returns `null` when the viewer cannot show the page: viewer disabled, auditor
+disabled, entity not audited, entity not persisted yet, or an entry without user (anonymous change) or without
+transaction id. Access rights are not checked: combine
+the link with `dh_auditor_is_viewable()` to show it only to users allowed to open it.
+
+```twig
+{% set history_url = dh_auditor_entity_url(post) %}
+{% if history_url and dh_auditor_is_viewable(post) %}
+    <a href="{{ history_url }}">History</a>
+{% endif %}
+```
+
+#### PHP
+
 ```php
+use DH\AuditorBundle\Viewer\AuditViewerUrlGenerator;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
-// Entity list
-$url = $urlGenerator->generate('dh_auditor_list_audits');
+public function __construct(private AuditViewerUrlGenerator $auditUrls) {}
 
-// Entity stream
-$url = $urlGenerator->generate('dh_auditor_show_entity_stream', [
-    'entity' => 'App-Entity-User',
-]);
+// Audit stream of an entity object (its identifier is read from the entity)
+$url = $this->auditUrls->generateEntityUrl($post);
 
-// Specific entity
-$url = $urlGenerator->generate('dh_auditor_show_entity_stream', [
-    'entity' => 'App-Entity-User',
-    'id' => 42,
-]);
+// Audit stream of a class, of one object, with viewer filters
+$url = $this->auditUrls->generateEntityUrl(Post::class);
+$url = $this->auditUrls->generateEntityUrl(Post::class, 42, ['what' => 'update', 'who' => '42']);
 
-// With filters
-$url = $urlGenerator->generate('dh_auditor_show_entity_stream', [
-    'entity' => 'App-Entity-User',
-    'type' => 'update',
-    'user' => '42',
-]);
+// Absolute URL
+$url = $this->auditUrls->generateEntityUrl($post, referenceType: UrlGeneratorInterface::ABSOLUTE_URL);
 
-// Transaction
-$url = $urlGenerator->generate('dh_auditor_show_transaction_stream', [
-    'hash' => $transactionHash,
-]);
+// Transaction and user timeline
+$url = $this->auditUrls->generateTransactionUrl($entry->transactionId);
+$url = $this->auditUrls->generateUserUrl($entry->userId);
 ```
+
+The filters are the query parameters of the page: `type`, `user`, `field`, `date_from`, `date_to` and `page` for
+the stream of an entity; `what`, `who`, `field`, `origin`, `when` and `attached` for the history of an object, which
+gets the `type` and `user` filters as `what` and `who`. The identifier of an entity object is converted like the `object_id` stored in
+the audit table (UUID, enum, custom type), and a Doctrine reference is not loaded to read it.
 
 ### 🎨 Customization
 
@@ -12838,15 +14807,40 @@ Create files in `templates/bundles/DHAuditorBundle/`:
 ```
 templates/bundles/DHAuditorBundle/
 ├── Audit/
-│   ├── audits.html.twig              # Entity list
-│   ├── entity_stream.html.twig       # Entity audit stream
-│   ├── transaction_stream.html.twig  # Transaction view
-│   ├── entry.html.twig               # Single entry
+│   ├── audits.html.twig              # Overview
+│   ├── object_history.html.twig      # History of an object
+│   ├── entity_stream.html.twig       # Stream of an entity
+│   ├── transaction_stream.html.twig  # Action
+│   ├── user_stream.html.twig         # Actions of a user
+│   ├── revisions.html.twig           # Revisions of an object
+│   ├── compare.html.twig             # Comparison of two revisions
 │   └── helpers/
 │       ├── helper.html.twig          # Helper macros
 │       └── pager.html.twig           # Pagination
+├── History/
+│   ├── _actions.html.twig            # Actions grouped by day, and the link to older ones
+│   ├── _row.html.twig                # One action
+│   ├── _details.html.twig            # Technical details of an action
+│   ├── _macros.html.twig             # Icons, origin badges, day headings, change rendering
+│   ├── phrase.html.twig              # A phrase
+│   └── object_reference.html.twig    # An object named by a phrase
+├── Component/
+│   └── History.html.twig             # <twig:DhAuditor:History> component
 └── layout.html.twig                  # Base layout
 ```
+
+> [!NOTE]
+> The changeset of a JSON column is a deep diff: a tree whose leaves are `{new}`, `{old}` or `{new, old}`.
+> A JSON object whose own keys are `new`/`old` therefore looks like a field diff, so a custom template must not
+> tell them apart by their keys. Use `entry.isDeepDiff(field)` for the root of a changeset, and the
+> `dh_auditor_is_diff_leaf(node)` Twig function for the nodes inside a deep diff.
+
+> [!IMPORTANT]
+> `bundles/dhauditor/app.css` only contains the classes of the bundle templates, with the `dh:` prefix. An overridden
+> template styles itself with prefixed classes and the `dh-*` tokens (`dh:bg-dh-card`, see [Theme](#-theme)); a class
+> without the prefix, or that no bundle template uses, such as the 7.x `bg-slate-50` or `text-indigo-600`, has no
+> style. An overridden page of `Audit/` keeps the `<div data-dh-auditor-viewer>` element that wraps the content of
+> its `dh_auditor_content` block: the reset of the viewer applies under it.
 
 #### Custom Layout
 
@@ -12856,7 +14850,11 @@ templates/bundles/DHAuditorBundle/
 
 {% block stylesheets %}
     {{ parent() }}
+    {# the viewer, with its own reset, bounded to its content: the rest of your page is left as it is #}
     <link rel="stylesheet" href="{{ asset('bundles/dhauditor/app.css') }}">
+    {# behaviours of the viewer (theme, sort, filters, technical mode, copy, older actions); loaded without defer so
+       that the theme applies before the first paint #}
+    <script src="{{ asset('bundles/dhauditor/viewer.js') }}"></script>
 {% endblock %}
 
 {% block body %}
@@ -12866,6 +14864,22 @@ templates/bundles/DHAuditorBundle/
 {% endblock %}
 ```
 
+`bundles/dhauditor/app.css` holds the `dh:` classes of the viewer, its tokens and its controls. It may come before
+or after the stylesheets of your application, which keeps its own classes, theme and font: the sans-serif text of the
+viewer is the one of your page, only its code and a few signs use the stacks of the `--dh-font-mono` and
+`--dh-font-sans` variables (`:root { --dh-font-sans: var(--font-sans); }` to change the latter). It does not reset
+your page either: its reset, the one of Tailwind (Preflight) cut down to what the templates need, only reaches the
+content of the pages of the viewer, under a `data-dh-auditor-viewer` element, so that the viewer looks the same with
+or without a reset of your own. The layout of the bundle adds `bundles/dhauditor/preflight.css`, the whole Preflight
+of Tailwind; a layout that extends yours does not need it.
+
+> [!WARNING]
+> The rules of the viewer sit in the cascade layers of Tailwind (`base`, `components`, `utilities`). A rule of your
+> application outside any layer (Bootstrap, plain CSS such as `select { padding: … }`) wins over all of them on the
+> elements it matches, whatever the order of the stylesheets. Put such rules in a layer, or scope them out of the
+> viewer. An application that compiles the viewer itself (see [Styling](../customization/histories.md#styling))
+> does not load `app.css` as well.
+
 #### Template Blocks
 
 | Block                | Description                          | Available in                     |
@@ -12873,8 +14887,8 @@ templates/bundles/DHAuditorBundle/
 | `title`              | Page title                           | All pages                        |
 | `stylesheets`        | CSS includes                         | All pages                        |
 | `dh_auditor_content` | Main content area                    | All pages                        |
-| `dh_auditor_header`  | Sub-header with back link & filters  | Entity stream, Transaction view  |
-| `dh_auditor_pager`   | Pagination                           | Entity stream                    |
+| `dh_auditor_header`  | Sub-header with back link & filters  | Entity stream, revisions, comparison |
+| `dh_auditor_pager`   | Pagination                           | Entity stream, revisions         |
 | `javascripts`        | JavaScript includes                  | All pages                        |      
 
 ### 📦 Assets
@@ -12885,7 +14899,8 @@ Install assets:
 bin/console assets:install
 ```
 
-Assets are installed to `public/bundles/dhauditor/`.
+Assets are installed to `public/bundles/dhauditor/`: `app.css` (the viewer), `preflight.css` (the reset of
+Tailwind, loaded by the layout of the bundle only) and `viewer.js` (its behaviours).
 
 ### 🌍 Translations
 

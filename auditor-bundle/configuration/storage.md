@@ -1,6 +1,8 @@
 # Storage Configuration
 
-> > **Configure audit storage, including multi-database setups**
+> Configure where audit entries are stored: table naming, a separate audit database with several entity managers, storage mapper and schema updates.
+
+> **Configure audit storage, including multi-database setups**
 
 This guide covers audit storage configuration, including multi-database setups.
 

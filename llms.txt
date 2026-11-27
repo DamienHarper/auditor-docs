@@ -51,16 +51,21 @@ Symfony applications install damienharper/auditor-bundle; Doctrine ORM applicati
 
 ## auditor-bundle
 
-- [Introduction](https://damienharper.github.io/auditor-docs/auditor-bundle.md): > **Symfony integration for the auditor library**
-- [Installation](https://damienharper.github.io/auditor-docs/auditor-bundle/getting-started/installation.md): > **Install auditor-bundle in your Symfony application**
-- [Entity Attributes](https://damienharper.github.io/auditor-docs/auditor-bundle/configuration/attributes.md): > **Configure auditing with PHP 8 attributes**
-- [Configuration Reference](https://damienharper.github.io/auditor-docs/auditor-bundle/configuration.md): > **All configuration options available in auditor-bundle**
-- [Storage Configuration](https://damienharper.github.io/auditor-docs/auditor-bundle/configuration/storage.md): > **Configure audit storage, including multi-database setups**
-- [Extra Data](https://damienharper.github.io/auditor-docs/auditor-bundle/customization/extra-data.md): > **Store additional contextual information in audit entries**
-- [Customization](https://damienharper.github.io/auditor-docs/auditor-bundle/customization.md): > **Customize the bundle's providers for your specific needs**
-- [Role Checker](https://damienharper.github.io/auditor-docs/auditor-bundle/customization/role-checker.md): > **Customize access control for the audit viewer**
-- [Security Provider](https://damienharper.github.io/auditor-docs/auditor-bundle/customization/security-provider.md): > **Customize IP address and context detection for audit entries**
-- [User Provider](https://damienharper.github.io/auditor-docs/auditor-bundle/customization/user-provider.md): > **Customize how the current user is identified in audit entries**
-- [Upgrade Guide](https://damienharper.github.io/auditor-docs/auditor-bundle/upgrade.md): > **Navigate between major versions of auditor-bundle**
-- [Upgrading to 7.0](https://damienharper.github.io/auditor-docs/auditor-bundle/upgrade/v7.md): > **Migrate from auditor-bundle 6.x to 7.0**
-- [Audit Viewer](https://damienharper.github.io/auditor-docs/auditor-bundle/viewer.md): > **Web interface for browsing audit logs**
+- [Introduction](https://damienharper.github.io/auditor-docs/auditor-bundle.md): Overview of auditor-bundle, the Symfony bundle that records Doctrine ORM entity changes in audit tables, with its features and version compatibility.
+- [Installation](https://damienharper.github.io/auditor-docs/auditor-bundle/getting-started/installation.md): Install auditor-bundle in a Symfony application, with its requirements, Composer install, bundle and route registration, audit tables and assets.
+- [Entity Attributes](https://damienharper.github.io/auditor-docs/auditor-bundle/configuration/attributes.md): Configure audited Doctrine ORM entities with the #[Auditable], #[Ignore], #[Mask], #[Security], #[DiffLabel] and #[AuditRoot] attributes, combined ...
+- [Configuration Reference](https://damienharper.github.io/auditor-docs/auditor-bundle/configuration.md): Reference of every dh_auditor option in Symfony, from global providers to Doctrine ORM provider options, entities, viewer, retention and logging.
+- [Storage Configuration](https://damienharper.github.io/auditor-docs/auditor-bundle/configuration/storage.md): Configure where audit entries are stored: table naming, a separate audit database with several entity managers, storage mapper and schema updates.
+- [Blame Context](https://damienharper.github.io/auditor-docs/auditor-bundle/customization/blame-context.md): Record how a change was made (an import, a console command, a Messenger message) in audit entries with BlameContextStack and the Messenger middleware.
+- [Custom Audit Provider](https://damienharper.github.io/auditor-docs/auditor-bundle/customization/custom-provider.md): Register a custom auditor provider in a Symfony application with the dh_auditor.provider service tag, alone or next to the Doctrine ORM provider.
+- [Diff Label Resolvers](https://damienharper.github.io/auditor-docs/auditor-bundle/customization/diff-label-resolvers.md): Store readable labels next to raw values in audit diffs with #[DiffLabel] and DiffLabelResolverInterface services, and show them in the audit log v...
+- [Extra Data](https://damienharper.github.io/auditor-docs/auditor-bundle/customization/extra-data.md): Attach extra data to audit entries in Symfony with the extra_data_provider option or a LifecycleEvent listener, then read and filter it with JsonFi...
+- [Histories](https://damienharper.github.io/auditor-docs/auditor-bundle/customization/histories.md): Show the history of a business object across entities: audit roots, root queries, field labels, phrases, Twig functions and the History Twig compon...
+- [Customization](https://damienharper.github.io/auditor-docs/auditor-bundle/customization.md): Overview of the customizable services of auditor-bundle: user provider, security provider, role checker, console user tracking and other extension ...
+- [Role Checker](https://damienharper.github.io/auditor-docs/auditor-bundle/customization/role-checker.md): Control who can view the audit logs of each entity in the audit log viewer and export with roles.view, #[Security] or a custom RoleCheckerInterface...
+- [Security Provider](https://damienharper.github.io/auditor-docs/auditor-bundle/customization/security-provider.md): Customize how the client IP address and firewall name are recorded in audit entries with a SecurityProviderInterface service, for example behind a ...
+- [User Provider](https://damienharper.github.io/auditor-docs/auditor-bundle/customization/user-provider.md): Customize how the user who made a change is identified in audit entries with a UserProviderInterface service, and how console commands are blamed.
+- [Upgrade Guide](https://damienharper.github.io/auditor-docs/auditor-bundle/upgrade.md): Find the upgrade guide between auditor-bundle major versions, the supported versions and the audit table schema commands to run after an upgrade.
+- [Upgrading to 7.0](https://damienharper.github.io/auditor-docs/auditor-bundle/upgrade/v7.md): Upgrade auditor-bundle from 6.x to 7.0: new PHP, Symfony, Doctrine and auditor requirements, removed classes, renamed viewer routes and other break...
+- [Upgrading to 8.0](https://damienharper.github.io/auditor-docs/auditor-bundle/upgrade/v8.md): Upgrade auditor-bundle from 7.x to 8.0: auditor 5 and auditor-doctrine-provider 2, migration of audit tables to schema v2, breaking changes and new...
+- [Audit Viewer](https://damienharper.github.io/auditor-docs/auditor-bundle/viewer.md): Enable, secure and customize the audit log viewer of auditor-bundle: routes, pages, export, activity graph, access control, URL generation and temp...

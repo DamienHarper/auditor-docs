@@ -1,20 +1,23 @@
 # Upgrade Guide
 
-> > **Navigate between major versions of auditor-bundle**
+> Find the upgrade guide between auditor-bundle major versions, the supported versions and the audit table schema commands to run after an upgrade.
+
+> **Navigate between major versions of auditor-bundle**
 
 This section contains upgrade guides for major versions.
 
 ## 📚 Upgrade Guides
 
+- ⬆️ [Upgrading to 8.0](v8.md) - From 7.x to 8.0
 - ⬆️ [Upgrading to 7.0](v7.md) - From 6.x to 7.0
 
 ## 📋 Version Support
 
 | Version | Status                 | Support Until |
 |:--------|:-----------------------|:--------------|
-| 7.x     | Active development 🚀  | Current       |
-| 6.x     | Active support         | TBD           |
-| 5.x     | End of Life            | -             |             
+| 8.x     | Active development 🚀  | Current       |
+| 7.x     | Bug and security fixes | Until next major |
+| 6.x     | End of Life            | -             |
 
 ## ✅ General Upgrade Process
 
@@ -41,12 +44,29 @@ bin/phpunit
 
 ## 🗄️ Schema Updates
 
-After upgrading, check if audit tables need updates:
+After upgrading, always check if audit tables need updating.
+
+**For fresh installations or existing v2 tables:**
 
 ```bash
 # Preview changes
 bin/console audit:schema:update --dump-sql
 
 # Apply changes
+bin/console audit:schema:update --force
+```
+
+**When upgrading from auditor-bundle 7.x or earlier (existing audit data):**
+
+> [!CAUTION]
+> `audit:schema:update` refuses to run if any audit table still has the legacy v1 schema. Run `audit:schema:migrate` first to preserve your data, then run `audit:schema:update`.
+> The migration drops the legacy columns and cannot be undone: back up the audit tables, stop writing audits
+> while it runs, and follow the [8.0 upgrade steps](v8.md#-upgrade-steps) in their order.
+
+```bash
+# Migrate legacy audit tables to v2 (converts the existing entries, then drops the legacy columns)
+bin/console audit:schema:migrate --force --convert-all
+
+# Then apply any remaining schema changes
 bin/console audit:schema:update --force
 ```

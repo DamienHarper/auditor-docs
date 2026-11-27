@@ -1,6 +1,8 @@
 # Extra Data
 
-> > **Store additional contextual information in audit entries**
+> Attach extra data to audit entries in Symfony with the extra_data_provider option or a LifecycleEvent listener, then read and filter it with JsonFilter.
+
+> **Store additional contextual information in audit entries**
 
 The `extra_data` feature allows you to attach arbitrary supplementary data to each audit entry. This is useful for capturing contextual information that isn't part of the entity's fields, such as route name, request ID, department, role, or any business-specific information.
 

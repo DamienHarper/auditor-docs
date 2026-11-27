@@ -1,6 +1,8 @@
 # Customization
 
-> > **Customize the bundle's providers for your specific needs**
+> Overview of the customizable services of auditor-bundle: user provider, security provider, role checker, console user tracking and other extension points.
+
+> **Customize the bundle's providers for your specific needs**
 
 This section covers how to customize the bundle's providers.
 
@@ -13,6 +15,9 @@ The bundle uses three providers that can be customized:
 | User Provider     | Returns current user information     | `dh_auditor.user_provider`       |
 | Security Provider | Returns IP address and firewall name | `dh_auditor.security_provider`   |
 | Role Checker      | Checks if user can view entity audits | `dh_auditor.role_checker`       |         
+
+To record *how* a change was made (an import, a console command, a Messenger message…), see
+[Blame Context](blame-context.md).
 
 ```mermaid
 flowchart LR
@@ -37,7 +42,7 @@ The default `UserProvider`:
 - ✅ Gets the current user from Symfony's `TokenStorage`
 - ✅ Extracts user ID via `getId()` method (if exists)
 - ✅ Extracts username via `getUserIdentifier()`
-- ✅ Tracks impersonation (switch user)
+- ✅ Tracks impersonation (switch user) in the `impersonator` key of the blame
 
 ### SecurityProvider
 
@@ -95,3 +100,6 @@ This is handled by `ConsoleEventSubscriber` and requires no configuration.
 - 🔒 [Security Provider](security-provider.md) - Custom IP/context detection
 - 🛡️ [Role Checker](role-checker.md) - Custom access control
 - 📦 [Extra Data](extra-data.md) - Attach additional data to audit entries
+- 🏷️ [Diff Label Resolvers](diff-label-resolvers.md) - Human-readable labels in audit diffs
+- 🌳 [Histories](histories.md) - History of an object across entities, last change of a field, field labels, the `<twig:DhAuditor:History>` component
+- 🔌 [Custom Provider](custom-provider.md) - Register a custom audit backend via tag
