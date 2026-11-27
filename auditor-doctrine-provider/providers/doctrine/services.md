@@ -1,6 +1,8 @@
 # Services
 
-> > **AuditingService and StorageService — the building blocks of the DoctrineProvider**
+> Register AuditingService and StorageService on the DoctrineProvider, attach its Doctrine listeners yourself, and reset it in long-running Messenger workers.
+
+> **AuditingService and StorageService — the building blocks of the DoctrineProvider**
 
 The DoctrineProvider relies on two types of services: **AuditingService** (source of changes) and **StorageService** (destination of audit entries).
 

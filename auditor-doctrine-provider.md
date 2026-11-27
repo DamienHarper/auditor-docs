@@ -1,8 +1,10 @@
 # Introduction
 
-> > **Doctrine ORM provider for the auditor audit-log library**
+> Doctrine ORM provider of the auditor library: records inserts, updates, deletes and many-to-many changes of entities in audit tables, in the flush transaction.
 
 # auditor-doctrine-provider
+
+> **Doctrine ORM provider for the auditor audit-log library**
 
 [![Latest Stable Version](https://poser.pugx.org/damienharper/auditor-doctrine-provider/v/stable)](https://packagist.org/packages/damienharper/auditor-doctrine-provider)
 [![License](https://poser.pugx.org/damienharper/auditor-doctrine-provider/license)](https://packagist.org/packages/damienharper/auditor-doctrine-provider)
@@ -106,7 +108,8 @@ flowchart TD
 
 | Version | Status                | Requirements                                                               |
 |---------|-----------------------|----------------------------------------------------------------------------|
-| 1.x     | Active development 🚀 | PHP >= 8.4, Doctrine DBAL >= 4.3, Doctrine ORM >= 3.2, auditor >= 4.1     |
+| 2.x     | Active development 🚀 | PHP >= 8.4, Doctrine DBAL >= 4.6, Doctrine ORM >= 3.7, auditor >= 5.0     |
+| 1.x     | Bug and security fixes | PHP >= 8.4, Doctrine DBAL >= 4.3, Doctrine ORM >= 3.2, auditor >= 4.1     |
 
 ## Quick Links
 
@@ -115,6 +118,9 @@ flowchart TD
 - [DoctrineProvider](providers/doctrine/index.md)
 - [Configuration Reference](providers/doctrine/configuration.md)
 - [Querying Audits](querying/index.md)
+- [Histories](querying/history.md)
+- [Performance](providers/doctrine/performance.md)
+- [Upgrade Guide](upgrade/index.md)
 
 ## Related Projects
 

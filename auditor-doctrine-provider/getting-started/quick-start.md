@@ -1,6 +1,8 @@
 # Quick Start Guide
 
-> > **Set up auditing for your Doctrine entities in minutes**
+> Set up audit logging of Doctrine ORM entities without Symfony: Auditor, DoctrineProvider, DBAL middleware, auditable entities, audit tables and the Reader.
+
+> **Set up auditing for your Doctrine entities in minutes**
 
 This guide will help you set up auditing for your Doctrine ORM entities in minutes.
 
@@ -229,7 +231,8 @@ $provider = new DoctrineProvider(new DoctrineConfiguration([
     ],
 ]));
 
-// $entityManager is your Doctrine EntityManagerInterface instance
+// $entityManager is your Doctrine EntityManagerInterface instance, whose connection was created with the
+// AuditorMiddleware (see Step 2)
 $provider->registerAuditingService(new AuditingService('default', $entityManager));
 $provider->registerStorageService(new StorageService('default', $entityManager));
 $auditor->registerProvider($provider);

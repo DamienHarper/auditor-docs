@@ -1,22 +1,29 @@
 # Installation
 
-> > **Install auditor-doctrine-provider using Composer**
+> Install auditor-doctrine-provider with Composer: PHP, Doctrine DBAL/ORM and auditor requirements of the 2.x and 1.x lines, and when to use auditor-bundle.
+
+> **Install auditor-doctrine-provider using Composer**
 
 ## 📋 Requirements
 
-### Version 1.x (Current)
+### Version 2.x (Current)
 
 | Requirement               | Version  |
 |---------------------------|----------|
 | PHP                       | >= 8.4   |
-| doctrine/dbal             | >= 4.3   |
-| doctrine/orm              | >= 3.2   |
+| doctrine/dbal             | >= 4.6   |
+| doctrine/orm              | >= 3.7   |
 | symfony/cache             | >= 8.1   |
 | symfony/lock              | >= 8.1   |
-| symfony/event-dispatcher  | >= 8.1   |
-| damienharper/auditor      | >= 4.1   |
+| damienharper/auditor      | >= 5.0   |
 
 Tested with PHP 8.4, 8.5 and 8.6, and Symfony 8.1 and 8.2.
+
+### Previous Versions
+
+| Version | PHP    | damienharper/auditor |
+|---------|--------|----------------------|
+| 1.x     | >= 8.4 | >= 4.1               |
 
 ## 📦 Install via Composer
 
@@ -43,8 +50,19 @@ composer require damienharper/auditor-bundle
 | `doctrine/orm`                      | Object-relational mapper              |
 | `symfony/cache`                     | Attribute metadata cache              |
 | `symfony/lock`                      | Schema update locking                 |
-| `symfony/event-dispatcher`          | LifecycleEvent dispatching            |
-| `symfony/options-resolver`          | Configuration option handling         |
+| `psr/log`                           | Logging of failed clean-ups           |
+
+Some packages the provider uses are not required directly:
+
+| Package                             | Purpose                               | Installed through      |
+|-------------------------------------|---------------------------------------|------------------------|
+| `symfony/options-resolver`          | Configuration option handling         | `damienharper/auditor` |
+| `symfony/console`                   | The `audit:*` console commands        | `doctrine/orm`         |
+
+> [!NOTE]
+> The `audit:*` commands are Symfony Console commands. Without the bundle, register them in your own
+> `Symfony\Component\Console\Application` (see [Registering Commands](../providers/doctrine/schema.md#registering-commands-standalone))
+> and require `symfony/console` explicitly if you rely on it directly.
 
 ---
 

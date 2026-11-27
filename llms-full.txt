@@ -269,7 +269,8 @@ flowchart TD
 
 | Version | Status                | Requirements                                                               |
 |---------|-----------------------|----------------------------------------------------------------------------|
-| 1.x     | Active development 🚀 | PHP >= 8.4, Doctrine DBAL >= 4.3, Doctrine ORM >= 3.2, auditor >= 4.1     |
+| 2.x     | Active development 🚀 | PHP >= 8.4, Doctrine DBAL >= 4.6, Doctrine ORM >= 3.7, auditor >= 5.0     |
+| 1.x     | Bug and security fixes | PHP >= 8.4, Doctrine DBAL >= 4.3, Doctrine ORM >= 3.2, auditor >= 4.1     |
 
 ### Quick Links
 
@@ -278,6 +279,9 @@ flowchart TD
 - [DoctrineProvider](providers/doctrine/index.md)
 - [Configuration Reference](providers/doctrine/configuration.md)
 - [Querying Audits](querying/index.md)
+- [Histories](querying/history.md)
+- [Performance](providers/doctrine/performance.md)
+- [Upgrade Guide](upgrade/index.md)
 
 ### Related Projects
 
@@ -746,19 +750,24 @@ See [Coming from DoctrineAuditBundle](coming-from-doctrine-audit-bundle.md).
 
 ### 📋 Requirements
 
-#### Version 1.x (Current)
+#### Version 2.x (Current)
 
 | Requirement               | Version  |
 |---------------------------|----------|
 | PHP                       | >= 8.4   |
-| doctrine/dbal             | >= 4.3   |
-| doctrine/orm              | >= 3.2   |
+| doctrine/dbal             | >= 4.6   |
+| doctrine/orm              | >= 3.7   |
 | symfony/cache             | >= 8.1   |
 | symfony/lock              | >= 8.1   |
-| symfony/event-dispatcher  | >= 8.1   |
-| damienharper/auditor      | >= 4.1   |
+| damienharper/auditor      | >= 5.0   |
 
 Tested with PHP 8.4, 8.5 and 8.6, and Symfony 8.1 and 8.2.
+
+#### Previous Versions
+
+| Version | PHP    | damienharper/auditor |
+|---------|--------|----------------------|
+| 1.x     | >= 8.4 | >= 4.1               |
 
 ### 📦 Install via Composer
 
@@ -785,8 +794,19 @@ composer require damienharper/auditor-bundle
 | `doctrine/orm`                      | Object-relational mapper              |
 | `symfony/cache`                     | Attribute metadata cache              |
 | `symfony/lock`                      | Schema update locking                 |
-| `symfony/event-dispatcher`          | LifecycleEvent dispatching            |
-| `symfony/options-resolver`          | Configuration option handling         |
+| `psr/log`                           | Logging of failed clean-ups           |
+
+Some packages the provider uses are not required directly:
+
+| Package                             | Purpose                               | Installed through      |
+|-------------------------------------|---------------------------------------|------------------------|
+| `symfony/options-resolver`          | Configuration option handling         | `damienharper/auditor` |
+| `symfony/console`                   | The `audit:*` console commands        | `doctrine/orm`         |
+
+> [!NOTE]
+> The `audit:*` commands are Symfony Console commands. Without the bundle, register them in your own
+> `Symfony\Component\Console\Application` (see [Registering Commands](../providers/doctrine/schema.md#registering-commands-standalone))
+> and require `symfony/console` explicitly if you rely on it directly.
 
 ---
 
@@ -1029,7 +1049,8 @@ $provider = new DoctrineProvider(new DoctrineConfiguration([
     ],
 ]));
 
-// $entityManager is your Doctrine EntityManagerInterface instance
+// $entityManager is your Doctrine EntityManagerInterface instance, whose connection was created with the
+// AuditorMiddleware (see Step 2)
 $provider->registerAuditingService(new AuditingService('default', $entityManager));
 $provider->registerStorageService(new StorageService('default', $entityManager));
 $auditor->registerProvider($provider);
@@ -5521,7 +5542,9 @@ $configuration->setExtraDataProvider(function (): ?array {
 ```
 
 > [!NOTE]
-> The `extra_data_provider` is called for every audit entry. If it returns `null`, `extra_data` is stored as `null`.
+> The `extra_data_provider` is called once per flush (and once per batch of `audit:snapshot`): every audit entry of
+> that flush gets the same `extra_data`. If it returns `null`, `extra_data` is stored as `null`. For a value that depends
+> on the audited entity, use a `LifecycleEvent` listener (option 2).
 
 ### 🎧 Option 2: LifecycleEvent Listener (Per-Entry)
 
@@ -5537,7 +5560,7 @@ $eventDispatcher = new EventDispatcher();
 
 $eventDispatcher->addListener(LifecycleEvent::class, function (LifecycleEvent $event): void {
     $payload = $event->getPayload();
-    $entity  = $event->getEntity();  // The audited Doctrine entity object
+    $entity  = $event->entity;       // The audited Doctrine entity object (null when unknown)
 
     // Only enrich specific entities
     if (!$entity instanceof App\Entity\Order) {
@@ -5592,7 +5615,7 @@ $eventDispatcher->addListener(LifecycleEvent::class, function (LifecycleEvent $e
 ```php
 $eventDispatcher->addListener(LifecycleEvent::class, function (LifecycleEvent $event): void {
     $payload = $event->getPayload();
-    $entity  = $event->getEntity();
+    $entity  = $event->entity;
 
     if ('remove' !== $payload['type']) {
         return;
@@ -5769,8 +5792,11 @@ Auditor uses PHP 8 attributes to configure Doctrine entity auditing. These attri
 | Attribute       | Target   | Description                               |
 |-----------------|----------|-------------------------------------------|
 | `#[Auditable]`  | Class    | Marks an entity for auditing              |
-| `#[Ignore]`     | Property | Excludes a property from auditing         |
+| `#[Ignore]`     | Property or class | Excludes a property from auditing |
 | `#[Security]`   | Class    | Defines who can view entity audits        |
+| `#[DiffLabel]`  | Property or class | Attaches a human-readable label resolver to a field |
+| `#[Mask]`       | Property or class | Records the changes of a property without its values |
+| `#[AuditRoot]`  | Class (repeatable) | Indexes the entries under the history of another entity (see [Histories](../../querying/history.md)) |
 
 ### 📝 #[Auditable]
 
@@ -5800,9 +5826,11 @@ class Post
 
 #### Parameters
 
-| Parameter  | Type   | Default | Description                        |
-|------------|--------|---------|------------------------------------|
-| `enabled`  | `bool` | `true`  | Whether auditing is enabled        |
+| Parameter    | Type      | Default | Description                                                         |
+|--------------|-----------|---------|---------------------------------------------------------------------|
+| `enabled`    | `bool`    | `true`  | Whether auditing is enabled                                         |
+| `maxAge`     | `?string` | `null`  | Retention: entries older than this ISO 8601 duration are deleted by `audit:clean` |
+| `maxEntries` | `?int`    | `null`  | Retention: only the N most recent entries are kept by `audit:clean` |
 
 #### Examples
 
@@ -5819,6 +5847,29 @@ class Post {}
 #[Auditable(enabled: false)]
 class DraftPost {}
 ```
+
+An entity disabled by default still gets an audit table, so that auditing can be enabled for it at runtime. If you
+never do that (e.g. a linter requires `#[Auditable]` on every entity and some are never meant to be audited), the
+[`skip_disabled_entities`](configuration.md#-skipping-disabled-entities) option leaves them without an audit table.
+
+#### Retention Policy
+
+```php
+// Keep 7 years of history, whatever the global audit:clean cutoff
+#[Auditable(maxAge: 'P7Y')]
+class Payment {}
+
+// Keep the 10,000 most recent entries (on top of the global audit:clean cutoff)
+#[Auditable(maxEntries: 10_000)]
+class Session {}
+```
+
+`maxAge` must be an ISO 8601 duration greater than zero and `maxEntries` a positive integer: invalid values fail when
+the entity metadata is loaded, with the entity name in the message. Both default to `null` (no policy). A policy given
+in the configuration (`max_age` / `max_entries` entity options) overrides the attribute value key by key.
+
+Attribute values are cached with the ORM metadata: clear the cache after changing them. See `audit:clean` in the
+auditor documentation for how policies are applied.
 
 #### Enabling/Disabling at Runtime
 
@@ -5867,7 +5918,36 @@ class User
 
 #### Parameters
 
-The `#[Ignore]` attribute has no parameters.
+| Parameter | Type      | Required          | Description                                         |
+|-----------|-----------|-------------------|-----------------------------------------------------|
+| `field`   | `?string` | On the class only | Name of the ignored field; leave it out on a property |
+
+#### On the Class
+
+`#[Ignore]` can also be put on the class, once per field, with `field` naming the property. This is handy when the
+property is declared in a parent class or a trait you do not want to touch:
+
+```php
+#[ORM\Entity]
+#[Auditable]
+#[Ignore(field: 'password')]
+#[Ignore(field: 'resetToken')]
+class User
+{
+    // ...
+}
+```
+
+A class-level `#[Ignore]` without `field`, or a property-level one with `field`, throws an `InvalidArgumentException`
+when the attributes are loaded.
+
+#### Combining with the Configuration
+
+- The entity `ignored_columns` of the configuration are added to the `#[Ignore]` properties.
+- `#[Ignore]` wins over the `audited_columns` allowlist: a property marked with `#[Ignore]` is never audited, even
+  when it is listed there.
+- To decide per object instead of per class, use the `ignored_columns_resolver` option
+  (see [Configuration](configuration.md#ignoring-properties-per-object)).
 
 #### Common Use Cases
 
@@ -5964,6 +6044,150 @@ $configuration->setRoleChecker(function (string $entity, string $scope) use ($pr
 });
 ```
 
+### 🏷️ #[DiffLabel]
+
+Without `#[DiffLabel]`, a change from category 1 to category 2 stores:
+
+```json
+{"categoryId": {"old": 1, "new": 2}}
+```
+
+With `#[DiffLabel]`, the same change stores:
+
+```json
+{"categoryId": {"old": {"value": 1, "label": "Books"}, "new": {"value": 2, "label": "Electronics"}}}
+```
+
+Labels are resolved at **write-time** and stored in the JSON — they remain accurate even if the referenced record is later renamed or deleted.
+
+#### Namespace
+
+```php
+use DH\Auditor\Attribute\DiffLabel;
+```
+
+#### Usage
+
+```php
+<?php
+
+use DH\Auditor\Attribute\Auditable;
+use DH\Auditor\Attribute\DiffLabel;
+use Doctrine\DBAL\Types\Types;
+use Doctrine\ORM\Mapping as ORM;
+
+#[ORM\Entity]
+#[Auditable]
+class Product
+{
+    #[ORM\Column(type: Types::INTEGER)]
+    #[DiffLabel(resolver: CategoryResolver::class)]
+    private int $categoryId;
+}
+```
+
+The resolver must implement `DiffLabelResolverInterface`. Return `null` to fall back to storing the plain scalar:
+
+```php
+use DH\Auditor\Contract\DiffLabelResolverInterface;
+
+final class CategoryResolver implements DiffLabelResolverInterface
+{
+    private const array LABELS = [1 => 'Books', 2 => 'Electronics', 3 => 'Clothing'];
+
+    public function __invoke(mixed $value): ?string
+    {
+        return self::LABELS[$value] ?? null;
+    }
+}
+```
+
+#### Parameters
+
+| Parameter  | Type     | Required | Description                          |
+|------------|----------|----------|--------------------------------------|
+| `resolver` | `string` | Yes      | FQCN of the `DiffLabelResolverInterface` implementation |
+| `field`    | `?string` | On the class only | Name of the field; leave it out on a property |
+
+As with `#[Ignore]`, the attribute can be put on the class, once per field:
+`#[DiffLabel(resolver: CategoryResolver::class, field: 'categoryId')]`. A property-level `#[DiffLabel]` wins over a
+class-level one for the same field.
+
+#### Wiring resolvers (standalone)
+
+Resolvers are looked up at flush-time via a PSR-11 `ContainerInterface`. Inject it on the provider before flushing:
+
+```php
+use DH\Auditor\Provider\Doctrine\DoctrineProvider;
+use Symfony\Component\DependencyInjection\ServiceLocator;
+
+$provider = new DoctrineProvider($configuration);
+
+$provider->setDiffLabelResolverLocator(new ServiceLocator([
+    CategoryResolver::class => fn () => new CategoryResolver(),
+]));
+```
+
+`ServiceLocator` comes from `symfony/dependency-injection`, which is not a dependency of the provider; any PSR-11
+container keyed by the resolver FQCN works. When using the Symfony bundle, the locator is wired automatically — see the [Diff Label Resolvers guide](https://github.com/DamienHarper/auditor-bundle/blob/master/docs/customization/diff-label-resolvers.md).
+
+### 🎭 #[Mask]
+
+Records that a property changed without storing its values. Unlike `#[Ignore]`, the change still shows in the
+history.
+
+#### Namespace
+
+```php
+use DH\Auditor\Attribute\Mask;
+use DH\Auditor\Masking\MaskStrategy;
+```
+
+#### Usage
+
+```php
+#[ORM\Entity]
+#[Auditable]
+class User
+{
+    #[ORM\Column(type: 'string')]
+    #[Mask(strategy: MaskStrategy::KeyedHash)]  // HMAC-SHA256 of the email
+    private string $email = '';
+
+    #[ORM\Column(type: 'string', nullable: true)]
+    #[Mask]                                     // "***"
+    private ?string $pin = null;
+}
+```
+
+#### Parameters
+
+| Parameter  | Type           | Default                | Description                                               |
+|------------|----------------|------------------------|-----------------------------------------------------------|
+| `strategy` | `MaskStrategy` | `MaskStrategy::Hidden` | `MaskStrategy::Hidden` or `MaskStrategy::KeyedHash`       |
+| `field`    | `?string`      | `null`                 | On the class only: name of the masked field (repeatable)  |
+
+#### Strategies
+
+- `MaskStrategy::Hidden` stores `"***"` as `old` and `new`.
+- `MaskStrategy::KeyedHash` stores an HMAC-SHA256 of the value, keyed with the `mask_secret` option of the provider (at least
+  32 bytes, see [Configuration](configuration.md#-masked-values)). Equal values give equal hashes: the entries of one
+  value can be found by hashing it with the same secret, without storing it. A string is hashed as is, any other value
+  as its JSON encoding.
+
+In both cases a null value stays null, and the values are compared before being masked: a change from `"1234"` to
+`"5678"` is recorded as `"***"` → `"***"`. Masks apply to `insert`, `update` and, with `full_snapshot_on_remove`,
+`remove` entries, to columns and to-one associations (whose summary is masked). A masked field gets no `#[DiffLabel]`
+label, and a masked JSON field no deep diff.
+
+An identifier (written in clear in `object_id`) and a collection (recorded by `associate` / `dissociate` entries)
+cannot be masked: a `#[Mask]` on either fails when the attributes are loaded, as does a `MaskStrategy::KeyedHash`
+without `mask_secret`.
+
+> [!WARNING]
+> The label of an entity (its `__toString()` or the `entity_label_resolver`) is written in clear in the diffs:
+> keep masked values out of it.
+
 ### 📄 Complete Example
 
 ```php
@@ -6007,10 +6231,7 @@ class User
 ### 🔀 Combining with Programmatic Configuration
 
 > [!TIP]
-> Some attribute options can be overridden by programmatic configuration.
-
-For an entity marked `#[Auditable]`, only `enabled: false` and `roles` (which take precedence over `#[Security]`)
-are read from the configuration (`roles` scope by scope); the other options, such as `ignored_columns`, come from the attributes.
+> Attributes can be combined with or overridden by programmatic configuration.
 
 ```php
 use DH\Auditor\Provider\Doctrine\Configuration;
@@ -6020,6 +6241,11 @@ $configuration = new Configuration([
         // Override the Security attribute, scope by scope — more restrictive
         User::class => [
             'roles' => ['view' => ['ROLE_SUPER_ADMIN']],
+        ],
+
+        // Add additional ignored properties on top of attribute-defined ones
+        Post::class => [
+            'ignored_columns' => ['viewCount'],
         ],
 
         // Completely disable auditing despite #[Auditable]
@@ -6047,6 +6273,7 @@ $configuration = new Configuration([
 
 - ⚙️ [Configuration Reference](configuration.md)
 - 🔍 [Querying Audits](../../querying/index.md)
+- 🏷️ [Diff Label Resolvers](https://github.com/DamienHarper/auditor-bundle/blob/master/docs/customization/diff-label-resolvers.md) — Full wiring guide (Symfony bundle)
 
 ---
 
@@ -6071,6 +6298,15 @@ $configuration = new Configuration([
     'viewer'          => true,
     'storage_mapper'  => null,
     'utf8_convert'    => false,
+    'full_snapshot_on_remove' => false,
+    'mask_secret'     => null,
+    'batch_size'      => 0,
+    'skip_disabled_entities' => false,
+    'compression'     => false,
+    'ignored_columns_resolver' => null,
+    'root_resolver'   => null,
+    'entity_label_resolver' => null,
+    'read_scope'      => null,
 ]);
 ```
 
@@ -6083,8 +6319,17 @@ $configuration = new Configuration([
 | `ignored_columns`| `array`           | `[]`       | Properties to ignore globally across all entities |
 | `entities`       | `array`           | `[]`       | Entity-specific configuration                    |
 | `viewer`         | `bool\|array`     | `true`     | Enable/configure the audit viewer                |
-| `storage_mapper` | `callable\|null`  | `null`     | Callback to route audits to storage services     |
+| `storage_mapper` | `callable\|class-string\|null` | `null` | Callback, or class name of an invokable class without constructor arguments, routing audits to storage services |
 | `utf8_convert`   | `bool`            | `false`    | Convert string values to UTF-8 before storing   |
+| `full_snapshot_on_remove` | `bool`   | `false`    | Record every audited field of a removed entity (see below) |
+| `mask_secret`    | `string\|null`    | `null`     | Secret of the `#[Mask(strategy: MaskStrategy::KeyedHash)]` fields, at least 32 bytes (see below) |
+| `batch_size`     | `int` (≥ 0)       | `0`        | Write audit entries with multi-row INSERTs (see Batch INSERT below) |
+| `skip_disabled_entities` | `bool`    | `false`    | No audit table for entities disabled by their configuration (see below) |
+| `compression`    | `bool`            | `false`    | Store `diffs`/`extra_data` compressed (MariaDB)  |
+| `ignored_columns_resolver` | `callable\|null` | `null` | Returns the properties to ignore for a given entity object (see below) |
+| `root_resolver`  | `callable\|null`  | `null`     | Returns extra audit roots of an entity object (see [Histories](../../querying/history.md)) |
+| `entity_label_resolver` | `callable\|null` | `null` | Builds the label of an entity written in the diffs (see [Histories](../../querying/history.md#-entity-labels)) |
+| `read_scope`     | `callable\|null`  | `null`     | Applied to every query the reader creates, to restrict what can be read (see [Histories](../../querying/history.md#-read-scope)) |
 
 ### 📛 Table Naming
 
@@ -6148,6 +6393,81 @@ $configuration = new Configuration([
 ]);
 ```
 
+#### Audited Properties (Allowlist)
+
+When only a few properties of an entity matter, list them with `audited_columns` instead of ignoring all the others:
+
+```php
+$configuration = new Configuration([
+    'entities' => [
+        App\Entity\Order::class => [
+            'audited_columns' => ['status', 'total', 'customer'],
+        ],
+    ],
+]);
+```
+
+- Only the listed properties (fields and to-one associations) appear in the diffs; an update that only changes
+  other properties writes no audit entry. Inserts and removals are still audited.
+- `null` or no `audited_columns` (the default) audits every property; `[]` audits no property, so only inserts and
+  removals are recorded (with empty diffs, or the allowlisted properties with `full_snapshot_on_remove`).
+- The identifier is not audited as a field unless it is listed, but every entry still records it (`object_id` and
+  the diff `source`).
+- An allowlist cannot audit an ignored property: global and per-entity `ignored_columns`, `#[Ignore]` and the
+  `ignored_columns_resolver` always win (see [Which properties are audited](#which-properties-are-audited)).
+
+#### Ignoring Properties per Object
+
+`ignored_columns` and `audited_columns` apply to every object of an entity class. To decide per object (e.g. skip
+a field while a document is a draft), give `ignored_columns_resolver` a callable that receives the entity object
+and returns the properties to ignore for it:
+
+```php
+use App\Entity\Document;
+use DH\Auditor\Provider\Doctrine\Auditing\IgnoredColumnsResolverInterface;
+
+final class DocumentIgnoredColumnsResolver implements IgnoredColumnsResolverInterface
+{
+    public function __invoke(object $entity): array
+    {
+        if ($entity instanceof Document && $entity->isDraft()) {
+            return ['content'];
+        }
+
+        return [];
+    }
+}
+
+$configuration = new Configuration([
+    'ignored_columns_resolver' => new DocumentIgnoredColumnsResolver(),
+]);
+
+// or later, with any callable (null removes it)
+$configuration->setIgnoredColumnsResolver(static fn (object $entity): array => []);
+```
+
+- The resolver is called for every audited entity object, once per insert, update and (with
+  `full_snapshot_on_remove`) removal, with the entity as it is when the flush is processed: keep it cheap.
+- It must return a list of property names; anything else throws an `UnexpectedValueException`.
+- Its result is added to the ignored properties: a resolver can ignore more properties, never audit a property that
+  the configuration ignores or leaves out of `audited_columns`.
+- `isAuditedField()` applies it when given an entity object, not a class name.
+
+#### Which Properties Are Audited
+
+A property is audited when its entity is audited and the property is:
+
+1. not in the global `ignored_columns`,
+2. not in the entity `ignored_columns` nor marked with `#[Ignore]`,
+3. listed in the entity `audited_columns`, when the entity has one,
+4. not returned by the `ignored_columns_resolver` for that object, when one is set.
+
+Ignoring always wins: a property listed in `audited_columns` but ignored by any other rule is not audited.
+
+> [!NOTE]
+> These rules apply to fields and to-one associations, which are recorded in the diffs. Changes of to-many
+> associations are recorded as `associate` / `dissociate` entries and are not filtered by property.
+
 ### 🏷️ Entity Configuration
 
 Configure entities programmatically instead of (or in addition to) using attributes:
@@ -6178,7 +6498,24 @@ $configuration = new Configuration([
 |-------------------|------------|---------|-------------------------------------------------|
 | `enabled`         | `bool`     | `true`  | Whether auditing is enabled for this entity     |
 | `ignored_columns` | `array`    | `[]`    | Properties to ignore for this entity            |
+| `audited_columns` | `?array`   | `null`  | Allowlist: only these properties are audited (`null`: all) |
 | `roles`           | `array`    | `null`  | View permissions (`['view' => ['ROLE_X']]`)     |
+| `max_age`         | `?string`  | `null`  | Retention: ISO 8601 duration applied by `audit:clean` instead of the global cutoff |
+| `max_entries`     | `?int`     | `null`  | Retention: number of most recent entries kept by `audit:clean` |
+| `roots`           | `list<string>` | `[]` | Audit root paths, merged with `#[AuditRoot]` (see [Histories](../../querying/history.md)) |
+
+`max_age` and `max_entries` take precedence over the `#[Auditable(maxAge: ..., maxEntries: ...)]` values, key by key:
+setting only `max_age` keeps the attribute `maxEntries`, and an explicit `null` disables the attribute value.
+They are validated (positive ISO 8601 duration, positive integer) before `audit:clean` deletes anything.
+
+For an entity marked `#[Auditable]`, the configured options combine with the attributes:
+
+- `enabled: false` disables the entity despite `#[Auditable]`; `enabled: true` does not re-enable an
+  `#[Auditable(enabled: false)]` entity.
+- `roles` take precedence over `#[Security]`, scope by scope (`view`): `roles: null`, an empty array or a missing
+  `view` key keeps the attribute value.
+- `ignored_columns` and `roots` are added to the `#[Ignore]` and `#[AuditRoot]` ones; `audited_columns` only exists
+  in the configuration.
 
 ### 👁️ Viewer Configuration
 
@@ -6213,6 +6550,151 @@ $configuration = new Configuration([
     'utf8_convert' => true,
 ]);
 ```
+
+### 📸 Full Snapshot on Remove
+
+By default, a `remove` entry only identifies the deleted entity: its diff holds the `source` block (id, class, label,
+table) and an empty `changes`. With `full_snapshot_on_remove`, it also records the value of every audited field
+before the deletion, as `old` (with `new` set to `null`), so that the last state of a deleted entity can be read
+from its audit history. A generated identifier is left out of these fields, as in an `insert` entry: Doctrine resets
+it on deletion, and the `source` block holds it. The owning-side to-one associations (`ManyToOne`, owning `OneToOne`)
+are recorded as in an `insert` entry, with the summary of their target (id, class, label, table) as `old`; a null
+association is left out, and so are to-many associations. The targets that are not loaded yet are loaded with one
+query per target class, and a target deleted in the same flush keeps the identifier it had before the deletion.
+
+```php
+$configuration = new Configuration([
+    'full_snapshot_on_remove' => true,
+]);
+```
+
+The snapshot makes `remove` entries larger, and lets `ChangedFieldFilter` match them on any of their fields.
+
+### 🎭 Masked Values
+
+`mask_secret` keys the HMAC-SHA256 that `#[Mask(strategy: MaskStrategy::KeyedHash)]` stores instead of a value
+(see [Attributes](attributes.md#-mask)). It must be at least 32 bytes long. Without it, an entity with a keyed hash
+mask fails when the attributes are loaded.
+
+```php
+$configuration = new Configuration([
+    'mask_secret' => $_ENV['AUDIT_MASK_SECRET'],
+]);
+```
+
+Changing the secret changes the hashes of the values recorded from then on: the entries recorded before can no
+longer be matched with the new ones.
+
+### 📦 Batch INSERT
+
+By default (`batch_size: 0`), each audit entry is written with its own `INSERT` statement as soon as it is produced.
+A positive `batch_size` buffers the audit entries of the database transaction being committed and writes them with
+multi-row `INSERT` statements, which saves round trips to the database when a transaction changes many entities:
+
+```php
+$configuration = new Configuration([
+    'batch_size' => 500,
+]);
+```
+
+> [!TIP]
+> With 500 to 1,000 audited entities per flush, `batch_size: 500` made a flush 10 to 18 % faster on SQLite, 19 to
+> 51 % faster on MySQL and 44 to 67 % faster on PostgreSQL in our measurements: see [Performance](performance.md) for
+> the method, the full results and how to reproduce them.
+
+**Why is it off by default?** Only because of the `id`: a `LifecycleEvent` listener, or another storage provider, that
+reads `$payload['id']` gets no `id` from a buffered entry (see below). If nothing in your application reads it, a
+positive `batch_size` is the largest speed-up available for flushes of many entities, and turning it on changes
+nothing else: the entries are written in the same database transaction, and a failure still fails the commit.
+
+| You read `$payload['id']` in a listener or another provider? | Recommended `batch_size`          |
+|---------------------------------------------------------------|-----------------------------------|
+| No                                                            | `500`                             |
+| Yes                                                           | `0` (default): the `id` is set    |
+
+- **When**: the buffered audit entries are written right before the `COMMIT` of the audited transaction, or as soon
+  as `batch_size` entries are buffered. Values between `100` and `1000` are a good start: the larger the value, the
+  fewer statements, but the more memory the buffer holds for a large transaction.
+- **Per-statement limit**: whatever `batch_size`, a single statement holds at most 99 rows on SQLite (bound parameter
+  limit of older SQLite versions) and 500 rows on MySQL, MariaDB and PostgreSQL. Other platforms are limited to 99 rows
+  per statement and must support the multi-row `INSERT INTO … VALUES (…), (…)` syntax. A statement is also closed
+  before its string values (diffs, extra data, blame…) exceed 1 MiB, a larger audit entry being written alone: MySQL
+  and MariaDB reject a statement larger than their `max_allowed_packet` setting (64 MiB by default since MySQL 8.0,
+  as low as 1 MiB on older or tuned servers). Keep `max_allowed_packet` comfortably above 1 MiB, and above the size
+  of your largest audit entry (as with `batch_size: 0`).
+- **No `id` in the payload**: the `LifecycleEvent` payload of a buffered audit entry has no `id` key, since the entry is
+  not written yet when it is persisted. With `batch_size: 0`, the provider adds the `id` of the inserted row to the
+  payload once the entry is written (on PostgreSQL, through `INSERT … RETURNING id`, in the same round trip).
+- **Failures fail the commit**: if an audit entry cannot be buffered (e.g. the storage mapper throws) or the buffered
+  audit entries cannot be written, the commit fails with the first of these failures and the audited transaction is
+  rolled back, so that no change is committed without its audit entries (as with `batch_size: 0`, where a failure to
+  write an audit entry also fails the flush). This includes audit entries
+  stored on another connection (see [Multi-Database Configuration](multi-database.md)): those already written by an
+  early batch are deleted when the audited transaction is rolled back, as they are with `batch_size: 0`.
+- **Outside of a commit**: `DoctrineProvider::persist()` called directly, outside of the commit of an audited
+  transaction, still writes the audit entry immediately.
+### 🗜️ Compression
+
+On MySQL and MariaDB, audit tables can become the largest tables of a database: almost all of their size is the
+`diffs` column (and `extra_data` when used). The `compression` option stores these two columns compressed:
+
+```php
+$configuration = new Configuration([
+    'compression' => true,
+]);
+```
+
+| Platform   | Effect                                                                                       |
+|------------|----------------------------------------------------------------------------------------------|
+| MariaDB    | `diffs` and `extra_data` are declared `JSON COMPRESSED` (transparent column compression)      |
+| PostgreSQL | None: large `JSONB` values are already compressed by PostgreSQL (TOAST)                      |
+| MySQL      | None: MySQL has no column compression (see [Schema Management](schema.md#mysql--mariadb))     |
+| SQLite     | None                                                                                          |
+
+MariaDB compresses and decompresses the values transparently: reading audit entries, `JsonFilter` and JSON functions in
+SQL work unchanged. Values shorter than `column_compression_threshold` (100 bytes by default) are stored as is.
+
+Compression trades CPU for disk space and I/O. Reading a large history whose pages are already in memory gets slower,
+since every value has to be decompressed: in the contributor's measurements (34,279 audit rows, MariaDB 11.8), reading
+an entity with ~510 changes took 16.0 ms instead of 7.5 ms (median, warm cache). Reads that hit the disk get faster
+(59.8 ms instead of 138.6 ms, cold cache) and writes are not slower, since there is much less data to read and write.
+
+New audit tables are created with compressed columns. Existing audit tables are converted by
+`audit:schema:update --force` (or by a migration containing the SQL shown by `audit:schema:update --dump-sql`):
+altering the columns rewrites the table and compresses existing entries. Disabling the option and running
+`audit:schema:update` again converts the columns back, without losing data.
+
+> [!NOTE]
+> The schema comparator of Doctrine DBAL does not see the `COMPRESSED` attribute, so `doctrine:schema:update` and
+> `doctrine:migrations:diff` neither report nor change the compression of existing audit tables: use
+> `audit:schema:update` for that. Conversely, they never report a difference for compressed columns.
+
+> [!WARNING]
+> Converting existing tables rewrites them (`ALTER TABLE ... MODIFY`), which takes time on large tables. Before
+> MariaDB 11.2, writes to the audit table are also locked for the duration of the rewrite, so audited flushes wait for
+> it; since MariaDB 11.2, the rewrite runs online by default (`ALGORITHM=COPY, LOCK=NONE`). Plan it like any other
+> large schema migration.
+
+### ⏭️ Skipping Disabled Entities
+
+An entity disabled by its configuration (`#[Auditable(enabled: false)]`, or `'enabled' => false`, also on an `#[Auditable]` entity) is not audited, but
+it still gets an audit table: auditing can be enabled for it at runtime with `enableAuditFor()`, and the audit
+entries need somewhere to go. When you never enable such entities at runtime, `skip_disabled_entities` leaves them
+without an audit table:
+
+```php
+$configuration = new Configuration([
+    'skip_disabled_entities' => true,
+]);
+```
+
+- `audit:schema:update`, `doctrine:schema:update` and `doctrine:migrations:diff` all skip these entities, so the
+  result does not depend on the tool that manages your schema. Existing audit tables of these entities are left as
+  they are: drop them yourself if you no longer need them.
+- `enableAuditFor()` throws a `LogicException` for these entities, instead of a failing flush later on. Entities
+  enabled by their configuration and disabled at runtime with `disableAuditFor()` keep their audit table.
+- The `Reader` refuses to query these entities and ignores them when reading a transaction.
+- Entities configured without an `enabled` key are enabled, so they are never skipped.
 
 ### 🗄️ Storage Mapper
 
@@ -6254,16 +6736,18 @@ $provider->isAuditedField(App\Entity\Post::class, 'password'); // false (if igno
 ### 🔀 Configuration Merging
 
 > [!TIP]
-> Configuration from PHP attributes and programmatic config are merged.
+> Configuration from PHP attributes and programmatic config are merged intelligently.
 
 1. PHP attributes on entities are loaded first (via `AttributeLoader`): for an entity with `#[Auditable]`, they
-   provide its options, including `ignored_columns` (`#[Ignore]`)
-2. For such an entity, only two options of the programmatic configuration (the `entities` array) are read:
-   `enabled: false` disables it despite `#[Auditable]` (`enabled: true` cannot re-enable an
-   `#[Auditable(enabled: false)]` entity), and `roles` take precedence over `#[Security]`, scope by scope (`roles:
-   null`, an empty array or a missing `view` key keeps the attribute value). Its other configured options, such as
-   `ignored_columns`, are not read: use `#[Ignore]`
-3. Global `ignored_columns` are combined with entity-specific ones
+   provide `enabled`, `roles` (`#[Security]`) and the `#[Ignore]` properties
+2. `enabled: false` in the programmatic configuration disables the entity despite `#[Auditable]` (`enabled: true`
+   cannot re-enable an `#[Auditable(enabled: false)]` entity), and its `roles` take precedence over `#[Security]`,
+   scope by scope
+3. The entity `ignored_columns` and `roots` of the programmatic configuration are added to the `#[Ignore]` properties
+   and `#[AuditRoot]` paths
+4. The entity `audited_columns` and the retention options (`max_age`, `max_entries`, key by key) of the programmatic
+   configuration are kept
+5. Global `ignored_columns` and the `ignored_columns_resolver` apply on top of the entity options
 
 ```php
 // Given this entity with attributes:
@@ -6280,14 +6764,16 @@ $configuration = new Configuration([
     'ignored_columns' => ['updatedAt'],
     'entities' => [
         Post::class => [
-            'roles' => ['view' => ['ROLE_ADMIN']],  // Overrides attribute
+            'ignored_columns' => ['slug'],
+            'audited_columns' => ['title', 'slug', 'cached', 'updatedAt'],
         ],
     ],
 ]);
 
 // Final configuration for Post:
-// - ignored_columns: ['cached'] (+ the global 'updatedAt')
-// - roles: ['view' => ['ROLE_ADMIN']]
+// - entity ignored_columns: ['cached', 'slug'] (+ the global 'updatedAt')
+// - audited_columns: ['title', 'slug', 'cached', 'updatedAt'] => only 'title' is audited
+// - roles: ['view' => ['ROLE_USER']]
 ```
 
 ### 📄 Complete Example
@@ -6335,6 +6821,8 @@ $configuration = new Configuration([
     ],
 
     'storage_mapper' => null,  // Single database, no mapper needed
+
+    'compression' => true,     // MariaDB only, ignored on other platforms
 ]);
 ```
 
@@ -6345,6 +6833,7 @@ $configuration = new Configuration([
 - 🏷️ [Attributes Reference](attributes.md)
 - 🗄️ [Multi-Database Setup](multi-database.md)
 - 🛠️ [Schema Management](schema.md)
+- 📊 [Performance](performance.md)
 
 ---
 
@@ -6379,21 +6868,19 @@ The provider hooks into Doctrine's `onFlush` event to automatically detect:
 
 For each audited entity, a corresponding audit table is created:
 
-| Column                | Type          | Description                                                     |
-|-----------------------|---------------|-----------------------------------------------------------------|
-| `id`                  | `bigint`      | Auto-increment primary key                                      |
-| `type`                | `string(10)`  | Action type (insert/update/remove/associate/dissociate)         |
-| `object_id`           | `string(255)` | ID of the audited entity                                        |
-| `discriminator`       | `string(255)` | Entity class (for inheritance hierarchies)                      |
-| `transaction_hash`    | `string(40)`  | Hash grouping related changes from the same flush               |
-| `diffs`               | `json`        | The actual changes (JSON)                                       |
-| `extra_data`          | `json`        | Custom extra data (populated via listener)                      |
-| `blame_id`            | `string(255)` | User identifier                                                 |
-| `blame_user`          | `string(255)` | Username                                                        |
-| `blame_user_fqdn`     | `string(255)` | User class name                                                 |
-| `blame_user_firewall` | `string(100)` | Context/firewall name                                           |
-| `ip`                  | `string(45)`  | Client IP address                                               |
-| `created_at`          | `datetime`    | When the audit was created                                      |
+| Column           | Type          | Description                                                       |
+|------------------|---------------|-------------------------------------------------------------------|
+| `id`             | `bigint`      | Auto-increment primary key                                        |
+| `schema_version` | `smallint`    | Diffs format version: `1` (legacy) or `2` (current)              |
+| `type`           | `string(11)`  | Action type (insert/update/remove/associate/dissociate)           |
+| `object_id`      | `string(255)` | ID of the audited entity                                          |
+| `discriminator`  | `string(255)` | Entity class (for inheritance hierarchies)                        |
+| `transaction_id` | `char(26)`    | ULID grouping related changes from the same flush                 |
+| `diffs`          | `json`        | The actual changes — see [schema reference](schema.md)            |
+| `extra_data`     | `json`        | Custom extra data (populated via listener)                        |
+| `blame_id`       | `string(255)` | User identifier                                                   |
+| `blame`          | `json`        | Blame context: `username`, `user_fqdn`, `user_firewall`, `ip`, plus `impersonator` and `via` when set |
+| `created_at`     | `datetime`    | When the audit was created                                        |
 
 #### Action Types
 
@@ -6452,6 +6939,7 @@ flowchart TB
 - [Services](services.md) — AuditingService and StorageService
 - [Schema Management](schema.md) — Audit table management
 - [Multi-Database](multi-database.md) — Store audits in a separate database
+- [Performance](performance.md) — Flush benchmarks and schema v2 migration duration
 
 ### 🚀 Basic Usage
 
@@ -6534,7 +7022,29 @@ Set up two EntityManagers: one for your application, one for the audit database.
 > (see the [Quick Start](../../getting-started/quick-start.md)): the audit entries are written when its transaction
 > is committed.
 
-#### Step 2: Register Services
+#### Step 2: Configure the Provider
+
+Since there is only one storage service, no storage mapper is needed — all audits go to `'audit'` automatically:
+
+```php
+<?php
+
+use DH\Auditor\Provider\Doctrine\Configuration;
+use DH\Auditor\Provider\Doctrine\DoctrineProvider;
+
+$configuration = new Configuration([
+    'table_suffix' => '_audit',
+    'entities'     => [
+        App\Entity\User::class => ['enabled' => true],
+        App\Entity\Post::class => ['enabled' => true],
+    ],
+    // No storage_mapper needed when there is only one StorageService
+]);
+
+$provider = new DoctrineProvider($configuration);
+```
+
+#### Step 3: Register Services
 
 ```php
 <?php
@@ -6549,25 +7059,6 @@ $provider->registerAuditingService(
 $provider->registerStorageService(
     new StorageService('audit', $auditEntityManager)
 );
-```
-
-#### Step 3: Configure the Provider
-
-Since there is only one storage service, no storage mapper is needed — all audits go to `'audit'` automatically:
-
-```php
-<?php
-
-use DH\Auditor\Provider\Doctrine\Configuration;
-
-$configuration = new Configuration([
-    'table_suffix' => '_audit',
-    'entities'     => [
-        App\Entity\User::class => ['enabled' => true],
-        App\Entity\Post::class => ['enabled' => true],
-    ],
-    // No storage_mapper needed when there is only one StorageService
-]);
 ```
 
 #### Step 4: Update Audit Schema
@@ -6586,21 +7077,10 @@ When you need different entities routed to different storage services:
 ```php
 <?php
 
+use DH\Auditor\Provider\Doctrine\Configuration;
+use DH\Auditor\Provider\Doctrine\DoctrineProvider;
 use DH\Auditor\Provider\Doctrine\Service\AuditingService;
 use DH\Auditor\Provider\Doctrine\Service\StorageService;
-
-// Register the auditing service (application EntityManager)
-$provider->registerAuditingService(
-    new AuditingService('app', $appEntityManager)
-);
-
-// Register multiple storage services
-$provider->registerStorageService(
-    new StorageService('audit_sensitive', $auditSensitiveEntityManager)
-);
-$provider->registerStorageService(
-    new StorageService('audit_general', $auditGeneralEntityManager)
-);
 
 $configuration = new Configuration([
     'entities' => [
@@ -6618,6 +7098,21 @@ $configuration = new Configuration([
         };
     },
 ]);
+
+$provider = new DoctrineProvider($configuration);
+
+// Register the auditing service (application EntityManager)
+$provider->registerAuditingService(
+    new AuditingService('app', $appEntityManager)
+);
+
+// Register multiple storage services, keyed by name in $storageServices
+$provider->registerStorageService(
+    new StorageService('audit_sensitive', $auditSensitiveEntityManager)
+);
+$provider->registerStorageService(
+    new StorageService('audit_general', $auditGeneralEntityManager)
+);
 ```
 
 > [!CAUTION]
@@ -6645,7 +7140,7 @@ $provider->getConfiguration()->setStorageMapper(
 When that transaction turns out to be rolled back (the audit fails, or the server reports a rollback when committing), the provider deletes the audit entries it has just written on the storage connection. This clean-up is best effort:
 
 - when the outcome of the COMMIT is unknown (e.g. the connection is lost), the audit entries are kept: an orphan entry is better than a missing one;
-- when the deletion itself fails, the entries are left behind and the failure is reported, without hiding the original error, to the PSR-3 logger of the provider, with the `transaction_hash` of the entries and the audit `table`:
+- when the deletion itself fails, the entries are left behind and the failure is reported, without hiding the original error, to the PSR-3 logger of the provider, with the `transaction_id` of the entries and the audit `table`:
 
 ```php
 $provider->setLogger($logger); // any Psr\Log\LoggerInterface
@@ -6660,6 +7155,376 @@ For strict transactional consistency, keep auditing and storage on the same Enti
 - 🛠️ [Schema Management](schema.md)
 - 🔍 [Querying Audits](../../querying/index.md)
 - ⚙️ [Configuration Reference](configuration.md)
+
+---
+
+## Performance
+
+> **Cost of auditing a flush, and duration of the schema v2 migration**
+
+This page gives measured figures for the flush pipeline of the provider (audit entries built in `onFlush` and written
+before the `COMMIT`), comparing the latest 1.x release with 2.0, with and without [batch INSERT](configuration.md#-batch-insert),
+and the duration of `audit:schema:migrate` on a large schema v1 table. They come from one machine: use them as orders
+of magnitude and to compare configurations, and measure your own workload before relying on a precise figure.
+
+### 📊 Summary
+
+- **2.0 with `batch_size: 0`** (the default) costs about the same as 1.2.1: from 10 % faster to 2 % slower on SQLite,
+  within ±3 % on PostgreSQL from 500 entities per flush. On MySQL, and with 50 entities per flush, the differences in
+  either direction stay within the dispersion of the measurements.
+- **2.0 with `batch_size: 500`** writes the audit entries of a flush with multi-row `INSERT` statements. With 500 or
+  1,000 entities per flush, a flush is **10 to 18 % faster** than with 1.2.1 on SQLite, **19 to 51 % faster** on
+  MySQL and **44 to 67 % faster** on PostgreSQL. The more round trips cost (a remote database server, a network),
+  the larger the gain.
+- **Before the 2.0 release**, fewer indexes, `RETURNING id` on PostgreSQL, a lighter transaction page, deferred joins
+  for deep pages on MySQL and a batched `audit:snapshot`: see [Before the 2.0 release](#-before-the-20-release-write-read-and-snapshot).
+- **Migrating** a 1,000,000-row schema v1 audit table with `audit:schema:migrate --force --convert-all` took
+  **5 minutes on MySQL** and **3 minutes on PostgreSQL**.
+  See [Schema v2 migration](#-schema-v2-migration).
+
+### 🚀 Before the 2.0 release: write, read and snapshot
+
+A last series of optimizations landed before the 2.0 release, each measured with the PHPBench suites of
+`benchmarks/` (`AuditBench`, `ReadBench`, `SnapshotBench`), `main` before the changes against the branch, back to back
+on the same machine:
+
+| Change | Measured effect |
+|---|---|
+| 3 secondary indexes fewer on audit tables (`object_id`, `blame_id` and `discriminator` alone) | Flushes 20 to 28 % faster on PostgreSQL; indexes 30 % smaller on MySQL (raw `INSERT`s 18 % faster on a 300,000-row table) |
+| `INSERT … RETURNING id` on PostgreSQL with `batch_size: 0` (no `SELECT LASTVAL()` per entry) | Included in the PostgreSQL figures above (raw `INSERT`: 152-178 → 82-87 µs per row) |
+| `Reader::getAuditsByTransactionId()` introspects each audit table only, not the whole database | Transaction page 89 to 99 % faster (200 unrelated tables) |
+| Deep pages of an unfiltered query read with a deferred join on MySQL and MariaDB | Page 500 of 1,000: 55 → 4 ms on MySQL |
+| `audit:snapshot` writes multi-row `INSERT`s and loads the association targets of a batch together | Snapshot 40 % faster on SQLite, 73 % on MySQL, 79 % on PostgreSQL |
+| `extra_data_provider` called once per flush; driver, storage mapper and association metadata resolved once | Within the dispersion of the flush figures |
+
+#### Method
+
+- **Machine**: cloud container (Linux), PHP 8.5.13 CLI without Xdebug, MySQL 8.4 and PostgreSQL 17 (official Docker
+  images, default configuration, reached on `127.0.0.1`), SQLite in memory.
+- **Flush** (`AuditBench`): `BENCH_N=500` entities per flush, `BENCH_SEED_ROWS=20000` rows already in the audit
+  tables, `batch_size: 0`; 5 iterations (10 for the SQLite re-run reported below).
+- **Read** (`ReadBench`): `BENCH_READ_ROWS=50000` rows in `post_audit`, 200 unrelated tables in the database; 5
+  iterations of 5 revolutions after a warm-up.
+- **Snapshot** (`SnapshotBench`): 2,000 posts of 200 authors, default batch size (500); 5 iterations.
+- Reported: the mode in milliseconds, its rstdev, and the change. Results within ±10 % with an rstdev of the same order
+  are noise.
+
+#### Results
+
+##### SQLite (in memory)
+
+| Scenario | Before | After | Change |
+|---|---:|---:|---:|
+| `insert` | 26.8 (±13 %) | 24.8 (±5 %) | -8 % |
+| `update` | 25.8 (±5 %) | 24.1 (±7 %) | -6 % |
+| `remove` | 21.7 (±8 %) | 18.4 (±5 %) | -15 % |
+| `associate` | 37.3 (±23 %) | 36.1 (±6 %) | -3 % |
+| `dissociate` | 36.9 (±5 %) | 35.1 (±8 %) | -5 % |
+| `mixed` | 22.2 (±11 %) | 22 (±6 %) | -1 % |
+| `history` | 0.128 (±22 %) | 0.115 (±7 %) | -10 % |
+| `list first page` | 0.291 (±13 %) | 0.21 (±9 %) | -28 % |
+| `list deep page` | 0.817 (±7 %) | 0.856 (±5 %) | +5 % |
+| `count` | 1.47 (±10 %) | 1.43 (±4 %) | -2 % |
+| `transaction` | 82.6 (±2 %) | 0.947 (±8 %) | -99 % |
+| `snapshot` | 169 (±14 %) | 102 (±2 %) | -40 % |
+
+The first SQLite flush run gave +6 to +37 % with rstdev up to 23 %; run again with 10 iterations, back to back, it
+gave the figures above. The flush changes do not touch what SQLite measures here (in-memory, no round trip).
+
+##### MySQL 8.4
+
+| Scenario | Before | After | Change |
+|---|---:|---:|---:|
+| `insert` | 218 (±16 %) | 225 (±6 %) | +3 % |
+| `update` | 317 (±9 %) | 301 (±10 %) | -5 % |
+| `remove` | 215 (±6 %) | 216 (±7 %) | +1 % |
+| `associate` | 423 (±7 %) | 385 (±8 %) | -9 % |
+| `dissociate` | 396 (±11 %) | 345 (±9 %) | -13 % |
+| `mixed` | 268 (±12 %) | 176 (±10 %) | -34 % |
+| `history` | 0.521 (±20 %) | 0.554 (±33 %) | +6 % |
+| `list first page` | 30.2 (±16 %) | 30.8 (±18 %) | +2 % |
+| `list deep page` | 55 (±12 %) | 3.98 (±9 %) | -93 % |
+| `count` | 4.25 (±24 %) | 4.48 (±13 %) | +5 % |
+| `transaction` | 80.9 (±4 %) | 6.08 (±8 %) | -92 % |
+| `snapshot` | 849 (±3 %) | 233 (±4 %) | -73 % |
+
+`list first page` takes 30 ms on both sides: on a table seeded right before the measure, MySQL sorts the rows instead
+of reading the `created_at` index backwards (its statistics are not up to date yet).
+
+##### PostgreSQL 17
+
+| Scenario | Before | After | Change |
+|---|---:|---:|---:|
+| `insert` | 308 (±10 %) | 222 (±15 %) | -28 % |
+| `update` | 245 (±9 %) | 195 (±9 %) | -21 % |
+| `remove` | 214 (±7 %) | 170 (±11 %) | -21 % |
+| `associate` | 364 (±7 %) | 275 (±4 %) | -25 % |
+| `dissociate` | 337 (±6 %) | 271 (±8 %) | -20 % |
+| `mixed` | 234 (±6 %) | 226 (±5 %) | -3 % |
+| `history` | 0.434 (±19 %) | 0.547 (±18 %) | +26 % |
+| `list first page` | 0.746 (±15 %) | 0.74 (±12 %) | -1 % |
+| `list deep page` | 26.5 (±43 %) | 24.3 (±6 %) | -8 % |
+| `count` | 3.92 (±7 %) | 3.93 (±11 %) | +0 % |
+| `transaction` | 95.5 (±3 %) | 10.5 (±25 %) | -89 % |
+| `snapshot` | 886 (±6 %) | 189 (±3 %) | -79 % |
+
+`history` read again with 10 iterations of 20 revolutions: 0.421 ms (±17 %) before, 0.411 ms (±23 %) after (−2 %).
+
+### 🧪 Flush benchmarks
+
+#### Method
+
+The benchmark is `benchmarks/AuditBench.php` ([PHPBench](https://phpbench.readthedocs.io/)). Each scenario changes
+`N` entities of the test fixtures (`Author`, `Post`, `Tag`), all audited, and measures the single `flush()` that
+writes them — the Doctrine work and the auditing (changesets, diffs, audit rows). The schema is rebuilt and the data
+seeded before each iteration, outside the measured time.
+
+| Scenario     | Measured flush                                                                    | Audit rows |
+|--------------|-----------------------------------------------------------------------------------|-----------:|
+| `insert`     | insert `N` authors                                                                | `N`        |
+| `update`     | update 3 fields of `N` posts                                                      | `N`        |
+| `remove`     | remove `N` authors                                                                | `N`        |
+| `associate`  | add a tag to `N` posts (many-to-many)                                             | `2N`       |
+| `dissociate` | remove that tag from `N` posts                                                    | `2N`       |
+| `mixed`      | insert `N/2` authors, update `N/4` of the existing ones (2 fields), remove `N/4`  | `N`        |
+
+Three configurations were measured back to back, for each database and each `N`:
+
+| Configuration                | Code                                                                       |
+|------------------------------|----------------------------------------------------------------------------|
+| 1.2.1                        | tag `1.2.1` (latest 1.x release), schema v1                                |
+| 2.0-dev, `batch_size: 0`     | `main` at `169793e` (batch INSERT), schema v2, one `INSERT` per entry¹ |
+| 2.0-dev, `batch_size: 500`   | the same code with `batch_size: 500`                                       |
+
+¹ The PostgreSQL `N` = 50 triplet was run again on `main` at `ae51e10`, which only changes `audit:schema:migrate`
+(see [Reading the results](#reading-the-results)). The first MySQL `N` = 1,000 triplet was discarded and run again:
+a dependency installation was running on the machine at the same time.
+
+1.2.1 has no benchmark: `benchmarks/AuditBench.php` and `phpbench.json` of `main` were copied into a checkout of the
+`1.2.1` tag, with one change — the `batch_size` option was removed from the provider configuration, since 1.2.1 does
+not have it (its configuration rejects unknown options). The scenarios, fixtures and data are the same.
+
+Settings: `N` = 50, 500 and 1,000; 10 iterations of 1 revolution, no warm-up; the reported value is the **mode** of
+the 10 iterations (PHPBench's kernel density estimate), with its relative standard deviation (rstdev).
+
+#### Environment
+
+| Item       | Value                                                                                         |
+|------------|-----------------------------------------------------------------------------------------------|
+| Machine    | Apple M3 (8 cores), 16 GiB RAM, macOS 27.3                                                    |
+| PHP        | 8.5.12 (CLI, NTS), Xdebug not loaded and `XDEBUG_MODE=off`, OPcache disabled for the CLI      |
+| Libraries  | doctrine/dbal 4.6.0, doctrine/orm 3.8.0, phpbench 1.7.0; damienharper/auditor 4.3.1 (1.2.1) and `master` at `aca4003` (2.0-dev) |
+| SQLite     | file database on the local SSD (`pdo-sqlite`)                                                 |
+| MySQL      | 8.0.46 (`mysql:8.0` image, default configuration), `pdo-mysql`                                |
+| PostgreSQL | 15.20 (`postgres:15` image, default configuration), `pdo-pgsql`                               |
+| Containers | OrbStack (8 CPUs, 9.8 GiB), data on Docker volumes (on disk, no tmpfs), reached on `127.0.0.1` |
+
+#### Reproduce
+
+Start the databases (any MySQL 8 / PostgreSQL 15 server will do; the benchmark empties the database it is given):
+
+```bash
+docker run -d --name bench-mysql -e MYSQL_ROOT_PASSWORD=password -e MYSQL_DATABASE=bench -e MYSQL_USER=auditor -e MYSQL_PASSWORD=password -p 33377:3306 mysql:8.0
+```
+
+```bash
+docker run -d --name bench-pgsql -e POSTGRES_PASSWORD=password -e POSTGRES_DB=bench -p 54377:5432 postgres:15
+```
+
+Run a configuration (here 2.0 with `batch_size: 500`, 1,000 entities, PostgreSQL):
+
+```bash
+BENCH_N=1000 BENCH_BATCH_SIZE=500 BENCH_DATABASE_URL='pdo-pgsql://postgres:password@127.0.0.1:54377/bench?serverVersion=15' XDEBUG_MODE=off vendor/bin/phpbench run benchmarks/AuditBench.php --iterations=10 --revs=1 --report=aggregate
+```
+
+- `BENCH_DATABASE_URL` takes a DBAL URL. Use the `pdo-mysql://`, `pdo-pgsql://` and `pdo-sqlite:///` schemes: with
+  `pgsql://`, DBAL picks the native `pgsql` driver. For SQLite on disk, give an absolute path after the third slash
+  (`pdo-sqlite:////path/to/bench.sqlite`); without `BENCH_DATABASE_URL`, the benchmark uses in-memory SQLite.
+- `BENCH_BATCH_SIZE` defaults to `0`; it is ignored by the 1.2.1 copy of the benchmark.
+- Run the configurations you compare back to back, with the same `N`, and nothing else running on the machine.
+
+#### Results
+
+Mode in milliseconds, rstdev in parentheses, and change against 1.2.1 (negative = faster).
+
+##### SQLite (file)
+
+**N = 50** — mode in ms (relative standard deviation), change against 1.2.1
+
+| Scenario | 1.2.1 | 2.0-dev, `batch_size: 0` | 2.0-dev, `batch_size: 500` |
+|---|---:|---:|---:|
+| `insert` | 4.92 (±43 %) | 5.03 (±27 %) — +2 % | 4.91 (±4 %) — -0 % |
+| `update` | 2.35 (±3 %) | 2.21 (±4 %) — -6 % | 2.06 (±1 %) — -13 % |
+| `remove` | 3.69 (±14 %) | 3.43 (±14 %) — -7 % | 3.31 (±20 %) — -10 % |
+| `associate` | 3.94 (±9 %) | 3.65 (±10 %) — -7 % | 3.31 (±2 %) — -16 % |
+| `dissociate` | 3.43 (±4 %) | 3.16 (±2 %) — -8 % | 2.80 (±8 %) — -18 % |
+| `mixed` | 3.77 (±1 %) | 3.80 (±7 %) — +1 % | 3.61 (±3 %) — -4 % |
+
+**N = 500** — mode in ms (relative standard deviation), change against 1.2.1
+
+| Scenario | 1.2.1 | 2.0-dev, `batch_size: 0` | 2.0-dev, `batch_size: 500` |
+|---|---:|---:|---:|
+| `insert` | 18.9 (±6 %) | 18.4 (±2 %) — -3 % | 17.1 (±2 %) — -10 % |
+| `update` | 19.8 (±2 %) | 18.9 (±2 %) — -5 % | 17.7 (±2 %) — -10 % |
+| `remove` | 15.0 (±5 %) | 14.7 (±4 %) — -1 % | 13.5 (±3 %) — -10 % |
+| `associate` | 30.3 (±1 %) | 27.4 (±4 %) — -9 % | 24.8 (±5 %) — -18 % |
+| `dissociate` | 30.3 (±1 %) | 27.3 (±1 %) — -10 % | 24.7 (±2 %) — -18 % |
+| `mixed` | 17.5 (±1 %) | 16.5 (±2 %) — -6 % | 15.3 (±5 %) — -12 % |
+
+**N = 1000** — mode in ms (relative standard deviation), change against 1.2.1
+
+| Scenario | 1.2.1 | 2.0-dev, `batch_size: 0` | 2.0-dev, `batch_size: 500` |
+|---|---:|---:|---:|
+| `insert` | 35.3 (±4 %) | 33.3 (±4 %) — -6 % | 31.1 (±3 %) — -12 % |
+| `update` | 39.6 (±1 %) | 37.9 (±3 %) — -4 % | 35.5 (±1 %) — -10 % |
+| `remove` | 30.4 (±3 %) | 29.5 (±3 %) — -3 % | 27.4 (±1 %) — -10 % |
+| `associate` | 61.1 (±2 %) | 55.3 (±2 %) — -10 % | 49.9 (±3 %) — -18 % |
+| `dissociate` | 60.9 (±1 %) | 55.7 (±5 %) — -8 % | 50.5 (±3 %) — -17 % |
+| `mixed` | 32.9 (±1 %) | 31.2 (±3 %) — -5 % | 28.2 (±1 %) — -14 % |
+
+##### MySQL 8.0
+
+**N = 50** — mode in ms (relative standard deviation), change against 1.2.1
+
+| Scenario | 1.2.1 | 2.0-dev, `batch_size: 0` | 2.0-dev, `batch_size: 500` |
+|---|---:|---:|---:|
+| `insert` | 26.5 (±6 %) | 23.9 (±14 %) — -10 % | 23.4 (±35 %) — -12 % |
+| `update` | 14.7 (±11 %) | 13.3 (±17 %) — -9 % | 10.5 (±30 %) — -28 % |
+| `remove` | 15.9 (±12 %) | 17.1 (±31 %) — +7 % | 12.2 (±25 %) — -24 % |
+| `associate` | 24.7 (±8 %) | 24.2 (±15 %) — -2 % | 15.5 (±14 %) — -37 % |
+| `dissociate` | 19.8 (±37 %) | 24.2 (±19 %) — +22 % | 15.2 (±28 %) — -23 % |
+| `mixed` | 18.5 (±16 %) | 21.6 (±30 %) — +17 % | 16.9 (±32 %) — -9 % |
+
+**N = 500** — mode in ms (relative standard deviation), change against 1.2.1
+
+| Scenario | 1.2.1 | 2.0-dev, `batch_size: 0` | 2.0-dev, `batch_size: 500` |
+|---|---:|---:|---:|
+| `insert` | 124.8 (±8 %) | 127.8 (±12 %) — +2 % | 91.0 (±12 %) — -27 % |
+| `update` | 117.5 (±6 %) | 135.7 (±14 %) — +15 % | 93.8 (±9 %) — -20 % |
+| `remove` | 96.7 (±8 %) | 110.5 (±22 %) — +14 % | 78.7 (±9 %) — -19 % |
+| `associate` | 185.7 (±8 %) | 181.7 (±10 %) — -2 % | 118.5 (±5 %) — -36 % |
+| `dissociate` | 186.5 (±9 %) | 178.9 (±14 %) — -4 % | 115.4 (±10 %) — -38 % |
+| `mixed` | 107.0 (±5 %) | 122.2 (±51 %) — +14 % | 80.6 (±8 %) — -25 % |
+
+**N = 1000** — mode in ms (relative standard deviation), change against 1.2.1
+
+| Scenario | 1.2.1 | 2.0-dev, `batch_size: 0` | 2.0-dev, `batch_size: 500` |
+|---|---:|---:|---:|
+| `insert` | 225.4 (±15 %) | 265.6 (±20 %) — +18 % | 154.7 (±12 %) — -31 % |
+| `update` | 219.5 (±5 %) | 202.9 (±8 %) — -8 % | 130.0 (±17 %) — -41 % |
+| `remove` | 198.7 (±13 %) | 181.1 (±3 %) — -9 % | 116.2 (±6 %) — -42 % |
+| `associate` | 362.4 (±4 %) | 321.0 (±10 %) — -11 % | 179.9 (±5 %) — -50 % |
+| `dissociate` | 299.2 (±6 %) | 274.8 (±5 %) — -8 % | 147.9 (±3 %) — -51 % |
+| `mixed` | 209.3 (±4 %) | 210.5 (±4 %) — +1 % | 153.3 (±31 %) — -27 % |
+
+##### PostgreSQL 15
+
+**N = 50** — mode in ms (relative standard deviation), change against 1.2.1
+
+| Scenario | 1.2.1 | 2.0-dev, `batch_size: 0` | 2.0-dev, `batch_size: 500` |
+|---|---:|---:|---:|
+| `insert` | 43.3 (±12 %) | 38.1 (±16 %) — -12 % | 29.8 (±25 %) — -31 % |
+| `update` | 15.9 (±13 %) | 16.3 (±23 %) — +2 % | 11.0 (±16 %) — -31 % |
+| `remove` | 19.7 (±10 %) | 20.6 (±12 %) — +4 % | 16.0 (±13 %) — -19 % |
+| `associate` | 25.7 (±12 %) | 25.7 (±14 %) — +0 % | 11.7 (±22 %) — -55 % |
+| `dissociate` | 21.7 (±6 %) | 21.2 (±8 %) — -2 % | 9.83 (±19 %) — -55 % |
+| `mixed` | 24.4 (±12 %) | 26.4 (±18 %) — +8 % | 20.8 (±16 %) — -15 % |
+
+**N = 500** — mode in ms (relative standard deviation), change against 1.2.1
+
+| Scenario | 1.2.1 | 2.0-dev, `batch_size: 0` | 2.0-dev, `batch_size: 500` |
+|---|---:|---:|---:|
+| `insert` | 167.5 (±4 %) | 165.1 (±7 %) — -1 % | 93.8 (±5 %) — -44 % |
+| `update` | 137.4 (±1 %) | 138.1 (±2 %) — +0 % | 65.1 (±2 %) — -53 % |
+| `remove` | 132.3 (±2 %) | 133.3 (±2 %) — +1 % | 61.0 (±2 %) — -54 % |
+| `associate` | 224.7 (±2 %) | 219.4 (±2 %) — -2 % | 76.6 (±5 %) — -66 % |
+| `dissociate` | 224.7 (±1 %) | 219.1 (±1 %) — -3 % | 74.7 (±2 %) — -67 % |
+| `mixed` | 148.0 (±2 %) | 150.5 (±2 %) — +2 % | 77.0 (±3 %) — -48 % |
+
+**N = 1000** — mode in ms (relative standard deviation), change against 1.2.1
+
+| Scenario | 1.2.1 | 2.0-dev, `batch_size: 0` | 2.0-dev, `batch_size: 500` |
+|---|---:|---:|---:|
+| `insert` | 328.4 (±2 %) | 327.8 (±2 %) — -0 % | 180.3 (±7 %) — -45 % |
+| `update` | 279.1 (±2 %) | 276.5 (±7 %) — -1 % | 133.1 (±2 %) — -52 % |
+| `remove` | 268.7 (±2 %) | 269.4 (±4 %) — +0 % | 124.6 (±2 %) — -54 % |
+| `associate` | 452.9 (±2 %) | 442.0 (±2 %) — -2 % | 155.9 (±3 %) — -66 % |
+| `dissociate` | 445.6 (±1 %) | 440.8 (±2 %) — -1 % | 151.9 (±8 %) — -66 % |
+| `mixed` | 298.4 (±1 %) | 291.4 (±3 %) — -2 % | 150.2 (±2 %) — -50 % |
+
+#### Reading the results
+
+- **Dispersion.** On SQLite and PostgreSQL, most rstdev values stay below 5 %: differences above 5 % are
+  meaningful. MySQL (through the container's virtualized disk) is much noisier, with rstdev up to 51 %: there, only
+  the large gains of `batch_size: 500` are significant, and the ±20 % differences between 1.2.1 and
+  `batch_size: 0` are not. At `N` = 50, a flush lasts a few dozen milliseconds and the rstdev reaches 10 to 25 % on
+  PostgreSQL too: the first run of the PostgreSQL `N` = 50 triplet gave the `insert` scenario 27.8 ms with 1.2.1 and
+  47.2 ms with `batch_size: 0` (+70 %); run again, the three configurations back to back, it gave 43.3 ms and
+  38.1 ms (−12 %). The second run is the one reported above: at `N` = 50, read only the large differences.
+- **`batch_size: 0`.** Each audit entry is written with its own `INSERT`, as in 1.2.1: the schema v2 changes (JSON
+  `blame`, ULID `transaction_id`, diffs envelope) do not make a flush measurably slower.
+- **`batch_size: 500`.** The gain grows with `N` and with the cost of a round trip: modest on SQLite (no network,
+  10 to 18 %), large on PostgreSQL (half of the time or less from `N` = 500). `associate` and `dissociate`, which write
+  two audit rows per changed entity, gain the most. With `N` = 50, a flush writes 50 to 100 rows, a single multi-row
+  statement: the gain is already visible but within a noisier range.
+
+### 🗄️ Schema v2 migration
+
+The migration of a schema v1 audit table (see [Upgrading to 2.0](../../upgrade/v2.md)) was timed on a table of
+**1,000,000 rows** written by 1.2.1, with `audit:schema:migrate --force --convert-all` (2.0-dev, `main` at
+`e081182`), on the machine and database servers described above.
+
+#### Method
+
+- **Data**: `author_audit`, generated with 1.2.1 (not measured) by cycles of three flushes, each in its own
+  transaction: insert 20 authors, update them (2 fields), remove 10 of them. That is 50 audit rows and 3 transactions
+  per cycle, i.e. **60,000 transactions** for 1,000,000 rows (547 MiB on MySQL, 447 MiB on PostgreSQL).
+- **Run**: one database after the other, nothing else running; the command output is timestamped to get the duration
+  of each step.
+
+#### Results
+
+| Step                                                  | MySQL 8.0         | PostgreSQL 15     |
+|-------------------------------------------------------|------------------:|------------------:|
+| Additive DDL (new columns, `schema_version`, `blame`) | 50 s              | 43 s              |
+| `transaction_hash` → `transaction_id` (60,000 ULIDs)  | 100 s             | 29 s              |
+| Diffs conversion (1,000,000 rows)                     | 139 s             | 118 s             |
+| Legacy columns dropped                                | < 1 s             | < 1 s             |
+| **Total**                                             | **4 min 59 s**    | **3 min 13 s**    |
+| Table size after `OPTIMIZE TABLE` / `VACUUM FULL`     | 690 MiB (+26 %)   | 614 MiB (+37 %)   |
+
+After the migration, both tables had 60,000 distinct `transaction_id` values (one per legacy transaction, the
+grouping is kept), no row without `transaction_id`, `blame` or `source` in its diffs, and every row at
+`schema_version` 2.
+
+- **What takes the time**: every row is read, its diffs decoded, rewritten in the v2 envelope and updated. Both
+  conversions work in batches of 500 rows (or transactions), each written in one database transaction, and read the
+  rows through the primary key or the `transaction_hash` index: their duration grows linearly with the size of the
+  audit tables.
+- **Disk space**: the rows are rewritten in place, so the table grows during the migration (878 MiB on MySQL and up
+  to 1,783 MiB on PostgreSQL right after it, dead rows included) until InnoDB or autovacuum reuses the space, or
+  until an `OPTIMIZE TABLE` / `VACUUM FULL` reclaims it. On PostgreSQL, the table reached up to 4 times its initial
+  size: check the free disk space before migrating.
+- **Your own estimate**: `--limit=N` converts only `N` transactions or rows and keeps the legacy columns, so that a
+  later run resumes where it stopped. Time a run on a sample and extrapolate linearly; test on a copy of your
+  production data, with a backup, before the real migration.
+
+#### Reproduce
+
+The scripts are not part of the repository; the steps are:
+
+1. With a checkout of the `1.2.1` tag, create the audit schema and write the v1 audit rows (any audited entity and
+   workload will do; the larger the table, the more representative the figures).
+2. With 2.0, register the same entities and run the command, timing it:
+
+```bash
+time bin/console audit:schema:migrate --force --convert-all
+```
+
+### Next Steps
+
+- ⚙️ [Configuration](configuration.md) — `batch_size` and the other options
+- 🚀 [Upgrading to 2.0](../../upgrade/v2.md) — migrating the audit tables
 
 ---
 
@@ -6678,52 +7543,111 @@ The schema can be managed in two ways:
 1. **Automatically** — via Doctrine's `postGenerateSchemaTable` event (integrates with `doctrine:schema:update` / Migrations)
 2. **Manually** — by calling `SchemaManager::updateAuditSchema()` directly
 
-### 🏗️ Audit Table Structure
+### 🏗️ Audit Table Structure (schema version 2)
 
-Each audit table has the following structure:
+Each audit table created by the current provider has the following structure:
 
 ```sql
 CREATE TABLE posts_audit (
-    id                  BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    type                VARCHAR(10)   NOT NULL,
-    object_id           VARCHAR(255)  NOT NULL,
-    discriminator       VARCHAR(255)  NULL,
-    transaction_hash    VARCHAR(40)   NULL,
-    diffs               JSON          NULL,
-    extra_data          JSON          NULL,
-    blame_id            VARCHAR(255)  NULL,
-    blame_user          VARCHAR(255)  NULL,
-    blame_user_fqdn     VARCHAR(255)  NULL,
-    blame_user_firewall VARCHAR(100)  NULL,
-    ip                  VARCHAR(45)   NULL,
-    created_at          DATETIME      NOT NULL,
+    id               BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    schema_version   SMALLINT UNSIGNED NOT NULL DEFAULT 2,
+    type             VARCHAR(11)  NOT NULL,
+    object_id        VARCHAR(255) NOT NULL,
+    discriminator    VARCHAR(255) NULL,
+    transaction_id   CHAR(26)     NULL,
+    diffs            JSON         NULL,
+    extra_data       JSON         NULL,
+    blame_id         VARCHAR(255) NULL,
+    blame            JSON         NULL,
+    created_at       DATETIME     NOT NULL,
 
-    INDEX type_idx              (type),
-    INDEX object_id_idx         (object_id),
-    INDEX discriminator_idx     (discriminator),
-    INDEX transaction_hash_idx  (transaction_hash),
-    INDEX blame_id_idx          (blame_id),
-    INDEX created_at_idx        (created_at)
+    INDEX type_idx            (type),
+    INDEX object_id_type_idx  (object_id, type),
+    INDEX transaction_id_idx  (transaction_id),
+    INDEX blame_id_created_at_idx (blame_id, created_at),
+    INDEX created_at_idx      (created_at)
 );
 ```
 
+The SQL is illustrative: the actual index names are generated from a hash of the table name
+(`type_<md5>_idx`…), and the column types depend on the platform (JSON on MySQL / MariaDB, JSONB on PostgreSQL,
+TEXT on SQLite).
+
 #### Column Details
 
-| Column                | Type          | Description                                                     |
-|-----------------------|---------------|-----------------------------------------------------------------|
-| `id`                  | BIGINT (PK)   | Auto-increment primary key                                      |
-| `type`                | VARCHAR(10)   | Action: insert, update, remove, associate, dissociate           |
-| `object_id`           | VARCHAR(255)  | The primary key of the audited entity                           |
-| `discriminator`       | VARCHAR(255)  | Entity class (used in inheritance hierarchies)                  |
-| `transaction_hash`    | VARCHAR(40)   | Groups changes from the same flush batch                        |
-| `diffs`               | JSON          | JSON-encoded change data                                        |
-| `extra_data`          | JSON          | Custom extra data (populated via `LifecycleEvent` listener)     |
-| `blame_id`            | VARCHAR(255)  | User identifier who made the change                             |
-| `blame_user`          | VARCHAR(255)  | Username/display name                                           |
-| `blame_user_fqdn`     | VARCHAR(255)  | Full class name of the user object                              |
-| `blame_user_firewall` | VARCHAR(100)  | Context/firewall name                                           |
-| `ip`                  | VARCHAR(45)   | Client IP address (IPv4 or IPv6)                                |
-| `created_at`          | DATETIME      | When the audit entry was created                                |
+| Column           | Type                | Description                                                       |
+|------------------|---------------------|-------------------------------------------------------------------|
+| `id`             | BIGINT (PK)         | Auto-increment primary key                                        |
+| `schema_version` | SMALLINT            | Diffs format version: `1` (legacy) or `2` (current)              |
+| `type`           | VARCHAR(11)         | Action: insert, update, remove, associate, dissociate             |
+| `object_id`      | VARCHAR(255)        | The primary key of the audited entity                             |
+| `discriminator`  | VARCHAR(255)        | Entity class (used in inheritance hierarchies)                    |
+| `transaction_id` | CHAR(26)            | ULID grouping changes from the same flush batch                   |
+| `diffs`          | JSON                | JSON-encoded change data (see format below)                       |
+| `extra_data`     | JSON                | Custom extra data (populated via `LifecycleEvent` listener)       |
+| `blame_id`       | VARCHAR(255)        | User identifier who made the change                               |
+| `blame`          | JSON                | Blame: `username`, `user_fqdn`, `user_firewall`, `ip`, `impersonator` when the user is impersonated, and `via` when a blame context is set |
+| `created_at`     | DATETIME            | When the audit entry was created                                  |
+
+#### Diffs Format (schema version 2)
+
+All entry types share a unified JSON envelope:
+
+```json
+{
+    "source":  { "id": "42", "class": "App\\Entity\\Post", "label": "Hello World", "table": "posts" },
+    "changes": {
+        "title":   { "old": "Hello World", "new": "Hello auditor!" },
+        "content": { "old": null,           "new": "My first post." }
+    }
+}
+```
+
+- `source` — always present: entity id, FQCN, label, and table at the time of the operation
+- `changes` — field-level diff with explicit `old`/`new` for every operation:
+  - **INSERT**: `old` is always `null`
+  - **UPDATE**: both `old` and `new` reflect the changed values
+  - **REMOVE**: empty by default; with `full_snapshot_on_remove`, every audited field with its `old` value and a `null` `new` (a generated identifier, reset by Doctrine on deletion, is left out: the `source` block holds it), and every owning-side to-one association with the summary of its target as `old`
+- `snapshot` — only on entries written by [`audit:snapshot`](#auditsnapshot): an `insert` entry with
+  `"snapshot": true` records the state of an entity that existed before auditing started, not its creation
+  (`Entry::isSnapshot()` reads it)
+- **ASSOCIATE / DISSOCIATE** — use a different structure (no `changes` key):
+  ```json
+  {
+      "source":       { "id": "1", "class": "App\\Entity\\Post", "label": "Post #1", "table": "posts", "field": "tags" },
+      "target":       { "id": "5", "class": "App\\Entity\\Tag",  "label": "php",     "table": "tag",   "field": "posts" },
+      "is_owning_side": true,
+      "join_table":   "post__tag"
+  }
+  ```
+
+#### Legacy Diffs Format (schema version 1)
+
+Entries written by earlier versions of the provider carry `schema_version = 1`. The `Entry` model reads them transparently — see [Entry Reference](../../querying/entry.md).
+
+#### Writing audit rows yourself
+
+The provider writes audit rows on flush only. An application that writes rows itself (for example to import the
+history kept by another tool) must follow the format above, or the `Reader` and the viewer misread the rows without
+any error:
+
+| Column | What to write |
+|---|---|
+| `schema_version` | `2`, always written explicitly: do not rely on the column default, which can still be `1` on a table left half-migrated or completed by hand; a row read as `1` has its diffs read as the legacy format |
+| `type` | `insert`, `update`, `remove`, `associate` or `dissociate` |
+| `object_id`, `discriminator` | the identifier of the entity as a string; its class in `discriminator` for an entity of an inheritance hierarchy, `NULL` otherwise |
+| `transaction_id` | a ULID (26 characters, e.g. `(string) new Ulid()` with `symfony/uid`), the same for every row written by one flush (one transaction), across tables: the viewer and `Query::transactions()` group the entries by it |
+| `diffs` | the envelope `{"source": {…}, "changes": {"field": {"old": …, "new": …}}}`, or the association structure; `source` holds `id`, `class`, `label` and `table`; plus `deep_diffs` (the fields whose change is a JSON deep diff) when relevant, without which the deep diffs are inferred from their shape |
+| `blame_id`, `blame` | `NULL` and `NULL` when nobody is known; otherwise `blame` holds the four keys `username`, `user_fqdn`, `user_firewall` and `ip`, each set to `null` when unknown, plus `impersonator` and `via` when relevant |
+| `extra_data` | a JSON object, or `NULL` |
+| `created_at` | the date of the change, `Y-m-d H:i:s`, in the timezone of the configuration (`timezone`, UTC by default) |
+
+- `diffs`, `blame` and `extra_data` are `JSONB` on PostgreSQL: cast the values (`::jsonb`) in a hand-written
+  `INSERT`.
+- Rows written by hand go around the `LifecycleEvent` listeners of the application (extra data, rewriting of the
+  diffs): apply their effect yourself.
+- Rows of entities that declare an [`#[AuditRoot]`](../../querying/history.md) are not indexed in `audit_root`: run
+  [`audit:roots:rebuild`](#auditrootsrebuild) after the import, or they are missing from the histories.
 
 ### 🛠️ Using SchemaManager
 
@@ -6751,7 +7675,7 @@ $schemaManager->updateAuditSchema();
 
 #### Console Commands
 
-Two console commands are available.
+Six console commands are available.
 
 ##### `audit:schema:update`
 
@@ -6767,6 +7691,36 @@ php bin/console audit:schema:update --force
 # Both: show SQL and execute
 php bin/console audit:schema:update --dump-sql --force
 ```
+
+##### `audit:schema:migrate`
+
+Migrates existing audit tables from schema version 1 to schema version 2.
+
+```bash
+# Preview the SQL that would be executed (dry-run)
+php bin/console audit:schema:migrate --dump-sql --convert-all
+
+# Execute the migration and convert the existing rows (recommended)
+php bin/console audit:schema:migrate --force --convert-all
+
+# Convert a sample only, to estimate the duration (keeps the legacy columns, resumable)
+php bin/console audit:schema:migrate --force --convert-all --limit=10000
+```
+
+> [!CAUTION]
+> The migration drops the legacy columns and cannot be undone: back up the audit tables first. `transaction_hash` is
+> only dropped once converted (`--convert-transaction-hash` or `--convert-all`), or with `--drop-transaction-hash`,
+> which drops it without converting it: legacy rows then lose their transaction grouping. Follow the
+> [upgrade guide](../../upgrade/v2.md#-upgrade-steps) for the complete procedure.
+
+> [!NOTE]
+> Use `audit:schema:migrate` when upgrading an existing installation. New installations created
+> with `audit:schema:update` already use schema version 2.
+
+> [!NOTE]
+> `--convert-diffs` rewrites existing diffs rows in PHP (batches of 500). This can take a while
+> on large tables. Without this flag, legacy rows remain readable via `Entry::getDiffs()` since
+> the `Entry` model handles both schema versions transparently.
 
 ##### `audit:clean`
 
@@ -6789,8 +7743,98 @@ php bin/console audit:clean -x App\\Entity\\User
 php bin/console audit:clean -i App\\Entity\\Log
 ```
 
+Entities with a retention policy (`#[Auditable(maxAge: …, maxEntries: …)]`, or the `max_age` / `max_entries` entity
+options) apply it: `maxAge` replaces the global cutoff, and `maxEntries` also deletes everything but the N most recent
+entries. See [Retention Policy](attributes.md#retention-policy).
+
+##### `audit:export`
+
+Exports audit entries as NDJSON (default, recommended for large exports), JSON or CSV, streamed to the standard
+output or to a file.
+
+```bash
+# Every auditable entity, NDJSON on stdout
+php bin/console audit:export
+
+# One entity, as CSV, for a period
+php bin/console audit:export App\\Entity\\Post --format=csv --from=2026-01-01 --to=2026-03-31 --output=posts.csv
+
+# One object, or one user, without the user and IP fields
+php bin/console audit:export App\\Entity\\Post --id=42 --anonymize
+php bin/console audit:export --blame-id=7
+```
+
+Each line or row is an `Entry::toArray()`: the same columns for legacy and schema v2 entries.
+
+##### `audit:roots:rebuild`
+
+Indexes the existing audit entries under their audit roots (`#[AuditRoot]`, `roots` entity option), in the
+`audit_root` table: after declaring a new root, or after migrating audit tables to schema v2.
+
+```bash
+php bin/console audit:roots:rebuild
+php bin/console audit:roots:rebuild --entity='App\Entity\Comment' --dry-run
+```
+
+| Option      | Description                                                    |
+|-------------|----------------------------------------------------------------|
+| `--entity`  | Entities whose entries are indexed (repeatable), all by default |
+| `--dry-run` | Count the missing index rows, write nothing                    |
+
+Only missing rows are written and no row is deleted, so the command can be run again and rows written by hand are
+kept. See
+[Histories](../../querying/history.md#rebuilding-the-index).
+
+##### `audit:snapshot`
+
+Records the current state of existing entities, so that their history does not start at their first change
+when auditing is enabled on a database that already holds data. Each entity gets one `insert` entry flagged
+with `"snapshot": true`, holding the current value of every audited field (`old: null`).
+
+```bash
+# Snapshot some entities
+php bin/console audit:snapshot 'App\Entity\Post' 'App\Entity\Author'
+
+# Snapshot every audited entity, 1,000 rows per database transaction
+php bin/console audit:snapshot --all --batch-size=1000
+
+# Count what would be written
+php bin/console audit:snapshot --all --dry-run
+```
+
+| Option         | Short | Description                                                                  |
+|----------------|-------|------------------------------------------------------------------------------|
+| `--all`        | `-a`  | Snapshot every audited entity (instead of the entities given as arguments)   |
+| `--batch-size` | `-b`  | Entities read and written per database transaction (default `500`)           |
+| `--force`      | `-f`  | Also snapshot entities that already have an audit history                    |
+| `--dry-run`    |       | Count the entities to snapshot, write nothing                                |
+
+- **Idempotent**: an entity that already has at least one audit entry is skipped, so the command can be
+  run again (e.g. after an interruption). `--force` snapshots it anyway: a manual snapshot of its current state.
+- **Batches**: entities are read in identifier order (keyset pagination), each batch is written in its own
+  database transaction and its entries share one `transaction_id`. The entity manager is cleared between batches.
+- **Content**: the same fields as an insert: ignored columns and generated identifiers are left out,
+  owning-side to-one associations are summarized, JSON fields are deep diffs. To-many associations are not
+  snapshotted.
+- **Context**: `created_at` is the date of the snapshot, the blame is the console user (`blame_id` is `null`
+  without a user provider). Doctrine filters that are enabled apply: rows they hide (e.g. soft-deleted) are
+  not snapshotted.
+- **Inheritance**: an entity whose parent class is also selected is read through its parent; each row is
+  written to the audit table of its own class.
+
+The same logic is available in PHP through `DH\Auditor\Provider\Doctrine\Auditing\Snapshot\Snapshotter`:
+
+```php
+use DH\Auditor\Provider\Doctrine\Auditing\Snapshot\Snapshotter;
+
+$result = new Snapshotter($provider)->snapshot(Post::class, batchSize: 500);
+$result->read;        // entities read
+$result->snapshotted; // entries written
+$result->skipped();   // entities that already had an audit history
+```
+
 > [!NOTE]
-> Both commands use Symfony's Lock component to prevent concurrent execution.
+> These commands use Symfony's Lock component to prevent concurrent execution.
 
 ##### Registering Commands (Standalone)
 
@@ -6798,18 +7842,25 @@ When not using auditor-bundle, register the commands manually:
 
 ```php
 use DH\Auditor\Provider\Doctrine\Persistence\Command\CleanAuditLogsCommand;
+use DH\Auditor\Provider\Doctrine\Persistence\Command\ExportAuditLogsCommand;
+use DH\Auditor\Provider\Doctrine\Persistence\Command\MigrateSchemaCommand;
+use DH\Auditor\Provider\Doctrine\Persistence\Command\RebuildRootsCommand;
+use DH\Auditor\Provider\Doctrine\Persistence\Command\SnapshotCommand;
 use DH\Auditor\Provider\Doctrine\Persistence\Command\UpdateSchemaCommand;
 use Symfony\Component\Console\Application;
 
 $application = new Application();
 
-$updateCommand = new UpdateSchemaCommand();
-$updateCommand->setAuditor($auditor);
-$application->addCommand($updateCommand);
-
-$cleanCommand = new CleanAuditLogsCommand();
-$cleanCommand->setAuditor($auditor);
-$application->addCommand($cleanCommand);
+foreach ([
+    new UpdateSchemaCommand(),
+    new MigrateSchemaCommand(),
+    new CleanAuditLogsCommand(),
+    new SnapshotCommand(),
+    new ExportAuditLogsCommand(),
+    new RebuildRootsCommand(),
+] as $command) {
+    $application->addCommand($command->setAuditor($auditor));
+}
 
 $application->run();
 ```
@@ -6829,7 +7880,7 @@ $schemaManager->updateAuditSchema();
 
 // Execute with a progress callback
 $schemaManager->updateAuditSchema(null, function (array $progress) {
-    echo sprintf('Updated: %s', $progress['table'] ?? '');
+    echo sprintf('Progress: %d / %d', $progress['current'], $progress['total']);
 });
 ```
 
@@ -6891,12 +7942,25 @@ When you add `#[Auditable]` to a new entity and add it to the configuration:
 
 #### MySQL / MariaDB
 
-- Native `JSON` column type is used for `diffs` and `extra_data`
+- Native `JSON` column type is used for `diffs`, `extra_data`, and `blame`
 - InnoDB engine is recommended for transactional integrity
+- InnoDB does not compress anything by default. On **MariaDB**, enable the [`compression`](configuration.md#-compression)
+  option to store `diffs` and `extra_data` as compressed columns (`JSON COMPRESSED`).
+- **MySQL** has no column compression, so the `compression` option has no effect there. If disk space matters more
+  than speed, InnoDB page compression can be enabled manually on audit tables (requires `innodb_file_per_table` and a
+  file system supporting hole punching, e.g. ext4 or XFS):
+
+  ```sql
+  ALTER TABLE posts_audit COMPRESSION='zlib';
+  OPTIMIZE TABLE posts_audit; -- compresses existing rows
+  ```
+
+  Doctrine does not manage table compression options: this is neither reported nor reverted by schema commands.
 
 #### PostgreSQL
 
-- Native `JSONB` column type is used for `diffs` and `extra_data`
+- Native `JSONB` column type is used for `diffs`, `extra_data` and `blame`
+- Large `JSONB` values are compressed automatically (TOAST): the `compression` option is not needed and has no effect
 - Audit tables created with `JSON` columns by previous versions are converted to `JSONB` by `audit:schema:update` (or by your next migration if you manage audit tables with Doctrine Migrations)
 - Indexed columns use PostgreSQL-compatible index names
 
@@ -6907,8 +7971,10 @@ When you add `#[Auditable]` to a new entity and add it to the configuration:
 
 ### ⚡ Performance Considerations
 
-1. **Indexed columns** — All common query columns (`type`, `object_id`, `transaction_hash`, `blame_id`, `created_at`) are indexed at creation time
-2. **JSON storage** — Native JSON types (MySQL, PostgreSQL) provide best query performance on `diffs`
+1. **Few indexes** — `(object_id, type)` and `(blame_id, created_at)` cover the most frequent Reader query patterns, and every
+   other secondary index slows each audit `INSERT` down: there is none on `object_id`, `blame_id` or `discriminator`
+   alone (5 secondary indexes instead of 8 before 2.0: audit `INSERT`s about 18 % faster on MySQL, indexes 30 % smaller)
+2. **JSON storage** — Native JSON types (MySQL, PostgreSQL) provide best query performance on `diffs` and `blame`
 3. **Archiving** — Implement a periodic cleanup strategy for high-volume applications using `audit:clean`
 4. **Separate database** — Consider storing audits in a dedicated database to avoid impacting application performance
 
@@ -7139,93 +8205,144 @@ use DH\Auditor\Model\Entry;
 
 `Entry` exposes its data through **virtual properties** (not getter methods). Access them directly:
 
-| Property           | Type                   | Description                                                      |
-|--------------------|------------------------|------------------------------------------------------------------|
-| `$id`              | `int`                  | Auto-increment primary key of the audit entry                    |
-| `$type`            | `string`               | Action type: `insert`, `update`, `remove`, `associate`, `dissociate` |
-| `$objectId`        | `string`               | Primary key of the audited entity                                |
-| `$discriminator`   | `string\|null`         | Entity class (used in inheritance hierarchies)                   |
-| `$transactionHash` | `string\|null`         | Hash grouping changes from the same flush batch                  |
-| `$diffs`           | `array\|null`          | Already-decoded change data (do **not** call `json_decode()`)    |
-| `$extraData`       | `array\|null`          | Already-decoded extra data (do **not** call `json_decode()`)     |
-| `$userId`          | `string\|null`         | Identifier of the user who made the change (`blame_id`)          |
-| `$username`        | `string\|null`         | Display name of the user (`blame_user`)                          |
-| `$userFqdn`        | `string\|null`         | Class name of the user object (`blame_user_fqdn`)                |
-| `$userFirewall`    | `string\|null`         | Context/firewall name (`blame_user_firewall`)                    |
-| `$ip`              | `string\|null`         | Client IP address                                                |
-| `$createdAt`       | `\DateTimeImmutable`   | Timestamp of when the audit entry was created                    |
+| Property         | Type                   | Description                                                          |
+|------------------|------------------------|----------------------------------------------------------------------|
+| `$id`            | `int`                  | Auto-increment primary key of the audit entry                        |
+| `$schemaVersion` | `int`                  | Diffs format version: `1` (legacy) or `2` (current). Defaults to `1`.|
+| `$type`          | `string`               | Action type: `insert`, `update`, `remove`, `associate`, `dissociate` |
+| `$objectId`      | `string`               | Primary key of the audited entity                                    |
+| `$discriminator` | `string\|null`         | Entity class (used in inheritance hierarchies)                       |
+| `$transactionId` | `string\|null`         | ULID grouping changes from the same flush batch                      |
+| `$extraData`     | `array\|null`          | Already-decoded extra data (do **not** call `json_decode()`)         |
+| `$userId`        | `int\|string\|null`    | Identifier of the user who made the change (`blame_id`)              |
+| `$blame`         | `array\|null`          | Decoded blame context: `username`, `user_fqdn`, `user_firewall`, `ip`, plus `impersonator` and `via` when set |
+| `$username`      | `string\|null`         | Convenience shortcut for `$blame['username']`                        |
+| `$userFqdn`      | `string\|null`         | Convenience shortcut for `$blame['user_fqdn']`                       |
+| `$userFirewall`  | `string\|null`         | Convenience shortcut for `$blame['user_firewall']`                   |
+| `$ip`            | `string\|null`         | Convenience shortcut for `$blame['ip']`                              |
+| `$impersonator`  | `array\|null`          | User who impersonated the blamed one (`id`, `username`, `fqdn`), from `$blame['impersonator']` |
+| `$via`           | `array\|null`          | Blame context (`type`, `label`, `data`) the change was made in, from `$blame['via']` |
+| `$createdAt`     | `\DateTimeImmutable`   | Timestamp of when the audit entry was created                        |
+| `$entity`        | `string\|null`         | FQCN of the audited entity, set by readers that merge several audit tables (history of a root) |
+| `$rootPath`      | `string\|null`         | Path that led to the root in the history of a root (`null` for the root itself) |
+
+`isDeepDiff($field)` tells whether a field's changeset is a JSON deep diff, and `getSortKey()` gives a total order
+of entries across tables (see [Histories](history.md)).
 
 > [!IMPORTANT]
 > - `$entry->type` is a plain `string` (e.g. `'insert'`, `'update'`), not an enum.
-> - `$entry->extraData` and `$entry->diffs` are **already decoded** — they return `?array`. Never call `json_decode()` on them.
+> - `$entry->extraData` is **already decoded** — it returns `?array`. Never call `json_decode()` on it.
 
 ### 🔍 Reading Diffs
 
-```php
-<?php
+Use `getDiffs()` to access the field-level change data:
 
+```php
 $audits = $reader->createQuery(Post::class, ['object_id' => 42])->execute();
 
 foreach ($audits as $entry) {
-    if ('insert' === $entry->type) {
-        // Insert diffs: field => ['new' => value]
-        foreach ($entry->diffs ?? [] as $field => $change) {
-            if (str_starts_with($field, '@')) {
-                continue;
-            }
-            echo "  Set $field to: " . $change['new'] . "\n";
-        }
-    }
-
-    if ('update' === $entry->type) {
-        // Update diffs: field => ['old' => value, 'new' => value]
-        foreach ($entry->diffs ?? [] as $field => $change) {
-            $old = $change['old'] ?? '(null)';
-            $new = $change['new'] ?? '(null)';
-            echo "  $field: $old → $new\n";
-        }
-    }
-
-    if ('remove' === $entry->type) {
-        // Remove diffs: summary of the deleted entity
-        echo "  Deleted: " . ($entry->diffs['label'] ?? '-') . " (id=" . ($entry->diffs['id'] ?? '-') . ")\n";
+    // getDiffs() returns the 'changes' sub-array for schema v2 entries
+    // and the raw diff array for legacy schema v1 entries
+    foreach ($entry->getDiffs() as $field => $change) {
+        $old = $change['old'] ?? '(null)';
+        $new = $change['new'] ?? '(null)';
+        echo "  $field: $old → $new\n";
     }
 }
 ```
 
-#### Diff Structure by Action Type
+#### Diff Structure (schema version 2)
 
-**`insert`**
+All entry types use the same unified envelope. `getDiffs()` returns the `changes` sub-array directly.
+
+**`insert`** — `old` is always `null`:
 ```json
 {
-  "@source": { "id": 42, "class": "App\\Entity\\Post", "label": "Hello World", "table": "posts" },
-  "title":   { "new": "Hello World" },
-  "content": { "new": "My first post." }
+    "title":   { "old": null, "new": "Hello World" },
+    "content": { "old": null, "new": "My first post." }
 }
 ```
 
-**`update`**
+**`update`**:
 ```json
 {
-  "title": { "old": "Hello World", "new": "Hello auditor!" }
+    "title": { "old": "Hello World", "new": "Hello auditor!" }
 }
 ```
 
-**`remove`**
+**`remove`** — empty by default (the `source` block identifies the deleted entity); with the `full_snapshot_on_remove` option, every audited field and owning-side to-one association, `new` always `null` (except a generated identifier, which only the `source` block holds):
 ```json
 {
-  "id":    42,
-  "class": "App\\Entity\\Post",
-  "label": "Hello auditor!",
-  "table": "posts"
+    "title":   { "old": "Hello auditor!", "new": null },
+    "content": { "old": "My first post.", "new": null },
+    "author":  { "old": { "id": 1, "class": "App\\Entity\\Author", "label": "John", "table": "author" }, "new": null }
 }
 ```
 
-**`associate` / `dissociate`**
+**`associate` / `dissociate`** — no `changes` key; `getDiffs()` returns the full envelope:
 ```json
 {
-  "source": { "id": 1, "class": "App\\Entity\\Post", "label": "Post #1", "table": "posts", "field": "tags" },
-  "target": { "id": 5, "class": "App\\Entity\\Tag", "table": "post_tag" }
+    "source":         { "id": "1", "class": "App\\Entity\\Post", "label": "Post #1", "table": "posts", "field": "tags" },
+    "target":         { "id": "5", "class": "App\\Entity\\Tag",  "label": "php",     "table": "tag",   "field": "posts" },
+    "is_owning_side": true,
+    "join_table":     "post__tag"
+}
+```
+
+#### Source and Target Metadata
+
+For schema v2 entries, use `getDiffSource()` and `getDiffTarget()`:
+
+```php
+// getDiffSource(): entity metadata at the time of the operation (all types)
+$source = $entry->getDiffSource();
+// ['class' => 'App\Entity\Post', 'id' => '42', 'label' => 'Hello World', 'table' => 'posts']
+
+// getDiffTarget(): second entity in associate/dissociate entries
+$target = $entry->getDiffTarget();
+// ['class' => 'App\Entity\Tag', 'field' => 'posts', 'id' => '5', 'label' => 'php', 'table' => 'tag']
+```
+
+Both return `null` for legacy schema v1 entries.
+
+#### Snapshots
+
+`audit:snapshot` records the state of entities that existed before auditing started as `insert` entries
+flagged with `"snapshot": true`. `isSnapshot()` tells them from real insertions (always `false` on schema v1):
+
+```php
+if ('insert' === $entry->type && $entry->isSnapshot()) {
+    // state of the entity at $entry->createdAt, when it was snapshotted: not its creation
+}
+```
+
+#### Legacy Diff Structure (schema version 1)
+
+`getDiffs()` returns the raw decoded array as-is, minus the internal `@source` key that legacy inserts carry
+(`getDiffSource()` returns `null` for legacy entries):
+
+**`insert`** (as returned by `getDiffs()`):
+```json
+{
+    "title":   { "new": "Hello World" },
+    "content": { "new": "My first post." }
+}
+```
+
+**`update`**:
+```json
+{
+    "title": { "old": "Hello World", "new": "Hello auditor!" }
+}
+```
+
+**`remove`**:
+```json
+{
+    "id":    42,
+    "class": "App\\Entity\\Post",
+    "label": "Hello auditor!",
+    "table": "posts"
 }
 ```
 
@@ -7268,9 +8385,12 @@ $entries = $reader->createQuery(App\Entity\Post::class, [
 ])->execute();
 
 foreach ($entries as $entry) {
+    $source = $entry->getDiffSource();
+
     printf(
-        "[%s] Post #%s — by %s (%s) from %s at %s\n",
+        "[%s] %s #%s — by %s (%s) from %s at %s\n",
         $entry->type,
+        $source['class'] ?? App\Entity\Post::class,
         $entry->objectId,
         $entry->username ?? 'anonymous',
         $entry->userId ?? '-',
@@ -7278,13 +8398,11 @@ foreach ($entries as $entry) {
         $entry->createdAt->format('Y-m-d H:i:s')
     );
 
-    foreach ($entry->diffs ?? [] as $field => $change) {
-        if (str_starts_with($field, '@')) {
-            continue;
+    foreach ($entry->getDiffs() as $field => $change) {
+        if (!\is_array($change) || $entry->isDeepDiff($field)) {
+            continue;   // association entries and JSON deep diffs have another shape
         }
-        $old = $change['old'] ?? null;
-        $new = $change['new'] ?? null;
-        printf("  %s: %s → %s\n", $field, $old ?? '(null)', $new ?? '(null)');
+        printf("  %s: %s → %s\n", $field, json_encode($change['old'] ?? null), json_encode($change['new'] ?? null));
     }
 }
 ```
@@ -7313,7 +8431,11 @@ Filters allow you to restrict the results returned by a `Query`. They can be add
 | `DateRangeFilter`  | `DateRangeFilter` | Filter by a date range on a datetime column    |
 | `RangeFilter`      | `RangeFilter`     | Filter by a numeric range                      |
 | `NullFilter`       | `NullFilter`      | Filter for NULL / NOT NULL values              |
-| `JsonFilter`       | `JsonFilter`      | Filter by a value inside the diffs JSON column |
+| `JsonFilter`       | `JsonFilter`      | Filter by a value inside a JSON column, typically `extra_data` |
+| `ChangedFieldFilter` | `ChangedFieldFilter` | Entries whose diff touches a given field (or one of several) |
+| `BlameOriginFilter` | `BlameOriginFilter` | Entries made from some origins: web request, console, worker, system |
+| `ImpersonatorFilter` | `ImpersonatorFilter` | Entries made while a user impersonated another one, optionally by a given impersonator |
+| `RootFilter`       | `RootFilter`      | Entries indexed under an audit root (see [Histories](history.md)) |
 
 All filter classes live under:
 
@@ -7347,14 +8469,18 @@ $query->addFilter(new SimpleFilter(Query::OBJECT_ID, '100'));
 
 #### Supported Columns
 
-| Constant                  | Column             |
-|---------------------------|--------------------|
-| `Query::ID`               | `id`               |
-| `Query::TYPE`             | `type`             |
-| `Query::OBJECT_ID`        | `object_id`        |
-| `Query::DISCRIMINATOR`    | `discriminator`    |
-| `Query::TRANSACTION_HASH` | `transaction_hash` |
-| `Query::USER_ID`          | `blame_id`         |
+| Constant                    | Column           |
+|-----------------------------|------------------|
+| `Query::ID`                 | `id`             |
+| `Query::TYPE`               | `type`           |
+| `Query::OBJECT_ID`          | `object_id`      |
+| `Query::DISCRIMINATOR`      | `discriminator`  |
+| `Query::TRANSACTION_ID`     | `transaction_id` |
+| `Query::USER_ID`            | `blame_id`       |
+
+> [!NOTE]
+> `Query::TRANSACTION_HASH` is kept for backward compatibility and maps to `transaction_id`
+> (same as `Query::TRANSACTION_ID`). Use `Query::TRANSACTION_ID` in new code.
 
 ### 📅 DateRangeFilter
 
@@ -7416,34 +8542,114 @@ use DH\Auditor\Provider\Doctrine\Persistence\Reader\Filter\NullFilter;
 use DH\Auditor\Provider\Doctrine\Persistence\Reader\Query;
 
 // Entries where blame_id IS NULL (anonymous changes)
-$query->addFilter(new NullFilter(Query::USER_ID, isNull: true));
-
-// Entries where blame_id IS NOT NULL (authenticated changes)
-$query->addFilter(new NullFilter(Query::USER_ID, isNull: false));
+$query->addFilter(new NullFilter(Query::USER_ID));
 ```
+
+`NullFilter` only tests `IS NULL`. To keep the entries whose column is not null, use a `RangeFilter` or a
+`SimpleFilter` with the values you expect, or a `JsonFilter` with `IS NOT NULL` on a JSON column.
 
 > [!WARNING]
 > `NullFilter` works on indexed columns such as `blame_id`, `object_id`, `type`, etc. Do not use `Query::JSON` with `NullFilter` — there is no `json` column in the audit table. To find entries where `extra_data IS NULL`, query without a filter and check `$entry->extraData === null`.
 
 ### 🔍 JsonFilter
 
-Filters entries by the presence of a field key within the `diffs` JSON column. Useful to find all audits where a specific field was changed.
+Filters entries on a value inside a JSON column, typically `extra_data`:
+`new JsonFilter($column, $path, $value = null, $operator = '=', $strict = false)`.
 
 #### Usage
 
 ```php
 use DH\Auditor\Provider\Doctrine\Persistence\Reader\Filter\JsonFilter;
-use DH\Auditor\Provider\Doctrine\Persistence\Reader\Query;
 
-// Entries where the 'title' field was part of the diff
-$query->addFilter(new JsonFilter(Query::JSON, 'title'));
+// Entries whose extra_data.department is 'IT'
+$query->addFilter(new JsonFilter('extra_data', 'department', 'IT'));
+
+// Entries whose extra_data has a non-null 'route'
+$query->addFilter(new JsonFilter('extra_data', 'route', null, 'IS NOT NULL'));
 ```
 
+Operators: `=`, `!=`, `<>`, `LIKE`, `NOT LIKE`, `IN`, `NOT IN`, `IS NULL`, `IS NOT NULL`. On a platform without JSON
+support, the filter falls back to `LIKE` unless `$strict` is `true` (it then throws). See
+[Extra Data](../extra-data.md#filtering-by-extra-data) for the platforms and indexing.
+
+> [!TIP]
+> To find the entries that changed a field, use [`ChangedFieldFilter`](#-changedfieldfilter) rather than a
+> `JsonFilter` on `diffs`.
+
+### ✏️ ChangedFieldFilter
+
+Restricts the results to the entries whose diff touches a given field, whatever the operation:
+
+- inserts and updates that changed the field;
+- removes recorded with `full_snapshot_on_remove` enabled (removes without a snapshot carry no field);
+- associations and dissociations recorded on the field, so that filtering on a collection returns the items added to or removed from it.
+
+Both diff formats are read: the schema v2 envelope (including the rows converted by `audit:schema:migrate --convert-diffs`) and the legacy rows (`schema_version = 1`) that were not converted yet.
+
+#### Usage
+
+```php
+use DH\Auditor\Provider\Doctrine\Persistence\Reader\Filter\ChangedFieldFilter;
+
+// Through the createQuery() option
+$query = $reader->createQuery(Post::class, ['changed_field' => 'title']);
+
+// Or directly on the query
+$query->addFilter(new ChangedFieldFilter('tags'));
+
+// Fields of embeddables use their dotted name
+$query->addFilter(new ChangedFieldFilter('address.street'));
+
+// Entries that changed any of several fields
+$query = $reader->createQuery(Post::class, ['changed_field' => ['title', 'body']]);
+```
+
+The field name must be a Doctrine field name (letters, digits and underscores, dotted for embeddables), otherwise an `InvalidArgumentException` is thrown. It is always passed to the database as a bound parameter.
+
 > [!NOTE]
-> `JsonFilter` implements `PlatformAwareFilterInterface`. The exact SQL it generates is platform-specific:
-> - **MySQL / MariaDB** — Uses `JSON_CONTAINS_PATH(diffs, 'one', '$.title')`
-> - **PostgreSQL** — Uses `diffs ? 'title'`
-> - **SQLite** — Uses `json_extract(diffs, '$.title') IS NOT NULL`
+> `ChangedFieldFilter` requires native JSON support (MySQL 5.7+, MariaDB 10.2.3+, PostgreSQL 9.4+, SQLite 3.38+) and an audit table with the schema v2 structure: run `audit:schema:migrate` on legacy tables first. It throws an `InvalidArgumentException` otherwise; check `JsonPlatformHelper::isJsonSearchSupported()` beforehand to offer the filter only where it works.
+
+> [!TIP]
+> The predicate cannot use an index: the database reads the `diffs` of every row left by the other filters. Combine it with `object_id` or a date range on large audit tables.
+
+### 🧭 BlameOriginFilter
+
+Keeps the entries made from some origins (`DH\Auditor\History\BlameOrigin`): `http` (a web request with a
+firewall), `console`, `messenger` (blame context types) or `system` (anything else). Several origins are combined
+with `OR`. It reads the `blame` JSON column, so it needs native JSON support and a schema v2 table.
+
+```php
+use DH\Auditor\History\BlameOrigin;
+use DH\Auditor\Provider\Doctrine\Persistence\Reader\Filter\BlameOriginFilter;
+
+$query->addFilter(new BlameOriginFilter([BlameOrigin::Console, BlameOrigin::Messenger]));
+
+// Or through the createQuery() option
+$query = $reader->createQuery(Post::class, ['blame_origin' => 'http']);
+```
+
+### 🎭 ImpersonatorFilter
+
+Keeps the entries made while a user impersonated another one (switch user): those whose `blame` JSON has an
+`impersonator` key, written when the user provider returns a user with an impersonator. Given an identifier, it
+keeps those of that impersonator only. It reads the `blame` JSON column, so it needs native JSON support and a
+schema v2 table.
+
+```php
+use DH\Auditor\Provider\Doctrine\Persistence\Reader\Filter\ImpersonatorFilter;
+
+$query->addFilter(new ImpersonatorFilter());     // made by impersonating someone
+$query->addFilter(new ImpersonatorFilter('1'));  // made by impersonator #1
+```
+
+Entries written before the `impersonator` key existed are not found: auditor-bundle before 8.0 appended the
+impersonator to the username instead (`alice[impersonator admin]`).
+
+### 🌳 RootFilter
+
+Keeps the entries indexed under an audit root, optionally through some paths only. It reads the `audit_root` index
+table: use it through `Reader::createRootQuery()`, which sets the index table and merges the tables of every entity
+(see [Histories](history.md)).
 
 ### 🔗 Combining Filters
 
@@ -7490,6 +8696,210 @@ $entries = $query->execute();
 
 - 🔍 [Querying Audits](index.md)
 - 📦 [Entry Reference](entry.md)
+
+---
+
+## Histories (Querying)
+
+> **Read the history of a business object across several audit tables, and the last change of each field**
+
+The building blocks (`#[AuditRoot]`, `HistoryGrouper`, `ChangeExtractor`, `BlameOrigin`) are described in the
+[auditor documentation](https://damienharper.github.io/auditor-docs/auditor/history). This page covers what the
+Doctrine provider adds: the audit root index, the history of a root, and field-level queries.
+
+### 🌳 Declaring roots
+
+With the `#[AuditRoot]` attribute, or the `roots` entity option (both are merged):
+
+```php
+use DH\Auditor\Attribute\Auditable;
+use DH\Auditor\Attribute\AuditRoot;
+
+#[ORM\Entity]
+#[Auditable]
+#[AuditRoot('property')]
+#[AuditRoot('visit.property')]
+class VisitReport { /* … */ }
+```
+
+```php
+$configuration = new Configuration([
+    'entities' => [
+        App\Entity\VisitReport::class => ['roots' => ['property', 'visit.property']],
+    ],
+]);
+```
+
+A path is a list of **single-valued** association properties (`ManyToOne`, `OneToOne`, owning or inverse side)
+separated by dots. A collection in a path is an error, raised at the first flush of the entity. Roots declared on a
+parent class are inherited.
+
+For roots that a path cannot express (a polymorphic owner stored as a class and an id, a root picked by business
+rules), give the provider a `root_resolver`: a callable that receives an audited entity and returns its extra roots,
+keyed by a name of your choice, written as the root path of the index rows (null roots are skipped):
+
+```php
+$configuration->setRootResolver(static fn (object $entity): array => match (true) {
+    $entity instanceof Attachment => ['subject' => $entity->getSubject()],
+    default => [],
+});
+```
+
+### 🗂️ The audit root index
+
+When at least one entity has roots, `audit:schema:update` creates one more table per storage, `audit_root` (with the
+`table_prefix`), which indexes each audit entry under its roots:
+
+| Column | Content |
+|---|---|
+| `root_class` | FQCN of the root, the root class of its inheritance hierarchy |
+| `root_id` | identifier of the root |
+| `root_path` | path (or resolver key) that led to the root |
+| `audit_table`, `object_id`, `transaction_id` | the audit entry |
+| `created_at` | date of the audit entry |
+
+Rows are written in the same database transaction as the audit entries (batched with them when `batch_size` is set).
+The roots are resolved during the flush:
+
+- when the first association of a path changes, the entry is indexed under the **old and the new** root: moving a
+  visit report to another property shows in both histories;
+- the owner of an inverse `OneToOne` not set in memory is looked up among the entities being inserted or updated;
+- removed entities are indexed while they still know their roots, so their history stays in the history of the root.
+
+#### Rebuilding the index
+
+```bash
+php bin/console audit:roots:rebuild                     # every entity with roots
+php bin/console audit:roots:rebuild --entity='App\Entity\VisitReport' --dry-run
+```
+
+The command replays the diffs of the existing schema v2 entries: the first segment of a path is read from the diffs
+of the entry's entity, the next ones from the audit history of the entities the path goes through, as they were when
+the entry was written. It writes the missing rows of the paths declared with `#[AuditRoot]` or `roots`, and never
+deletes a row: it can be run again safely, and rows you write yourself (for entries whose diffs do not hold the
+association, such as imported or legacy entries) are kept. Roots returned by a `root_resolver` cannot be replayed.
+Run it after declaring a new root, or after migrating audit tables to schema v2
+(`audit:schema:migrate --force --convert-all`): entries in schema v1 or without a transaction id
+are skipped and counted. The command fails when an `--entity` is not audited, when it already runs, or when the diffs
+of an entry cannot be read; in the last case the rows of the other entries are still written. Rows that no longer match the configuration (a removed path) are not cleaned up: delete
+them with SQL if needed.
+
+Index rows go with their entries: the retention pruning (`audit:clean` and the scheduled retention) deletes
+the rows whose entry it deleted, and a rolled-back transaction deletes its rows from a remote storage along with its
+entries.
+
+### 📜 The history of a root
+
+```php
+use DH\Auditor\Provider\Doctrine\Persistence\Reader\Reader;
+
+$reader = new Reader($provider);
+$query = $reader->createRootQuery(Property::class, 42);
+
+$page = $query->fetch(20);              // RootPage
+foreach ($page->group() as $item) {     // list<HistoryItem>, one per transaction
+    // $item->username, $item->origin, $item->getChanges()…
+}
+
+$next = $query->fetch(20, after: $page->lastCursor);
+$newer = $query->fetch(20, since: $page->firstCursor);   // entries written since the page was read
+```
+
+The query reads the entries of the root itself and those indexed under it, in every audit table concerned, and
+merges them: most recent first, then by transaction id, entity and id. Each `Entry` has `$entry->entity` (FQCN) and
+`$entry->rootPath` (null for the root itself).
+
+Pagination uses opaque cursors (keyset pagination), so a page never shifts when entries are written in the
+meantime. `fetch()` extends a page past its size until the transaction of its last entry is complete, so that an
+action is never split between two pages: pass the `HistoryGrouper` (or key callable) you display the page with to
+keep its groups whole, or `false` to cut the page at its size exactly. `iterate()` yields every entry, keyed by
+cursor, reading each table by batches; `count()` counts them.
+
+`fetchTransactions()` counts a page in transactions instead: every page but the last holds exactly that many actions,
+each one whole, whatever its number of entries. `countTransactions()` counts the transactions of the history, once
+each even when they wrote in several audit tables (twice when these tables are on two connections).
+
+```php
+$page = $query->fetchTransactions(20);                        // 20 actions
+$next = $query->fetchTransactions(20, after: $page->lastCursor);
+$total = $query->countTransactions();
+```
+
+A cursor that is not one (edited by hand in a query string, for instance) makes `fetch()` and `iterate()` throw an
+`InvalidArgumentException`. `RootQuery::isCursor($cursor)` tells it beforehand, to show the first page instead:
+
+```php
+$after = $request->query->getString('after');
+$page = $query->fetch(20, after: RootQuery::isCursor($after) ? $after : null);
+```
+
+#### Options
+
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `include` | `?list<string>` | `null` | FQCNs of the entities to read (all by default) |
+| `paths` | `list<string>` | `[]` | Root paths to keep (all by default). Leaves the entries of the root itself out |
+| `self` | `bool` | `true` | Read the entries of the root itself |
+| `type` | `string\|array` | `null` | Operation types (`insert`, `update`…) |
+| `blame_id` | `int\|string\|array` | `null` | Authors |
+| `changed_field` | `string\|list<string>` | `null` | Entries that changed one of the fields (native JSON needed) |
+| `blame_origin` | `string\|BlameOrigin\|array` | `null` | `http`, `console`, `messenger`, `system` (native JSON needed) |
+
+An entity in `include` that is not audited, or a path in `paths` that no entity declares (when no `root_resolver` is
+set), throws an `InvalidArgumentException`, as does a root class that no auditing entity manager maps.
+
+Only the `view` role of the **root** is checked: reading the history of a root gives access to the entries of the
+entities indexed under it. Use the `read_scope` option to restrict them further.
+
+### 🔎 Field-level queries
+
+```php
+// last change of each field, or the creation (or snapshot) for a field never changed since
+$changes = $reader->getLastChanges(Property::class, 42, ['price', 'status']);
+$changes['price']?->getValue('price');  // value of the field: after the change, or at the creation (deep diff tree for a JSON field)
+$changes['price']?->getLabel('price');  // its label (#[DiffLabel], association), if any
+$changes['price']?->entry->username;    // who, when: the Entry of the change
+$changes['price']?->entry->createdAt;
+
+// entries that changed a field, of one object or of all objects of a class
+$entries = $reader->getFieldHistory(Property::class, 42, 'price')->execute();
+$entries = $reader->getFieldHistory(Property::class, null, 'price')->execute();
+```
+
+`getLastChanges()` returns `array<string, ?Change>` (null when nothing was audited). For a field never changed, the
+change is the creation of the object, which holds the requested fields: read the value with `getValue($field)` rather
+than `new`. For a JSON field changed since, `getValue()` returns the deep diff tree of the last change, not the whole
+value (`ChangeKind::Json`). It reads the entries that
+changed one of the fields when the platform has native JSON support, and scans the history of the object otherwise.
+`getFieldHistory()` returns a `Query` with a `ChangedFieldFilter`, which needs native JSON support.
+
+The `changed_field` option of `createQuery()` also takes a list of fields (entries that changed any of them), and
+`blame_origin` keeps the entries of some origins (`BlameOriginFilter`).
+
+### 🧱 Read scope
+
+`read_scope` is a callable applied to every query the reader creates, including each table of a root query. It
+receives the query and the FQCN of the entity it reads, and can add filters, for instance to keep the entries of the
+current tenant (a `RootFilter` built by hand takes the root class of the inheritance hierarchy):
+
+```php
+$configuration->setReadScope(static function (Query $query, string $entity) use ($tenant): void {
+    $query->addFilter(new JsonFilter('extra_data', 'tenant', $tenant->getId()));
+});
+```
+
+### 🏷️ Entity labels
+
+`entity_label_resolver` is a callable (see `EntityLabelResolverInterface`) that builds the label of an entity
+written in the `source` and `target` blocks of the diffs, and in association values. Return null to keep the
+default label (the string representation of the entity, otherwise `Class#id`); a `Stringable` is accepted. It runs
+during the flush and must not flush: an exception it throws aborts the flush and rolls the transaction back.
+
+### Related
+
+- [Querying](index.md)
+- [Filters](filters.md)
+- [Configuration](../providers/doctrine/configuration.md)
 
 ---
 
@@ -7553,9 +8963,12 @@ $query = $reader->createQuery(App\Entity\Post::class, [
 | `type`             | `string\|array`         | `null`  | Filter by action type(s)                  |
 | `blame_id`         | `int\|string\|array`    | `null`  | Filter by user ID(s) who made changes     |
 | `user_id`          | `int\|string\|array`    | `null`  | Alias for `blame_id`                      |
-| `transaction_hash` | `string\|array`         | `null`  | Filter by transaction hash(es)            |
+| `transaction_id`   | `string\|array`         | `null`  | Filter by transaction ID(s) (ULID)        |
+| `changed_field`    | `string\|list<string>`  | `null`  | Entries whose diff touches this field, or one of these fields (see [ChangedFieldFilter](filters.md#-changedfieldfilter)) |
+| `blame_origin`     | `string\|BlameOrigin\|array` | `null` | Entries made from these origins (see [BlameOriginFilter](filters.md#-blameoriginfilter)) |
 | `page`             | `int\|null`             | `1`     | Page number (1-based)                     |
 | `page_size`        | `int\|null`             | `50`    | Number of entries per page                |
+| `strict`           | `bool`                  | `true`  | With single table inheritance, keep only the entries of the queried class (filter on the discriminator) |
 
 ### 📄 Executing a Query
 
@@ -7576,7 +8989,7 @@ $query = $reader->createQuery(App\Entity\Post::class);
 $result = $reader->paginate($query, page: 2, pageSize: 25);
 
 // $result contains:
-// 'results'         → array<Entry>
+// 'results'         → \ArrayIterator<int|string, Entry>
 // 'currentPage'     → int
 // 'hasPreviousPage' → bool
 // 'hasNextPage'     → bool
@@ -7592,15 +9005,84 @@ foreach ($result['results'] as $entry) {
 }
 ```
 
-### 🔎 Querying by Transaction Hash
+#### Pages of transactions
 
-Retrieve all audit entries related to the same flush batch across all configured entities:
+A transaction (an action: the flushes of one database transaction share its id) often writes several entries, so pages of entries cut actions and hold a varying
+number of them. `transactions()` pages the transactions the query reads instead, with its filters (its order and limit
+do not apply), most recent first:
+
+```php
+use DH\Auditor\Provider\Doctrine\Persistence\Reader\Filter\SimpleFilter;
+use DH\Auditor\Provider\Doctrine\Persistence\Reader\Query;
+
+$query = $reader->createQuery(App\Entity\Post::class, ['page_size' => null]);
+
+$total = $query->countTransactions();
+$transactions = $query->transactions(limit: 25, offset: 25);   // list<TransactionSummary>, page 2
+
+// then the entries of these transactions, with the same filters, most recent first
+$ids = array_values(array_filter(array_map(static fn ($transaction) => $transaction->transactionId, $transactions)));
+$entries = $query->transactionEntries($ids);                    // or transactionEntries($ids, limit: 1000)
+
+// an entry without transaction id is a transaction of its own
+foreach ($transactions as $transaction) {
+    if (null === $transaction->transactionId && $transaction->table === $query->getTable()) {
+        $entries = [...$entries, ...(clone $query)->addFilter(new SimpleFilter(Query::ID, (string) $transaction->entryId))->execute()];
+    }
+}
+```
+
+A `TransactionSummary` tells its `transactionId`, the date of its most recent entry (`createdAt`) and its number of
+`entries`. Transactions are ordered by that date, then by transaction id (both descending). An entry written without
+transaction id is a transaction of its own: `transactionId` is null, `entryId` and `table` identify it. A table not
+migrated to schema v2 is read through its `transaction_hash` column; in a table being migrated (`audit:schema:migrate`
+without `--convert-transaction-hash`), a row not converted yet stands for its transaction by its hash, as
+`$entry->transactionId` does, and `transactionEntries()` reads it too.
+
+`Query::transactionsOf($queries, $limit, $offset)` and `Query::countTransactionsOf($queries)` do the same across
+several audit tables (one query per table): a transaction that wrote in several tables is one transaction. The tables
+of one connection are read in one statement; across connections, each one is read for `$offset + $limit`
+transactions. A transaction stored on two connections is listed once but counted twice (the last page may come out
+short), and its number of `entries` only counts the part read on each connection.
+
+When the transactions are read on one audit table (a query alone, or the only table of its connection), a page that
+ends within the first 10,000 transactions walks the entries most recent first, on the `created_at` index, until it has
+found them. Measured with 3,000,000 entries in 750,000 transactions, by pages of 50: page 1 in 2 to 6 ms, page 100 in
+40 to 100 ms, instead of 1.3 to 25 s. A deep page with a very selective filter that the date order does not serve (one
+user, anonymous entries) can be slower than grouping: up to 1.4 s instead of 75 ms on PostgreSQL. The other pages group
+the entries the filters keep, in the database:
+- deeper pages;
+- a page whose walk reads, or would read, more than 50,000 entries (very large transactions);
+- a table being migrated;
+- several tables of one connection, read in one statement.
+
+On a large table without a selective filter, such a page costs a pass over the table, and so does
+`countTransactions()`.
+
+`countTransactionsByDay()` counts the transactions the query reads by day of their entries, for an activity graph:
+
+```php
+use DH\Auditor\Provider\Doctrine\Persistence\Reader\Filter\DateRangeFilter;
+
+$query = $reader->createQuery(App\Entity\Post::class, ['page_size' => null])
+    ->addFilter(new DateRangeFilter(Query::CREATED_AT, new DateTimeImmutable('-29 days midnight')));
+
+$query->countTransactionsByDay();   // ['2026-11-24' => 13, '2026-11-25' => 4]
+```
+
+Days are those of the `created_at` column as stored (`DATE(created_at)`), in ascending order; days without any
+transaction are left out. A transaction whose entries span midnight counts on each of its days, as a filter on either
+day finds it.
+
+### 🔎 Querying by Transaction
+
+Retrieve all audit entries related to the same database transaction across all configured entities:
 
 ```php
 <?php
 
 // Get all entries that belong to the same transaction
-$byEntity = $reader->getAuditsByTransactionHash('abc123def456...');
+$byEntity = $reader->getAuditsByTransactionId('01JH8Z6Q3C2V5W7X9Y0A1B2C3D');
 
 // Returns: ['App\Entity\Post' => [Entry, ...], 'App\Entity\Comment' => [Entry, ...]]
 foreach ($byEntity as $entityClass => $entries) {
@@ -7612,7 +9094,9 @@ foreach ($byEntity as $entityClass => $entries) {
 ```
 
 > [!NOTE]
-> `getAuditsByTransactionHash()` silently skips entities for which the current user does not have the `view` role.
+> `getAuditsByTransactionId()` silently skips entities for which the current user does not have the `view` role.
+> `getAuditsByTransactionHash()` is deprecated: it forwards to `getAuditsByTransactionId()`, which also finds the
+> rows of tables not migrated yet by their legacy `transaction_hash`.
 
 ### 🔍 Filtering Examples
 
@@ -7642,10 +9126,10 @@ $query = $reader->createQuery(Post::class, ['type' => ['insert', 'update']]);
 $query = $reader->createQuery(Post::class, ['blame_id' => 'user-123']);
 ```
 
-#### Filter by Transaction Hash
+#### Filter by Transaction ID
 
 ```php
-$query = $reader->createQuery(Post::class, ['transaction_hash' => 'abc123...']);
+$query = $reader->createQuery(Post::class, ['transaction_id' => '01HXYZ1234567890ABCDEFGHIJ']);
 ```
 
 #### Advanced Filtering
@@ -7681,20 +9165,20 @@ foreach ($entries as $entry) {
     $entry->id;               // int - audit entry ID
     $entry->type;             // string - 'insert', 'update', 'remove', 'associate', 'dissociate'
     $entry->objectId;         // string - entity primary key
-    $entry->transactionHash;  // string|null
-    $entry->diffs;            // array|null - already decoded from JSON
+    $entry->transactionId;    // string|null - ULID
     $entry->extraData;        // array|null - already decoded from JSON
-    $entry->userId;           // string|null - blame_id
-    $entry->username;         // string|null - blame_user
-    $entry->userFqdn;         // string|null - blame_user_fqdn
-    $entry->userFirewall;     // string|null - blame_user_firewall
-    $entry->ip;               // string|null
+    $entry->userId;           // int|string|null - blame_id
+    $entry->username;         // string|null - from blame JSON
+    $entry->userFqdn;         // string|null - from blame JSON
+    $entry->userFirewall;     // string|null - from blame JSON
+    $entry->ip;               // string|null - from blame JSON
     $entry->createdAt;        // \DateTimeImmutable
 }
 ```
 
 > [!IMPORTANT]
-> `$entry->extraData` and `$entry->diffs` are **already decoded** — they return `?array`, not a JSON string. Do not call `json_decode()` on them.
+> `$entry->extraData` is **already decoded**: it returns `?array`, not a JSON string. Do not call `json_decode()`
+> on it. Read the diffs with `$entry->getDiffs()`.
 
 See [Entry Reference](entry.md) for a complete description.
 
@@ -7717,8 +9201,758 @@ try {
 ### Next Steps
 
 - 🔧 [Filters Reference](filters.md)
+- 🌳 [Histories](history.md): the history of a root across tables, last change of each field
 - 📦 [Entry Reference](entry.md)
 - 💡 [Extra Data](../extra-data.md)
+
+---
+
+## Upgrade Guide (Auditor-doctrine-provider)
+
+> **Navigate between major versions of auditor-doctrine-provider**
+
+This section contains upgrade guides for major versions.
+
+### 📚 Upgrade Guides
+
+- ⬆️ [Upgrading to 2.0](v2.md) - From 1.x to 2.0
+
+### 📋 Version Support
+
+| Version | Status                | Support Until |
+|:--------|:----------------------|:--------------|
+| 2.x     | Active development 🚀 | Current       |
+| 1.x     | Bug and security fixes | Until next major |
+
+### ✅ General Upgrade Process
+
+> [!IMPORTANT]
+> Always follow these steps when upgrading:
+
+1. 📖 **Read the upgrade guide** for your target version
+2. 📦 **Update dependencies** in `composer.json`
+3. 🔄 **Run Composer update**
+4. 🗄️ **Run schema migration** (if upgrading from 1.x)
+5. ✅ **Run tests**
+
+> [!CAUTION]
+> Upgrading from 1.x migrates every audit table and drops the legacy columns: back up the audit tables
+> and follow the [step-by-step procedure](v2.md#-upgrade-steps), in its order.
+
+```bash
+# Update dependencies
+composer require damienharper/auditor-doctrine-provider:^2.0
+
+# Migrate existing audit tables (after a backup, with audit writes stopped)
+bin/console audit:schema:migrate --force --convert-all
+
+# Add the indexes of the v2 schema
+bin/console audit:schema:update --force
+
+# Run tests
+bin/phpunit
+```
+
+---
+
+## Upgrading to 2.0
+
+> **Migrate from auditor-doctrine-provider 1.x to 2.0**
+
+This guide covers upgrading from auditor-doctrine-provider 1.x to 2.0.
+
+### Overview
+
+auditor-doctrine-provider 2.0 introduces **schema version 2**: a revised audit table format
+with a unified `blame` JSON column, a ULID-based `transaction_id`, and a richer `diffs`
+envelope. `audit:schema:migrate` converts the existing audit entries to the new format: the
+legacy columns are read during the migration, then dropped. There is no command to go back to
+the v1 schema: **back up your audit tables before migrating** (see below).
+
+### ⚠️ Who is affected?
+
+| Scenario | Impact |
+|----------|--------|
+| Using `damienharper/auditor-bundle` 8.x | ✅ Bundle handles wiring automatically |
+| Using `auditor-doctrine-provider` standalone | ⚠️ Must migrate audit tables manually |
+| Custom providers calling `persist(LifecycleEvent $event)` | ⚠️ Payload keys have changed |
+| Code reading `$entry->transactionHash` | ⚠️ Property removed — use `$entry->transactionId` |
+| Code importing `DH\Auditor\Provider\Doctrine\Auditing\Attribute\{Auditable,Ignore,Security}` | ⚠️ Aliases removed — import `DH\Auditor\Attribute\*` |
+| Custom Doctrine types implementing `NeedsConversionToAuditableType` | ⚠️ Implement `DH\Auditor\Provider\Doctrine\Transaction\NeedsConversionToAuditableType` |
+| `LifecycleEvent` listeners rewriting `diffs` | ⚠️ Write under `changes` — see [Listeners that rewrite `diffs`](#listeners-that-rewrite-diffs) |
+| Audit tables created by Doctrine migrations | ⚠️ A replayable migration is needed — see [Audit tables managed by Doctrine Migrations](#audit-tables-managed-by-doctrine-migrations) |
+| Raw SQL on the audit tables | ⚠️ Columns and `diffs` paths changed — see step 10 |
+| Code writing audit rows itself (imports) | ⚠️ See [Writing audit rows yourself](../providers/doctrine/schema.md#writing-audit-rows-yourself) |
+
+### 🚀 Upgrade Steps
+
+Migrating to 2.0 converts every existing audit table: plan it like a database migration, with a backup,
+a rehearsal on a copy of your data and a maintenance window. The steps below are in the order to follow.
+
+#### 1️⃣ Check the prerequisites
+
+| Requirement | 2.0 |
+|---|---|
+| PHP | 8.4 or later |
+| Symfony components | 8.1 or later |
+| `doctrine/dbal` | 4.6 or later |
+| `doctrine/orm` | 3.7 or later |
+| `damienharper/auditor` | 5.0 (requires `symfony/uid`, installed with it) |
+| `damienharper/auditor-bundle` (Symfony apps) | 8.0 |
+
+This guide starts from the latest 1.x release. From an older version, upgrade to the latest 1.x first and run
+`audit:schema:update --force` there, so that the audit tables match the last v1 schema before you migrate.
+
+#### 2️⃣ Back up your audit tables
+
+> [!CAUTION]
+> **There is no rollback.** Once the conversions are done, `audit:schema:migrate` drops the legacy columns
+> (`transaction_hash`, `blame_user`, `blame_user_fqdn`, `blame_user_firewall`, `ip`) and the indexes that cover
+> them. A backup taken just before the migration is the only way back to 1.x and to the v1 data.
+
+Back up every audit table (`*_audit` by default, or your `table_prefix` / `table_suffix`), on every connection that
+stores audits when you use a `storage_mapper`. For example:
+
+```bash
+# MySQL / MariaDB
+mysqldump --single-transaction my_database post_audit comment_audit > audit-backup.sql
+
+# PostgreSQL
+pg_dump --table='*_audit' my_database > audit-backup.sql
+```
+
+#### 3️⃣ Rehearse on a copy and estimate the duration
+
+Restore a recent copy of your production database on a staging environment, install 2.0 there (step 5) and run
+the whole procedure. It tells you how long your maintenance window must be, and that the migration goes through
+on your data.
+
+The migration rewrites every audit row, so its duration grows linearly with the size of the audit tables. As an
+order of magnitude, **count 3 to 5 minutes per million audit rows** (a 1,000,000-row table took 4 min 59 s on
+MySQL 8.0 and 3 min 13 s on PostgreSQL 15 on a developer laptop, see
+[Performance](../providers/doctrine/performance.md#-schema-v2-migration)), plus the time `audit:schema:update`
+takes to apply the rest of the schema (step 7).
+
+To measure it on your own data without running the whole migration, convert a sample with `--limit`, **on the
+copy**:
+
+```bash
+bin/console audit:schema:migrate --force --convert-all --limit=10000
+```
+
+`--limit=N` (with a conversion option, not with `--drop-transaction-hash`) converts `N` transactions
+(`--convert-transaction-hash`) or `N` rows (`--convert-diffs`), prints an
+estimate of the remaining time, and keeps the legacy columns, so that a later run resumes where it stopped.
+
+> [!WARNING]
+> Do not run `--limit` on production while 1.x still writes to it: it already adds the v2 columns and converts
+> rows. Rehearse and estimate on a copy.
+
+Also check the free disk space: rows are rewritten in place, so the audit tables grow during the migration, up to
+4 times their initial size on PostgreSQL in the measurement above, until the space is reused or reclaimed.
+
+#### 4️⃣ Stop writing audits during the migration
+
+1.x writes v1 rows and 2.0 writes v2 rows: neither can write into a table that is half-way between the two. With
+2.0, an audit entry that cannot be written makes the flush fail and the transaction roll back.
+
+So, for the duration of the migration, stop everything that modifies audited entities: put the application in
+maintenance mode, and stop the Messenger workers, cron jobs and scheduled tasks (including audit retention or
+`audit:clean`). Reading the audits is safe at any time: the `Reader` handles migrated and non-migrated tables.
+Histories across tables only index converted entries: run `audit:roots:rebuild` once the migration is complete (it
+warns about the entries it had to skip).
+
+#### 5️⃣ Update the packages
+
+```bash
+# Symfony application
+composer require damienharper/auditor-bundle:^8.0
+# This pulls in damienharper/auditor ^5.0 and damienharper/auditor-doctrine-provider ^2.0.
+
+# Without the bundle
+composer require damienharper/auditor:^5.0 damienharper/auditor-doctrine-provider:^2.0
+```
+
+Then clear the cache (`bin/console cache:clear`) and deploy the code, keeping the application in maintenance mode.
+
+> [!CAUTION]
+> **Do not let Doctrine change the audit tables before the migration.** The provider declares the v2 audit tables
+> in the Doctrine schema, so on v1 tables `doctrine:schema:update --force` and a migration generated by
+> `doctrine:migrations:diff` drop the legacy columns **without converting their data**. Run
+> `audit:schema:migrate` first; if your deployment runs `doctrine:migrations:migrate` automatically, make sure no
+> pending migration touches the audit tables, and generate new migrations only after step 7.
+> `audit:schema:update` refuses to run while an audit table still has the v1 schema.
+> If your audit tables are created by Doctrine migrations, follow
+> [Audit tables managed by Doctrine Migrations](#audit-tables-managed-by-doctrine-migrations) instead: it replaces
+> this advice.
+
+##### Audit tables managed by Doctrine Migrations
+
+When your audit tables are created by Doctrine migrations (generated by `doctrine:migrations:diff`, since the
+provider declares them in the Doctrine schema), `audit:schema:migrate` is not enough:
+
+- it only migrates the databases it runs on: every database built by running the migrations from scratch (test
+  databases, CI, new environments) still ends with v1 audit tables until a migration brings them to v2;
+- the migration that `doctrine:migrations:diff` generates for that drops the legacy columns without converting their
+  data, so it must not run on a database that holds audit entries;
+- a deployment that runs `doctrine:migrations:migrate` when it starts runs it before you can run
+  `audit:schema:migrate`.
+
+Write instead one migration whose every statement can be replayed: it brings an empty v1 table to v2, completes a
+table already migrated by `audit:schema:migrate` as `audit:schema:update` would, and changes nothing on a table
+already at v2. It stops while a table still has `transaction_hash` and rows, whose data only `audit:schema:migrate`
+can convert. Example for PostgreSQL, with the default index names
+(`<columns>_<md5 of the audit table name, as written in TABLES>_idx`):
+
+```php
+namespace DoctrineMigrations;
+
+use Doctrine\DBAL\Schema\Schema;
+use Doctrine\Migrations\AbstractMigration;
+
+final class Version20261201000000 extends AbstractMigration
+{
+    // Every audit table, with your table_prefix / table_suffix. Unqualified names of tables in the current schema
+    // (the first of search_path) only: the v1 check below does not see the other schemas.
+    private const array TABLES = ['author_audit', 'post_audit'];
+
+    public function up(Schema $schema): void
+    {
+        foreach (self::TABLES as $table) {
+            $isV1 = (bool) $this->connection->fetchOne(
+                "SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = ? AND column_name = 'transaction_hash'",
+                [$table],
+            );
+            $this->abortIf(
+                $isV1 && (bool) $this->connection->fetchOne(sprintf('SELECT EXISTS (SELECT 1 FROM %s)', $table)),
+                sprintf('%s holds v1 entries: run bin/console audit:schema:migrate --force --convert-all first.', $table),
+            );
+
+            $hash = md5($table);
+            foreach (['transaction_hash', 'blame_id', 'object_id', 'discriminator'] as $index) {
+                $this->addSql(sprintf('DROP INDEX IF EXISTS %s_%s_idx', $index, $hash));
+            }
+
+            $this->addSql(sprintf(
+                'ALTER TABLE %s'
+                .' ADD COLUMN IF NOT EXISTS schema_version SMALLINT DEFAULT 2 NOT NULL,'
+                .' ADD COLUMN IF NOT EXISTS transaction_id CHAR(26) DEFAULT NULL,'
+                .' ADD COLUMN IF NOT EXISTS blame JSONB DEFAULT NULL,'
+                .' DROP COLUMN IF EXISTS transaction_hash,'
+                .' DROP COLUMN IF EXISTS blame_user,'
+                .' DROP COLUMN IF EXISTS blame_user_fqdn,'
+                .' DROP COLUMN IF EXISTS blame_user_firewall,'
+                .' DROP COLUMN IF EXISTS ip,'
+                .' ALTER schema_version SET DEFAULT 2,'
+                .' ALTER id TYPE BIGINT,'
+                .' ALTER type TYPE VARCHAR(11)',
+                $table,
+            ));
+            $this->addSql(sprintf('CREATE INDEX IF NOT EXISTS transaction_id_%s_idx ON %s (transaction_id)', $hash, $table));
+            $this->addSql(sprintf('CREATE INDEX IF NOT EXISTS object_id_type_%s_idx ON %s (object_id, type)', $hash, $table));
+            $this->addSql(sprintf('CREATE INDEX IF NOT EXISTS blame_id_created_at_%s_idx ON %s (blame_id, created_at)', $hash, $table));
+        }
+    }
+
+    public function down(Schema $schema): void
+    {
+        $this->throwIrreversibleMigrationException('The v1 audit schema can only be restored from a backup.');
+    }
+}
+```
+
+On PostgreSQL, the `(blame_user, blame_id)` index of 1.x goes away with the `blame_user` column. When at least one
+entity declares an [`#[AuditRoot]`](../querying/history.md), generate the creation of the `audit_root` table as
+usual: it is a new, empty table.
+
+On MySQL, the same migration cannot rely on `IF EXISTS`: MySQL supports neither `ADD COLUMN IF NOT EXISTS`,
+`DROP COLUMN IF EXISTS` nor `DROP INDEX IF EXISTS` (MariaDB does, but a migration that must also run on MySQL cannot
+rely on it). Introspect each table first (`$this->connection->createSchemaManager()->introspectTable($table)`) and
+add a statement only when `hasColumn()` or `hasIndex()` says it is needed; `blame` is a `JSON` column there. Drop the
+`blame_user_blame_id_<md5>_idx` index explicitly before the `blame_user` column: MySQL and MariaDB keep an index on
+the remaining columns of a multi-column index, under its legacy name. Compare the result with
+`audit:schema:update --dump-sql` on a copy.
+
+Then deploy in this order:
+
+1. Put the application in maintenance mode and stop writing audits (step 4).
+2. Deploy 2.0 with this migration, **without** running `doctrine:migrations:migrate` at start for this deployment:
+   the migration would stop on the populated v1 tables, and the deployment with it. The other pending migrations of
+   the release then run at item 4: make sure the code does not need them before.
+3. Run `audit:schema:migrate --force --convert-all` (step 6).
+4. Run `doctrine:migrations:migrate`. On the migrated tables, it does what `audit:schema:update` does in step 7.
+5. Check and reopen (step 8): `audit:schema:update --dump-sql` has nothing left to do, and
+   `doctrine:migrations:diff` generates nothing more for the audit tables. With `#[AuditRoot]`, run
+   `audit:roots:rebuild` first (step 4).
+
+Test and CI databases built from the migrations have empty audit tables: the migration brings them to v2 on its own.
+
+#### 6️⃣ Migrate the audit tables
+
+```bash
+# Preview the DDL (no writes)
+bin/console audit:schema:migrate --dump-sql --convert-all
+
+# Run the migration: new columns, transaction hash conversion, diffs conversion, then legacy columns dropped
+bin/console audit:schema:migrate --force --convert-all
+```
+
+Always pass `--convert-all` (or both `--convert-transaction-hash` and `--convert-diffs`):
+
+| Command | Result |
+|---|---|
+| `--force --convert-all` | **Recommended.** Every row reaches `schema_version` 2, transactions stay grouped (one ULID per legacy `transaction_hash`, across all tables), and the legacy columns are dropped. |
+| `--force --convert-transaction-hash` | Transactions stay grouped; rows keep their legacy diffs (`schema_version` 1, still readable). Run `--convert-diffs` later to finish. |
+| `--force --convert-diffs` | Diffs are converted; `transaction_hash` is **kept** so that `--convert-transaction-hash` can run later. The table stays a legacy table until then. |
+| `--force` alone | New columns added, blame migrated; `transaction_hash` is **kept** and the diffs stay at `schema_version` 1. The table stays a legacy table until the conversions run. |
+| `--force --drop-transaction-hash` | ⚠️ `transaction_hash` is **dropped without conversion**: legacy rows lose their transaction grouping for good. Only on request: this option cannot be combined with `--convert-transaction-hash` or `--convert-all`. |
+
+The command migrates the audit tables of the entities currently configured as auditable, each on the storage its
+entity is mapped to. It holds a lock: a second run started meanwhile does nothing and exits with an error. The lock is
+local to the host: run the migration from a single host, not from every replica or pod of a deployment.
+
+A row whose diffs cannot be converted without losing or misreading them (not valid JSON, not an object, a field entry
+that is not an object, an unknown type) is left as it is, at `schema_version` 1, and listed at the end of the run, which then exits with an error. It
+stays readable as a legacy entry; fix or delete it, then run the command again.
+
+On large datasets, the conversions can run in several commands (`--convert-transaction-hash`, then
+`--convert-diffs`), or in chunks with `--limit` during the maintenance window: each run resumes where the previous
+one stopped, and the legacy columns are only dropped by a run without `--limit`.
+
+#### 7️⃣ Apply the rest of the v2 schema
+
+```bash
+bin/console audit:schema:update --dump-sql
+bin/console audit:schema:update --force
+```
+
+This adds the indexes of the v2 schema (`transaction_id`, `(object_id, type)`, `(blame_id, created_at)`), drops the
+`object_id`, `blame_id` and `discriminator` indexes of 1.x, and
+aligns the column types and defaults (`id` becomes a `BIGINT`, which rebuilds the table on MySQL and MariaDB and
+rewrites it on PostgreSQL). It is much shorter than the migration itself, about 20 seconds per million rows on
+MySQL 8.4 and 8 seconds on PostgreSQL 17 in a test container, but include it in the window.
+
+#### 8️⃣ Check, then reopen
+
+```bash
+# Both must report that there is nothing left to do
+bin/console audit:schema:migrate
+bin/console audit:schema:update --dump-sql
+```
+
+`audit:schema:migrate` without options exits with an error while a table still has a legacy column or rows with
+unconverted diffs (`schema_version` 1), and tells which. A run that only does a step of the migration (`--limit`, or
+a single conversion option) ends with "Step done. The migration is not complete" instead of the success message.
+
+Open a few audit entries (in the bundle's viewer, or through the `Reader`): the user, IP and transaction grouping
+of the migrated entries must be there. Then restart the workers and scheduled tasks, and leave maintenance mode.
+
+Optionally, reclaim the disk space used during the migration: `OPTIMIZE TABLE` on MySQL / MariaDB,
+`VACUUM FULL` on PostgreSQL (both lock the table while they run).
+
+#### 9️⃣ Update code reading `$entry->transactionHash`
+
+```php
+// Before (1.x)
+$entry->transactionHash;    // SHA-1 VARCHAR(40) string
+
+// After (2.0)
+$entry->transactionId;      // ULID CHAR(26) string
+```
+
+See [Breaking Changes](#-breaking-changes) for the other changes that may affect your code.
+
+#### 🔟 Update raw SQL queries on the audit tables
+
+`Reader` and `Query` handle both schemas, but SQL written by hand against the audit tables does not: repositories
+that `UNION` several audit tables, reports, views, BI dashboards, Doctrine migrations or scripts. After
+`audit:schema:migrate`, any query naming `transaction_hash`, `blame_user`, `blame_user_fqdn`, `blame_user_firewall`
+or `ip` fails with an unknown column error. Search your code base (SQL strings, `.sql` files, views, migrations) for
+these names, and for paths into the `diffs` JSON, before the maintenance window.
+
+##### Columns
+
+| 1.x | 2.0, MySQL / MariaDB | 2.0, PostgreSQL | 2.0, SQLite |
+|---|---|---|---|
+| `transaction_hash` | `transaction_id` | `transaction_id` | `transaction_id` |
+| `blame_user` | `JSON_VALUE(blame, '$.username')` | `blame->>'username'` | `json_extract(blame, '$.username')` |
+| `blame_user_fqdn` | `JSON_VALUE(blame, '$.user_fqdn')` | `blame->>'user_fqdn'` | `json_extract(blame, '$.user_fqdn')` |
+| `blame_user_firewall` | `JSON_VALUE(blame, '$.user_firewall')` | `blame->>'user_firewall'` | `json_extract(blame, '$.user_firewall')` |
+| `ip` | `JSON_VALUE(blame, '$.ip')` | `blame->>'ip'` | `json_extract(blame, '$.ip')` |
+| `blame_id`, `object_id`, `type`, `discriminator`, `extra_data`, `created_at` | unchanged | unchanged | unchanged |
+
+- `transaction_id` holds a ULID, not the SHA-1 of 1.x: the conversion gives one ULID per legacy hash across all audit
+  tables, so joins and `GROUP BY` between audit tables keep working once the column is renamed. A transaction hash
+  stored **outside** the audit tables (in your own tables, logs, URLs) no longer matches anything.
+- `blame` is `NULL` when an entry has no blame at all (no user, no IP, no blame context). Otherwise each key is
+  present, set to JSON `null` when unknown, so `blame_user_firewall IS NOT NULL` becomes
+  `JSON_VALUE(blame, '$.user_firewall') IS NOT NULL` (MySQL / MariaDB).
+- ⚠️ On MySQL, do not use `blame->>'$.user_firewall'` for a null test: on a JSON `null` it returns the **string**
+  `'null'`, not SQL `NULL`, so `IS NOT NULL` is true for every row that has a blame. `JSON_VALUE()` (MySQL 8.0.21+,
+  MariaDB) returns SQL `NULL`. MariaDB has no `->>` operator.
+- `blame` may also carry a `via` key (blame context, see [Blame contexts](#blame-contexts--entry-via)).
+- `id` becomes a `BIGINT`: a column or variable that stores an audit id in an `INT` must be widened.
+
+##### `diffs`
+
+| Entry | 1.x `diffs` | 2.0 `diffs` |
+|---|---|---|
+| insert / update | `{"field": {"old": …, "new": …}, …}` (insert: plus `@source`) | `{"source": {…}, "changes": {"field": {"old": …, "new": …}}}` |
+| remove | `{"class": …, "id": …, "label": …, "table": …}` | `{"source": {"class", "id", "label", "table"}, "changes": {}}` (`changes` filled with `full_snapshot_on_remove`) |
+| associate / dissociate | `{"source": …, "target": …, "is_owning_side": …, "table": "<join table>"}` | same, `table` renamed `join_table` |
+
+A path into a field diff gets a `changes` level:
+
+| | MySQL / MariaDB | PostgreSQL | SQLite |
+|---|---|---|---|
+| new value of `email` | `JSON_VALUE(diffs, '$.changes.email.new')` | `diffs->'changes'->'email'->>'new'` | `json_extract(diffs, '$.changes.email.new')` |
+| `email` changed | `JSON_CONTAINS_PATH(diffs, 'one', '$.changes.email')` | `diffs->'changes' ? 'email'` | `json_type(diffs, '$.changes.email') IS NOT NULL` |
+
+> [!WARNING]
+> **A 1.x path does not fail, it finds nothing.** `diffs->'email' IS NOT NULL` (PostgreSQL),
+> `JSON_EXTRACT(diffs, '$.email')` (MySQL) or `json_extract(diffs, '$.email')` (SQLite) raise no error on a v2 row:
+> they just never match, since the field is under `changes`. A query that expects rows returns none, and a query or a
+> test that checks that **no** row matches still passes, but no longer checks anything. Look for these paths
+> before the migration: an error will not point them out.
+
+- A `diffs LIKE '%"email"%'` test still matches after the migration, but also matches the `source` block (its
+  `label`) and fields of a JSON deep diff: prefer the paths above, or `ChangedFieldFilter` through the `Reader`.
+- Until `--convert-diffs` has run on every row, a table holds both formats: rows with `schema_version` 1 keep the
+  1.x diffs. Filter on `schema_version = 2`, or handle both.
+- `diffs`, `blame` and `extra_data` are native `JSON` on MySQL / MariaDB and `JSONB` on PostgreSQL (an `INSERT`
+  needs a `::jsonb` cast there); `TEXT` on SQLite.
+
+##### Example
+
+Entries of a user's HTTP requests (firewall known), grouped by transaction, on MySQL:
+
+```sql
+-- Before (1.x)
+SELECT transaction_hash, MIN(created_at)
+FROM post_audit
+WHERE blame_id = :user AND blame_user_firewall IS NOT NULL
+GROUP BY transaction_hash;
+
+-- After (2.0)
+SELECT transaction_id, MIN(created_at)
+FROM post_audit
+WHERE blame_id = :user AND JSON_VALUE(blame, '$.user_firewall') IS NOT NULL
+GROUP BY transaction_id;
+```
+
+### 🩺 Troubleshooting
+
+**The migration stopped in the middle (timeout, lost connection, `Ctrl+C`).**
+Run the same command again. The added columns are kept, converted rows are skipped, transactions already given a
+ULID keep it, and the legacy columns are dropped last, so a new run completes the migration. On MySQL and MariaDB,
+DDL statements are not transactional: do not drop or restore anything by hand before the new run. If the run keeps
+failing, restore the backup and run it again after fixing the cause.
+
+**`audit:schema:update` says that audit tables are still on the legacy v1 schema.**
+`audit:schema:migrate` has not run, or not to the end (for example, only `--convert-diffs` ran, or a run used
+`--limit`). Run `audit:schema:migrate --force --convert-all`.
+
+**`audit:schema:migrate` reports nothing to migrate, but a v1 audit table is still there.**
+Only the audit tables of the entities currently configured as auditable are migrated. A table left by an entity
+that is no longer audited is ignored: audit it again for the time of the migration, or keep its backup and drop it.
+
+**"The command is already running in another process."**
+Another `audit:schema:migrate` holds the lock on this host. Wait for it to finish. The lock does not cover other
+hosts: make sure only one host runs the migration.
+
+**Some rows "could not be converted".**
+Their diffs are not valid JSON, do not decode to an object, hold a field entry that is not an object, or their type
+is unknown: they were left as they are, at
+`schema_version` 1. Look at them with the ids listed by the command, fix or delete them, then run
+`audit:schema:migrate --force --convert-diffs` again.
+
+**A Doctrine migration wants to change or drop the audit columns.**
+It was generated against v1 audit tables: delete it, run `audit:schema:migrate` and `audit:schema:update`, then
+generate the migration again. If your audit tables are created by Doctrine migrations, write the migration described
+in [Audit tables managed by Doctrine Migrations](#audit-tables-managed-by-doctrine-migrations) instead.
+
+**Test or CI databases still have v1 audit tables after the upgrade.**
+They are built by running the Doctrine migrations, which created the v1 tables, and `audit:schema:migrate` never ran
+on them. Add the migration described in
+[Audit tables managed by Doctrine Migrations](#audit-tables-managed-by-doctrine-migrations).
+
+**`audit:schema:update --dump-sql` shows a change of `transaction_id` to `CHAR(26)`.**
+Development builds of 2.x created `transaction_id` as `VARCHAR(26)`. Apply the change once: both
+`audit:schema:update` and `doctrine:schema:update` then agree.
+
+**Disk full during the migration.**
+Free some space, then run the command again: it resumes. Plan for up to 4 times the size of the audit tables on
+PostgreSQL.
+
+### 🗄️ Schema Changes
+
+| Column (1.x) | Column (2.0) | Notes |
+|---|---|---|
+| `transaction_hash VARCHAR(40)` | `transaction_id CHAR(26)` | SHA-1 replaced by ULID |
+| `blame_user VARCHAR(255)` | *(removed)* | Merged into `blame` JSON |
+| `blame_user_fqdn VARCHAR(255)` | *(removed)* | Merged into `blame` JSON |
+| `blame_user_firewall VARCHAR(100)` | *(removed)* | Merged into `blame` JSON |
+| `ip VARCHAR(45)` | *(removed)* | Merged into `blame` JSON |
+| *(new)* | `blame JSON NULL` | `{"username","user_fqdn","user_firewall","ip"}` |
+| *(new)* | `schema_version SMALLINT DEFAULT 2` | `1` = legacy diffs, `2` = v2 format (new or converted rows). `audit:schema:migrate` adds it with a default of `1`, which marks the existing rows, and sets `2` when it drops the last legacy column (a table that keeps `transaction_hash` keeps `1` until then) |
+
+Indexes:
+
+| Index (1.x) | Index (2.0) |
+|---|---|
+| `transaction_hash` | `transaction_id` |
+| `(blame_user, blame_id)` (added in 1.x for the viewer's user filter) | *(removed)*, the viewer reads `blame_id` |
+| `object_id` | *(removed)*, covered by `(object_id, type)` |
+| `blame_id` | *(removed)*, covered by `(blame_id, created_at)` |
+| `discriminator` | *(removed)*, always filtered along with `object_id` or `created_at` |
+| | `(object_id, type)` (history of an object) |
+| | `(blame_id, created_at)` (timeline of a user) |
+
+`audit:schema:migrate` drops the 1.x indexes with their columns, and `audit:schema:update` creates the 2.0 ones and
+drops the `object_id`, `blame_id` and `discriminator` indexes: fewer indexes to maintain make each audit `INSERT`
+faster.
+
+### 🔄 Breaking Changes
+
+#### `Entry::$transactionHash` removed
+
+Property removed with no deprecated alias. Replace all reads with `$entry->transactionId`.
+
+#### Deprecated attribute aliases removed
+
+`DH\Auditor\Provider\Doctrine\Auditing\Attribute\Auditable`, `Ignore` and `Security`, deprecated since 1.0, are
+removed. Import the attributes from the core:
+
+```php
+// Before (1.x)
+use DH\Auditor\Provider\Doctrine\Auditing\Attribute\Auditable;
+
+// After (2.0)
+use DH\Auditor\Attribute\Auditable;
+```
+
+#### `NeedsConversionToAuditableType` lives in the provider
+
+The interface of the Doctrine types whose value must be converted before it is audited is now
+`DH\Auditor\Provider\Doctrine\Transaction\NeedsConversionToAuditableType`. Its auditor 4.x counterpart,
+`DH\Auditor\Transaction\NeedsConversionToAuditableType`, is gone from auditor 5.0: a custom type implementing it must
+implement the provider's interface instead.
+
+#### `LifecycleEvent` payload keys changed
+
+Custom providers must update any code reading the old flat keys from `$event->getPayload()`:
+
+| Key (1.x) | Key (2.0) | Notes |
+|---|---|---|
+| `transaction_hash` | `transaction_id` | ULID string |
+| `blame_user` | `blame` → `username` | Key of the `blame` JSON string |
+| `blame_user_fqdn` | `blame` → `user_fqdn` | Key of the `blame` JSON string |
+| `blame_user_firewall` | `blame` → `user_firewall` | Key of the `blame` JSON string |
+| `ip` | `blame` → `ip` | Key of the `blame` JSON string |
+| *(new)* | `schema_version` | `2` for all new entries |
+
+`blame`, like `diffs` and `extra_data`, is a JSON string in the payload:
+`json_decode($payload['blame'] ?? 'null', true)['username'] ?? null`.
+
+##### Listeners that rewrite `diffs`
+
+A `LifecycleEvent` listener that changes `$payload['diffs']` before the entry is written (to rewrite, add or remove
+field diffs) receives the v2 envelope, not the flat 1.x diff. It must:
+
+- read and write the field diffs under `changes`;
+- keep `source` (and, for an association, `target`, `is_owning_side` and `join_table`) as it is;
+- when it replaces a JSON deep diff by an `{old, new}` diff, remove that field from `deep_diffs`, and drop
+  `deep_diffs` once it is empty;
+- leave the envelope of an association or a dissociation (no `changes` key) as it is: adding `changes` to it hides
+  its structure.
+
+```php
+// Before (1.x)
+$diffs = json_decode($payload['diffs'], true);
+$diffs['tags'] = ['old' => $oldTags, 'new' => $newTags];
+$payload['diffs'] = json_encode($diffs);
+
+// After (2.0)
+$envelope = json_decode($payload['diffs'], true);
+if (!\array_key_exists('changes', $envelope)) {
+    return; // associate / dissociate: no field diffs
+}
+
+$envelope['changes']['tags'] = ['old' => $oldTags, 'new' => $newTags];
+$envelope['deep_diffs'] = array_values(array_diff($envelope['deep_diffs'] ?? [], ['tags']));
+if ([] === $envelope['deep_diffs']) {
+    unset($envelope['deep_diffs']);
+}
+$payload['diffs'] = json_encode($envelope);
+
+$event->setPayload($payload);
+```
+
+Nothing checks the envelope when the entry is written, and a wrong one is misread without any error: a v2 envelope
+without `changes` is returned whole by `getDiffs()`, like an association, so field diffs written next to `source`
+show `source` as a changed field, and without `source` the entry loses its summary (`getDiffSource()` returns
+`null`); a field left in `deep_diffs` is walked as a tree of changed keys (`old`, `new`).
+
+#### `getDiffs()` return value for schema v2 rows
+
+For entries written with `schema_version >= 2`, `getDiffs()` returns the `changes` sub-array
+from the unified diffs envelope. Legacy v1 rows are unaffected.
+
+```php
+// schema_version = 1: raw ['field' => ['old' => x, 'new' => y], ...]
+// schema_version >= 2: envelope['changes'] — same shape
+$changes = $entry->getDiffs();
+```
+
+#### `Query::count()` no longer hides database errors
+
+In 1.x, `Query::count()` returned `0` when the query failed (missing audit table, lost connection, SQL error),
+while `execute()` on the same query threw. It now lets the exception through, like `execute()`. Code that worked
+around the silent `0` (for example by taking the larger of `count()` and the number of fetched entries) can drop it.
+
+#### `audit:schema:update` now guards against v1 tables
+
+If any audit table still has a legacy column (`transaction_hash`, `blame_user`, `blame_user_fqdn`,
+`blame_user_firewall` or `ip`), `audit:schema:update`
+will refuse to run and print an error listing the affected tables. Run
+`audit:schema:migrate --force --convert-all` first.
+
+#### Configured `ignored_columns` of `#[Auditable]` entities are applied
+
+In 1.x, the attributes of an `#[Auditable]` entity replaced its whole configured options (except retention): the
+entity `ignored_columns` given in the configuration (e.g. the bundle YAML) were silently dropped. They are now added
+to the `#[Ignore]` properties, as documented. Check that the properties listed there are really meant to be ignored.
+
+#### `extra_data_provider` called once per flush
+
+The `extra_data_provider` callable takes no argument: it is now called once per flush (and once per batch of
+`audit:snapshot`) instead of once per audit entry, and every entry of the flush gets its value. A provider that
+returned a different value on each call (a counter, a timestamp) now returns one value per flush; use a
+`LifecycleEvent` listener for a value that depends on the audited entity.
+
+#### `Query::getSupportedFilters()` lists column names only
+
+The filters of a `Query` used to be derived from the index definitions of the audit table, so that
+`getSupportedFilters()` also returned the `__composite_object_id_type` and `__composite_blame_id_created_at`
+pseudo-names, which never made a valid filter. It now returns `id`, `type`, `object_id`, `discriminator`,
+`transaction_id`, `blame_id`, `created_at`, `json`, `diffs`, `transaction_hash`, `blame`, `root` and `cursor`.
+
+### ✨ New Features
+
+None of these features exists in 1.x, except the listener attachment by a container (also in 1.4). They are all
+optional: a 1.x configuration keeps working unchanged.
+
+#### Beyond the schema
+
+| Feature | Documentation |
+|---|---|
+| **Batch INSERT** (`batch_size`): the audit entries of a transaction are written with multi-row `INSERT` statements, 10 to 67 % faster flushes with many entities | [Batch INSERT](../providers/doctrine/configuration.md#-batch-insert) |
+| **Per-entity retention**: `#[Auditable(maxAge: …, maxEntries: …)]` or the `max_age` / `max_entries` entity options, applied by `audit:clean` | [Retention Policy](../providers/doctrine/attributes.md#retention-policy) |
+| **Export** with `audit:export`: NDJSON, JSON or CSV, streamed, filtered by entity, object, period or user, optionally anonymized | [audit:export](../providers/doctrine/schema.md#auditexport) |
+| **Changed field filter** (`ChangedFieldFilter`, `changed_field` query option): entries whose diff touches a field | [Filters](../querying/filters.md) |
+| **Readable values** in diffs with `#[DiffLabel]` and a `DiffLabelResolverInterface` service | [#[DiffLabel]](../providers/doctrine/attributes.md) |
+| **Masked values** with `#[Mask]`: the change of a field recorded as `"***"` or as an HMAC keyed with `mask_secret` | [#[Mask]](../providers/doctrine/attributes.md#-mask) |
+| **JSON deep diffs**: a JSON field change can be stored as a tree of the changed keys, listed under `deep_diffs` in the envelope (read with `Entry::isDeepDiff()`) | [Entry](../querying/entry.md) |
+| **Full snapshot on remove** (`full_snapshot_on_remove`): `remove` entries record the last value of every audited field | [Configuration](../providers/doctrine/configuration.md#-full-snapshot-on-remove) |
+| **Compression** (`compression`): compressed `diffs` and `extra_data` columns on MariaDB | [Compression](../providers/doctrine/configuration.md#-compression) |
+| **`skip_disabled_entities`**: no audit table for entities disabled by default | [Skipping Disabled Entities](../providers/doctrine/configuration.md#-skipping-disabled-entities) |
+| **Initial snapshot** with `audit:snapshot`: an `insert` entry flagged as a snapshot records the state of the entities that existed before auditing started | [audit:snapshot](../providers/doctrine/schema.md#auditsnapshot) |
+| **Audited properties allowlist** (`audited_columns`) and **per-object ignored properties** (`ignored_columns_resolver`) | [Ignored Properties](../providers/doctrine/configuration.md#-ignored-properties) |
+| **Blame contexts**: *how* a change was made (console command, import, message…) in the `via` key of the `blame` JSON | [Blame contexts](#blame-contexts--entry-via) |
+| **Impersonator** (switch user): an `impersonator` key in the `blame` JSON, read by `$entry->impersonator` and filtered by `ImpersonatorFilter`; `user_fqdn` is the class given by the user provider | [Filters](../querying/filters.md#-impersonatorfilter) |
+| **Histories across tables**: `#[AuditRoot]` and the `audit_root` index, `Reader::createRootQuery()` with cursor pagination, `getLastChanges()`, `getFieldHistory()`, `BlameOriginFilter`, `audit:roots:rebuild` | [Histories](../querying/history.md) |
+| **Pages of transactions**: `Query::transactions()` / `countTransactions()` (and `transactionsOf()` / `countTransactionsOf()` across tables), `Query::transactionEntries()`, `Query::countTransactionsByDay()`, `RootQuery::fetchTransactions()` / `countTransactions()`: pages of whole actions instead of entries | [Pages of transactions](../querying/index.md#pages-of-transactions) |
+| **New indexes** `(object_id, type)` and `(blame_id, created_at)`, for the history of an object and the timeline of a user, and a lighter flush pipeline | [Performance](../providers/doctrine/performance.md) |
+
+#### `$entry->transactionId` — ULID
+
+```php
+$entry->transactionId;  // '01JXXXXXXXXXXXXXXXXXXXXXXXXX' (26 chars)
+```
+
+#### `$entry->blame` — full blame context
+
+```php
+$entry->blame;  // ['username' => '...', 'user_fqdn' => '...', 'user_firewall' => '...', 'ip' => '...']
+```
+
+#### `user_fqdn` and the impersonator
+
+`user_fqdn` is the `fqdn` of the user returned by the user provider (the class of the user in the application), no
+longer the class of that object, which was `DH\Auditor\User\User` whenever the built-in class was used: null when
+the user provider gives none. When that user has an impersonator (switch user), the `blame` JSON gets an
+`impersonator` key, `{"id": "1", "username": "admin", "fqdn": "App\\Entity\\Admin"}`, read by
+`$entry->impersonator` and filtered by `ImpersonatorFilter` (see [Filters](../querying/filters.md)).
+
+#### Blame contexts — `$entry->via`
+
+The blame context current when the entities are flushed (see the core
+[Blame Context](https://damienharper.github.io/auditor-docs/auditor/configuration/blame-context) page) is written in
+the `via` key of the `blame` JSON: `{"type": "import", "label": "Import batch #42"}`. It is captured at flush time,
+so it still applies when the database transaction is committed after the context was popped. A context carrying
+a user blames that user (`blame_id`, `username`, `user_fqdn`) instead of the user provider's one.
+
+#### `$entry->schemaVersion`
+
+```php
+$entry->schemaVersion;  // 1 (legacy) or 2 (current)
+```
+
+#### `Entry::getDiffSource()` — entity metadata
+
+```php
+$source = $entry->getDiffSource();
+// ['id' => '42', 'class' => 'App\Entity\Post', 'label' => 'My post', 'table' => 'post']
+// Returns null for schema_version = 1 entries.
+```
+
+#### `Entry::getDiffTarget()` — association target
+
+```php
+$target = $entry->getDiffTarget();
+// ['id' => '7', 'class' => 'App\Entity\Tag', 'label' => 'PHP', 'table' => 'tag']
+// Returns null for non-association entries or schema_version = 1.
+```
+
+#### `audit:snapshot` — initial state of existing entities
+
+When auditing is enabled on a database that already holds data, the history of an entity used to start
+at its first change. `audit:snapshot` writes one `insert` entry flagged with `"snapshot": true` per existing
+entity, in batches, and skips the entities that already have an audit history:
+
+```bash
+php bin/console audit:snapshot --all
+```
+
+`Entry::isSnapshot()` (auditor 5.0) tells these entries from real insertions. See
+[Schema Management](../providers/doctrine/schema.md#auditsnapshot).
+
+#### Reader backwards compatibility
+
+The `Reader` automatically adapts queries to use `transaction_id` or `transaction_hash`
+depending on which column exists in each table. Mixed environments (some tables migrated,
+some not) are fully supported.
+
+#### `audited_columns` and `ignored_columns_resolver`
+
+- The `audited_columns` entity option audits only the listed properties (an allowlist, instead of ignoring all the
+  others).
+- The `ignored_columns_resolver` option takes a callable (see `IgnoredColumnsResolverInterface`) that returns the
+  properties to ignore for a given entity object.
+
+Ignoring always wins over the allowlist. See [Configuration](../providers/doctrine/configuration.md#which-properties-are-audited).
+
+#### Listeners attached by a container
+
+`disableListenerAttachment()` leaves the Doctrine listeners to a dependency injection container, which declares
+`getDoctrineSubscriber()` as a lazy listener: flushes made before the provider is built are audited (auditor-bundle
+does it). One subscriber is now shared by all the auditing entity managers: auditing entity managers sharing an event
+manager no longer write each audit entry twice. Also in 1.4. See [Services](../providers/doctrine/services.md#attaching-the-listeners-yourself).
+
+### ❓ Need Help?
+
+- Check [GitHub Issues](https://github.com/DamienHarper/auditor-doctrine-provider/issues)
+- Open a new issue with details about your error
 
 ---
 
