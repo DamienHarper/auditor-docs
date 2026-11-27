@@ -14,8 +14,10 @@ const sidebars = {
       type: 'category',
       label: 'Getting Started',
       items: [
+        'getting-started/which-packages',
         'getting-started/installation',
         'getting-started/quick-start',
+        'getting-started/coming-from-doctrine-audit-bundle',
       ],
     },
     {
@@ -46,6 +48,7 @@ const sidebars = {
     'api/index',
     'history',
     'extra-data',
+    'common-mistakes',
     'contributing',
     {
       type: 'category',
