@@ -1,6 +1,8 @@
 # Role Checker Configuration
 
-> > **Control access to audit logs with fine-grained permissions**
+> Restrict who can read audit log entries with a role checker callable, combined with the #[Security] attribute, and handle the AccessDeniedException it triggers.
+
+> **Control access to audit logs with fine-grained permissions**
 
 The role checker controls access to audit logs, allowing you to restrict who can view audits for specific entities.
 
@@ -38,7 +40,7 @@ $configuration->setRoleChecker(function (string $entity, string $scope): bool {
 
 use App\Entity\User;
 use App\Entity\Payment;
-use Symfony\Component\Security\Core\Security;
+use Symfony\Bundle\SecurityBundle\Security;
 
 $configuration->setRoleChecker(function (string $entity, string $scope) use ($security): bool {
     // Admins can view all audits
@@ -84,8 +86,8 @@ You can also define view permissions directly on entities using the `#[Security]
 ```php
 <?php
 
-use DH\Auditor\Provider\Doctrine\Auditing\Annotation\Auditable;
-use DH\Auditor\Provider\Doctrine\Auditing\Annotation\Security;
+use DH\Auditor\Attribute\Auditable;
+use DH\Auditor\Attribute\Security;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -188,7 +190,7 @@ When the role checker returns `false`, an `AccessDeniedException` is thrown:
 <?php
 
 use DH\Auditor\Exception\AccessDeniedException;
-use DH\Auditor\Provider\Doctrine\Persistence\Reader\Reader;
+use DH\Auditor\Provider\Doctrine\Persistence\Reader\Reader; // from auditor-doctrine-provider
 
 $reader = new Reader($provider);
 

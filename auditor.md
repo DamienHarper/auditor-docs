@@ -1,8 +1,10 @@
 # Introduction
 
-> > **The missing audit log library for PHP**
+> Overview of auditor, a provider-based PHP audit log library: features, architecture and data flow, available providers, supported databases and versions.
 
 # auditor
+
+> **The missing audit log library for PHP**
 
 [![Latest Stable Version](https://poser.pugx.org/damienharper/auditor/v/stable)](https://packagist.org/packages/damienharper/auditor)
 [![License](https://poser.pugx.org/damienharper/auditor/license)](https://packagist.org/packages/damienharper/auditor)
@@ -64,7 +66,7 @@ flowchart TD
 
             TP["TransactionProcessor
             Track inserts, updates, deletes, relations
-            Build payload (diffs, blame, extra_data = null)"]
+            Build payload (diffs, blame, extra_data)"]
         end
 
         subgraph EVENTS["EventDispatcher"]
@@ -93,18 +95,18 @@ flowchart TD
 
 ### Data Flow
 
-1. **Entity Change** → Your application modifies an entity via Doctrine
-2. **Detection** → `AuditingService` detects the change through Doctrine events
-3. **Processing** → `TransactionProcessor` computes diffs and prepares audit data (with `extra_data = null`)
+1. **Entity Change** → Your application modifies data
+2. **Detection** → The provider's `AuditingService` detects the change
+3. **Processing** → `TransactionProcessor` computes diffs and prepares audit data (`extra_data` comes from the [extra data provider](extra-data.md) when one is set, `null` otherwise)
 4. **Event** → A `LifecycleEvent` is dispatched with the audit payload and the entity object
 5. **Enrichment** *(optional)* → Your listener(s) inspect the entity and populate `extra_data` in the payload
-6. **Persistence** → `StorageService` persists the audit entry to the database
+6. **Persistence** → The provider's `StorageService` persists the audit entry to the database
 
 ## Available Providers
 
 | Provider | Package | Storage technology |
 |----------|---------|-------------------|
-| DoctrineProvider | [auditor-doctrine-provider](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/) | Doctrine ORM / DBAL |
+| DoctrineProvider | [auditor-doctrine-provider](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider) | Doctrine ORM / DBAL |
 
 > Need a different backend? See [Building a Custom Provider](providers/custom-provider.md).
 
@@ -124,12 +126,13 @@ Database support depends on the provider used. Via **DoctrineProvider**:
 
 ## Version Compatibility
 
-| Version | Status                     | Requirements                                                          |
-|---------|----------------------------|-----------------------------------------------------------------------|
-| 4.x     | Bug and security fixes     | PHP >= 8.4, Symfony >= 8.1 |
-| 3.x     | End of Life                | PHP >= 8.2, Symfony >= 5.4                                            |
-| 2.x     | End of Life                | PHP >= 7.4, Symfony >= 4.4                                            |
-| 1.x     | End of Life                | PHP >= 7.2, Symfony >= 3.4                                            |
+| Version | Status                     | Requirements                                                           |
+|---------|----------------------------|------------------------------------------------------------------------|
+| 5.x     | Active development 🚀      | PHP >= 8.4, Symfony >= 8.1                                             |
+| 4.x     | Bug and security fixes     | PHP >= 8.4, Symfony >= 8.1, Doctrine DBAL >= 4.0, Doctrine ORM >= 3.2 |
+| 3.x     | End of Life                | PHP >= 8.2, Symfony >= 5.4                                             |
+| 2.x     | End of Life                | PHP >= 7.4, Symfony >= 4.4                                             |
+| 1.x     | End of Life                | PHP >= 7.2, Symfony >= 3.4                                             |
 
 ## Quick Links
 
@@ -139,11 +142,13 @@ Database support depends on the provider used. Via **DoctrineProvider**:
 - [DoctrineProvider](providers/doctrine/index.md)
 - [Building a Custom Provider](providers/custom-provider.md)
 - [Querying Audits](querying/index.md)
+- [Histories](history.md)
 - [Extra Data](extra-data.md)
 - [API Reference](api/index.md)
 
 ## Related Projects
 
+- **[auditor-doctrine-provider](https://github.com/DamienHarper/auditor-doctrine-provider)** - Doctrine ORM provider
 - **[auditor-bundle](https://github.com/DamienHarper/auditor-bundle)** - Symfony bundle for seamless integration
 
 ## License

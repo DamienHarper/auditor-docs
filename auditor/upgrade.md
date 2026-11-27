@@ -1,12 +1,14 @@
 # Upgrade Guide
 
-> > **Navigate between major versions of auditor**
+> Choose the upgrade guide between auditor major versions, check which versions are supported with which PHP and Symfony releases, and update with Composer.
+
+> **Navigate between major versions of auditor**
 
 This guide helps you upgrade between major versions of auditor.
 
 ## 📚 Upgrade Paths
 
-- [⬆️ Upgrading to 5.x from 4.x](https://github.com/DamienHarper/auditor/blob/master/docs/upgrade/v5.md)
+- [⬆️ Upgrading to 5.x from 4.x](v5.md)
 - [⬆️ Upgrading to 4.x from 3.x](v4.md)
 - [⬆️ Upgrading to 3.x from 2.x](v3.md)
 
@@ -41,9 +43,9 @@ composer show damienharper/auditor
 ## 📦 Updating
 
 ```bash
-# Update to latest 4.x
-composer require damienharper/auditor:^4.0
+# Update to latest 5.x
+composer require damienharper/auditor:^5.0
 
-# Update to latest 3.x (if on 3.x)
-composer require damienharper/auditor:^3.0
+# Update to latest 4.x (if on 4.x)
+composer require damienharper/auditor:^4.0
 ```

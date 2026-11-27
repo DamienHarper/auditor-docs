@@ -1,7 +1,9 @@
 # Querying Audits
 
-> Querying audit entries is **provider-specific**: each provider implements its own reader and
-> filter system adapted to its underlying storage technology.
+> Querying audit log entries is provider-specific: the readers, queries and filters providers offer, with pointers to the Doctrine ORM provider reader.
+
+Querying audit entries is **provider-specific**: each provider implements its own reader and
+filter system adapted to its underlying storage technology.
 
 The `auditor` core does not define a query API — it only orchestrates providers and dispatches
 audit events.
@@ -19,7 +21,7 @@ Providers that implement a reader expose at minimum:
 The **auditor-doctrine-provider** package ships a full Reader and filter system backed by
 Doctrine DBAL.
 
-→ **[Querying Audits (auditor-doctrine-provider)](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/querying/)**
+→ **[Querying Audits (auditor-doctrine-provider)](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/querying)**
 
 Highlights:
 
@@ -32,6 +34,10 @@ Highlights:
 | Numeric range | `RangeFilter` |
 | NULL check | `NullFilter` |
 | JSON column content | `JsonFilter` |
+| History of a root and its satellites | `Reader::createRootQuery()` |
+| Last change of fields | `Reader::getLastChanges()` |
+
+The core turns the entries a reader returns into actions and changes: see [Histories](../history.md).
 
 ## Other providers
 

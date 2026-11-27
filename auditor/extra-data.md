@@ -1,6 +1,8 @@
 # Extra Data
 
-> The `extra_data` column allows you to store arbitrary supplementary information alongside each audit entry. This is useful for capturing contextual data that isn't part of the entity's fields, such as department, role, request metadata, or any business-specific information.
+> Attach extra data to audit log entries with the extra_data_provider callable or a LifecycleEvent listener, then read it back as a decoded array from Entry.
+
+The `extra_data` column allows you to store arbitrary supplementary information alongside each audit entry. This is useful for capturing contextual data that isn't part of the entity's fields, such as department, role, request metadata, or any business-specific information.
 
 ## How It Works
 
@@ -20,7 +22,7 @@ flowchart TD
 
     B["TransactionProcessor
     Builds payload: diffs, blame
-    Calls extra_data_provider (if set)
+    Calls extra_data_provider once per flush (if set)
     → extra_data = JSON string or null"] --> C
 
     C["LifecycleEvent dispatched"]
@@ -48,7 +50,7 @@ flowchart TD
 
 ## Approach 1: `extra_data_provider` Callable
 
-Register a callable on the `Configuration` object. It is invoked for every audit entry in every transaction. The callable must return `?array` — return `null` to leave `extra_data` empty.
+Register a callable on the `Configuration` object. It is invoked once per flush, and every audit entry of the flush gets its value. The callable must return `?array` — return `null` to leave `extra_data` empty.
 
 ```php
 $auditor->getConfiguration()->setExtraDataProvider(
@@ -197,6 +199,9 @@ public function __invoke(LifecycleEvent $event): void
 The `Entry` model provides access to `extra_data` via the `extraData` property or the `getExtraData()` method:
 
 ```php
+// Reader comes from damienharper/auditor-doctrine-provider
+use DH\Auditor\Provider\Doctrine\Persistence\Reader\Reader;
+
 $reader = new Reader($provider);
 $entries = $reader->createQuery(User::class)->execute();
 
@@ -286,4 +291,4 @@ php bin/console audit:schema:update --force
 
 ## Next Steps
 
-- [Upgrade Guide](upgrade/v4.md)
+- [Upgrade Guide](upgrade/v5.md)

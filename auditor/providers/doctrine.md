@@ -1,17 +1,19 @@
 # DoctrineProvider
 
-> DoctrineProvider adds Doctrine ORM support to `auditor`. It automatically tracks insertions,
-> updates, deletions and many-to-many association changes, and persists audit entries in
-> dedicated audit tables.
+> Doctrine ORM support for auditor lives in the separate auditor-doctrine-provider package since 5.0: what it supports and where its documentation is.
+
+DoctrineProvider adds Doctrine ORM support to `auditor`. It automatically tracks insertions,
+updates, deletions and many-to-many association changes, and persists audit entries in
+dedicated audit tables.
 
 It also provides a **Reader** API to query and filter audit entries directly from your
 application.
 
 > [!WARNING]
-> The built-in `DoctrineProvider` (namespace `DH\Auditor\Provider\Doctrine\`) is **deprecated**
-> since auditor 4.1 and will be removed in v5.0.
+> The built-in `DoctrineProvider` (namespace `DH\Auditor\Provider\Doctrine\`) was **removed**
+> in auditor 5.0.
 >
-> Use the standalone **[auditor-doctrine-provider](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider/)** package instead — it is a drop-in replacement
+> Use the standalone **[auditor-doctrine-provider](https://damienharper.github.io/auditor-docs/auditor-doctrine-provider)** package — it is a drop-in replacement
 > with the same namespace and feature set.
 
 ## What it supports
